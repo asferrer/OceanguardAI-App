@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de detalle de sesión                                        -->
+    <!-- ================================================================== -->
+    <string name="session_detail_title">Detalle de sesión</string>
+    <string name="session_detail_dialog_delete_title">Eliminar sesión</string>
+    <string name="session_detail_dialog_delete_message">¿Seguro que quieres eliminar esta sesión de detección? Esta acción no se puede deshacer.</string>
+    <string name="session_detail_btn_delete">Eliminar</string>
+    <string name="session_detail_cd_back">Volver</string>
+    <string name="session_detail_cd_edit_location">Editar ubicación</string>
+    <string name="session_detail_cd_delete_session">Eliminar sesión</string>
+    <string name="session_detail_cd_annotated_image">Imagen de detección anotada</string>
+    <string name="session_detail_empty">Sesión no encontrada</string>
+    <string name="session_detail_label_total_debris">Total de residuos</string>
+    <string name="session_detail_label_processing">Procesamiento</string>
+    <string name="session_detail_label_quality">Calidad</string>
+    <string name="session_detail_section_material_breakdown">Desglose de materiales</string>
+    <string name="session_detail_section_detected_objects">Objetos detectados</string>
+    <string name="session_detail_location_add">Agregar ubicación</string>
+    <string name="session_detail_cd_edit_location_inline">Editar ubicación</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de mapa                                                     -->
+    <!-- ================================================================== -->
+    <string name="map_title">Mapa de sesiones</string>
+    <!-- El subtítulo con el número de sesiones usa argumentos de formato en estilo plural — construido en el código -->
+    <string name="map_cd_go_back">Volver</string>
+    <string name="map_zone_avg_health">Salud media: %1$d</string>
+    <string name="map_legend_title">Puntuación de salud</string>
+    <string name="map_legend_cd_collapse">Contraer leyenda</string>
+    <string name="map_legend_cd_expand">Expandir leyenda</string>
+    <string name="map_legend_excellent">80-100  Excelente</string>
+    <string name="map_legend_good">60-79   Buena</string>
+    <string name="map_legend_moderate">40-59   Moderada</string>
+    <string name="map_legend_poor">20-39   Deficiente</string>
+    <string name="map_legend_critical">0-19    Crítica</string>
+    <string name="map_empty_no_location_title">Sin datos de ubicación</string>
+    <string name="map_empty_no_location_message">Ninguna de tus sesiones registradas incluye datos de ubicación. Concede permiso de ubicación y captura una nueva imagen para ver los marcadores GPS en el mapa.</string>
+    <string name="map_empty_no_sessions_title">Aún no hay sesiones</string>
+    <string name="map_empty_no_sessions_message">Aún no hay sesiones de detección registradas. Captura una imagen con la cámara o selecciona una de la galería para empezar.</string>
+
+    <!-- Controles FAB del mapa (MapControls.kt) -->
+    <string name="map_fab_cd_show_pins">Mostrar marcadores</string>
+    <string name="map_fab_cd_show_heatmap">Mostrar mapa de calor</string>
+    <string name="map_fab_cd_fit_all">Ajustar todos los marcadores</string>
+    <string name="map_fab_cd_map_style">Estilo del mapa</string>
+
+    <!-- Panel inferior de sesión (SessionBottomSheet.kt) -->
+    <string name="map_sheet_health_label">Salud: %1$d</string>
+    <string name="map_sheet_items_detected">%d elemento(s) detectado(s)</string>
+    <string name="map_sheet_risk_level">Nivel de riesgo: %s</string>
+    <string name="map_sheet_btn_view_details">Ver detalles completos</string>
+    <string name="map_sheet_zone_health_label">Salud de la zona</string>
+    <string name="map_sheet_trend_improving">Mejorando</string>
+    <string name="map_sheet_trend_degrading">Degradándose</string>
+    <string name="map_sheet_trend_stable">Estable</string>
+
+    <!-- Filtros del mapa -->
+    <string name="map_filter_debris_type">Tipo de residuo</string>
+    <string name="map_filter_date_range">Rango de fechas</string>
+
+    <!-- Panel inferior de zona -->
+    <string name="zone_sheet_stat_dives">Inmersiones</string>
+    <string name="zone_sheet_stat_images">Imágenes</string>
+    <string name="zone_sheet_stat_sessions">Sesiones</string>
+    <string name="zone_sheet_stat_total_items">Total Elementos</string>
+    <string name="zone_sheet_stat_avg_health">Salud Media</string>
+    <string name="zone_sheet_sessions_header">Actividad en esta zona</string>
+    <string name="zone_sheet_day_all">Todos los días</string>
+
+    <!-- Filtros de informes -->
+    <string name="report_filter_location">Localización</string>
+    <string name="report_filter_date_range">Rango de fechas</string>
+    <string name="report_filter_sessions_selected">%1$d de %2$d sesiones</string>
+
+    <!-- Filtros avanzados del historial -->
+    <string name="history_filter_debris_type">Tipo de residuo</string>
+    <string name="history_filter_location">Ubicación</string>
+    <string name="history_filter_date_range">Rango de fechas</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de informes                                                 -->
+    <!-- ================================================================== -->
+    <string name="report_title">Informes</string>
+    <string name="report_cd_go_back">Volver</string>
+    <string name="report_cd_share">Compartir informe</string>
+    <string name="report_dialog_delete_title">Eliminar informe</string>
+    <string name="report_dialog_delete_message">¿Seguro que quieres eliminar este informe? Esta acción no se puede deshacer.</string>
+    <string name="report_btn_delete">Eliminar</string>
+    <string name="report_label_language">Idioma del informe</string>
+    <string name="report_btn_generating">Generando…</string>
+    <string name="report_btn_generate_sample">Generar informe de muestra</string>
+    <!-- En plural: construido en el código como "Generar informe (%d sesiones)" -->
+    <string name="report_btn_generate">Generar informe (%d sesiones)</string>
+    <string name="report_dropdown_selected">Seleccionado</string>
+    <string name="report_empty_title">Aún no se ha generado ningún informe</string>
+    <string name="report_empty_message_with_sessions">Selecciona un idioma y toca «Generar informe» para crear un resumen ambiental de tus sesiones de estudio.</string>
+    <string name="report_empty_message_no_sessions">No se encontraron sesiones de detección. Captura imágenes submarinas, ejecuta el análisis y guarda las sesiones. Luego vuelve aquí para generar un informe.</string>
+    <!-- Recuento de sesiones en el indicador de disponibilidad, construido en el código -->
+    <string name="report_sessions_available">%d sesión(es) disponibles para análisis</string>
+    <string name="report_saved_title">Informes guardados (%d)</string>
+    <string name="report_card_ai_label">Informe IA</string>
+    <string name="report_card_template_label">Informe de plantilla</string>
+    <string name="report_card_cd_ai">Generado por IA</string>
+    <string name="report_card_cd_template">Plantilla</string>
+    <string name="report_card_delete_cd">Eliminar informe</string>
+    <string name="report_loading_engine">Cargando motor de análisis…</string>
+    <string name="report_header_ai_generated">Informe generado por IA</string>
+    <string name="report_header_template">Informe de plantilla</string>
+    <string name="report_template_banner_text">Informe de plantilla generado. Despliega el modelo de IA para un análisis asistido.</string>
+    <string name="report_error_title">Error al generar el informe</string>
+    <string name="report_btn_retry">Reintentar</string>
+    <string name="report_btn_back_to_list">Volver a la lista</string>
+    <string name="report_btn_share">Compartir</string>
+    <string name="report_snackbar_export_error">No se pudo crear el archivo de exportación. Comprueba los permisos de almacenamiento.</string>
+    <string name="report_cd_download_pdf">Descargar PDF</string>
+    <string name="report_snackbar_pdf_error">No se pudo crear el PDF.</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de configuración                                            -->
+    <!-- ================================================================== -->
+    <string name="settings_title">Configuración</string>
+    <string name="settings_cd_back">Volver</string>
+
+    <!-- Sección de detección -->
+    <string name="settings_section_detection">Detección</string>
+    <string name="settings_label_confidence_threshold">Umbral de confianza</string>
+    <string name="settings_desc_confidence_threshold">Mostrar solo detecciones con confianza superior a este valor</string>
+    <string name="settings_label_detector_precision">Precisión del detector</string>
+    <string name="settings_desc_detector_precision">INT8 es más ligero (43 MB frente a 83 MB) y puede ser más rápido. Requiere reiniciar la app.</string>
+    <string name="settings_hint_restart">Reinicia la app para aplicar la nueva precisión del modelo</string>
+    <string name="settings_label_deep_analysis">Análisis profundo</string>
+    <string name="settings_desc_deep_analysis">Ejecutar análisis profundo con IA tras la detección. Desactívalo para obtener resultados más rápidos (solo detección)</string>
+    <string name="settings_label_confirm_capture">Confirmar captura</string>
+    <string name="settings_desc_confirm_capture">Vista previa de la foto antes de enviarla a la detección</string>
+
+    <!-- Sección de idioma de la app -->
+    <string name="settings_section_app_language">Idioma de la app</string>
+    <string name="settings_label_interface_language">Idioma de la interfaz</string>
+    <string name="settings_desc_interface_language">Cambia toda la interfaz de la app. Tiene efecto de inmediato.</string>
+
+    <!-- Sección de informes -->
+    <string name="settings_section_reports">Informes</string>
+    <string name="settings_label_report_language">Idioma de los informes</string>
+    <string name="settings_desc_report_language">Idioma para los informes ambientales generados por IA</string>
+
+    <!-- Sección de visualización -->
+    <string name="settings_section_display">Visualización</string>
+    <string name="settings_label_dark_mode">Modo oscuro</string>
+    <string name="settings_desc_dark_mode">Usar tema oscuro para mejor visibilidad submarina</string>
+
+    <!-- Sección de datos -->
+    <string name="settings_section_data">Datos</string>
+    <string name="settings_label_reset_all_data">Restablecer todos los datos</string>
+    <string name="settings_desc_reset_all_data">Eliminar todas las sesiones, entradas de MarineDex y logros para empezar de cero</string>
+    <string name="settings_btn_reset_all_data">Restablecer todos los datos</string>
+    <string name="settings_dialog_clear_title">Borrar todos los datos</string>
+    <string name="settings_dialog_clear_message">Esto eliminará permanentemente todas las sesiones de detección, descubrimientos de MarineDex y logros. Comenzarás completamente desde cero. Esta acción no se puede deshacer.</string>
+    <string name="settings_dialog_clear_confirm">Eliminar todo</string>
+
+    <!-- Sección de visitas guiadas -->
+    <string name="settings_section_guided_tours">Visitas guiadas</string>
+    <string name="settings_desc_guided_tours">Guías interactivas que explican las funciones de cada pantalla.</string>
+    <string name="settings_btn_replay_tours">Repetir visitas guiadas</string>
+
+    <!-- Sección Acerca de -->
+    <string name="settings_section_about">Acerca de</string>
+    <string name="settings_cd_logo">Logo de OceanGuard</string>
+    <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_powered_by">Desarrollado con MediaPipe &amp; TensorFlow Lite</string>
+    <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" se mantiene intencionalmente
+         en el código de SettingsScreen.kt según las instrucciones de la tarea. -->
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de MarineDex                                                -->
+    <!-- ================================================================== -->
+    <string name="marinedex_title">MarineDex</string>
+    <string name="marinedex_cd_go_back">Volver</string>
+    <string name="marinedex_collection_complete">¡Colección completa!</string>
+    <!-- El recuento de descubrimientos se construye en el código: "$discoveredCount / $TOTAL Descubiertos" -->
+    <string name="marinedex_stat_discovered">Descubiertos</string>
+    <string name="marinedex_stat_favorites">Favoritos</string>
+    <string name="marinedex_stat_detections">Detecciones</string>
+    <!-- La descripción de contenido de la tarjeta se construye en el código mediante formatDebrisName() -->
+    <string name="marinedex_card_cd_discovered">%1$s, detectado %2$d veces</string>
+    <string name="marinedex_card_cd_locked">%s, aún no descubierto</string>
+    <string name="marinedex_card_click_label">Ver detalles de %s</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de detalle de MarineDex                                     -->
+    <!-- ================================================================== -->
+    <string name="marinedex_detail_cd_go_back">Volver</string>
+    <string name="marinedex_detail_cd_remove_favorite">Quitar de favoritos</string>
+    <string name="marinedex_detail_cd_add_favorite">Agregar a favoritos</string>
+    <string name="marinedex_detail_tab_info">Info</string>
+    <string name="marinedex_detail_tab_gallery">Galería</string>
+    <string name="marinedex_detail_tab_map">Mapa</string>
+    <!-- Recuento de detecciones: "Detectado %2$d vez/veces" construido en el código -->
+    <string name="marinedex_detail_stat_times_detected">Veces\ndetectado</string>
+    <string name="marinedex_detail_stat_first_seen">Primera\nvez visto</string>
+    <string name="marinedex_detail_stat_last_seen">Última\nvez visto</string>
+    <string name="marinedex_detail_impact_title">Impacto ambiental</string>
+    <string name="marinedex_detail_impact_degradation_label">Tiempo de degradación</string>
+    <string name="marinedex_detail_impact_risk_label">Nivel de riesgo</string>
+    <string name="marinedex_detail_impact_annual_volume_label">Volumen anual en el océano</string>
+
+    <!-- ================================================================== -->
+    <!-- Componente AchievementUnlockOverlay                                  -->
+    <!-- ================================================================== -->
+    <string name="achievement_unlock_overlay_title">¡Logro desbloqueado!</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de logros                                                   -->
+    <!-- ================================================================== -->
+    <string name="achievements_title">Logros</string>
+    <string name="achievements_cd_go_back">Volver</string>
+    <string name="achievements_progress_label">Progreso total</string>
+    <!-- "$unlockedCount / $TOTAL Desbloqueados" construido en el código -->
+    <!-- "%% completado" construido en el código -->
+    <!-- Contraer/expandir categorías construido en el código usando category.label -->
+    <!-- "desbloqueado $dateString" construido en el código -->
+
+    <!-- Etiquetas de categorías de logros -->
+    <string name="achievement_category_first_steps">Primeros pasos</string>
+    <string name="achievement_category_explorer">Explorador</string>
+    <string name="achievement_category_collector">Coleccionista de MarineDex</string>
+    <string name="achievement_category_impact">Impacto ambiental</string>
+    <string name="achievement_category_elite">Élite</string>
+
+    <!-- Nombres de logros -->
+    <string name="achievement_name_first_scan">Primera inmersión</string>
+    <string name="achievement_name_first_live">Ojo de águila</string>
+    <string name="achievement_name_first_report">Notas de campo</string>
+    <string name="achievement_name_first_batch">Comandante de lotes</string>
+    <string name="achievement_name_first_dex_entry">Catalogador</string>
+    <string name="achievement_name_tutorial_complete">Guía Turístico</string>
+    <string name="achievement_name_scan_10">Limpiador de playas</string>
+    <string name="achievement_name_scan_50">Patrulla de arrecife</string>
+    <string name="achievement_name_scan_100">Centinela del océano</string>
+    <string name="achievement_name_scan_500">Guardián abisal</string>
+    <string name="achievement_name_streak_7">Guerrero semanal</string>
+    <string name="achievement_name_dex_3">Buscador de playas</string>
+    <string name="achievement_name_dex_6">Biólogo marino</string>
+    <string name="achievement_name_dex_9">Oceanógrafo</string>
+    <string name="achievement_name_dex_11">Maestro del Dex</string>
+    <string name="achievement_name_dex_favorite_3">Curador</string>
+    <string name="achievement_name_debris_50">Novato de la limpieza</string>
+    <string name="achievement_name_debris_200">Luchador contra la contaminación</string>
+    <string name="achievement_name_health_80">Aguas prístinas</string>
+    <string name="achievement_name_all_achievements">Campeón de Neptuno</string>
+    <string name="achievement_name_report_10">Colaborador científico</string>
+
+    <!-- Descripciones de logros -->
+    <string name="achievement_desc_first_scan">Completa tu primer escaneo</string>
+    <string name="achievement_desc_first_live">Usa la detección en vivo por primera vez</string>
+    <string name="achievement_desc_first_report">Genera tu primer informe de IA</string>
+    <string name="achievement_desc_first_batch">Procesa tu primer lote de imágenes</string>
+    <string name="achievement_desc_first_dex_entry">Descubre tu primer tipo de residuo</string>
+    <string name="achievement_desc_tutorial_complete">Completa el tour guiado completo</string>
+    <string name="achievement_desc_scan_10">Completa 10 escaneos</string>
+    <string name="achievement_desc_scan_50">Completa 50 escaneos</string>
+    <string name="achievement_desc_scan_100">Completa 100 escaneos</string>
+    <string name="achievement_desc_scan_500">Completa 500 escaneos</string>
+    <string name="achievement_desc_streak_7">Escanea 7 días consecutivos</string>
+    <string name="achievement_desc_dex_3">Descubre 3 tipos de residuos</string>
+    <string name="achievement_desc_dex_6">Descubre 6 tipos de residuos</string>
+    <string name="achievement_desc_dex_9">Descubre 9 tipos de residuos</string>
+    <string name="achievement_desc_dex_11">Descubre los 11 tipos de residuos</string>
+    <string name="achievement_desc_dex_favorite_3">Marca 3 favoritos en el MarineDex</string>
+    <string name="achievement_desc_debris_50">Detecta 50 objetos de residuos</string>
+    <string name="achievement_desc_debris_200">Detecta 200 objetos de residuos</string>
+    <string name="achievement_desc_health_80">Encuentra una zona con salud &gt;= 80</string>
+    <string name="achievement_desc_all_achievements">Desbloquea todos los demás logros</string>
+    <string name="achievement_desc_report_10">Genera 10 informes de IA</string>
+
+    <!-- ================================================================== -->
+    <!-- Pantalla de selector de ubicación                                    -->
+    <!-- ================================================================== -->
+    <string name="location_picker_title">Editar ubicación</string>
+    <string name="location_picker_cd_back">Volver</string>
+    <string name="location_picker_cd_confirm">Confirmar ubicación</string>
+    <string name="location_picker_search_placeholder">Buscar ubicación…</string>
+    <string name="location_picker_cd_search">Buscar</string>
+    <string name="location_picker_selected_label">Ubicación seleccionada</string>
+    <!-- El formato de coordenadas se construye en el código -->
+    <string name="location_picker_tap_hint">Toca el mapa o busca arriba</string>
+    <string name="location_picker_btn_confirm">Confirmar</string>
+
+    <!-- ================================================================== -->
+    <!-- Componente HealthScoreGauge                                          -->
+    <!-- ================================================================== -->
+    <string name="health_gauge_label_excellent">Excelente</string>
+    <string name="health_gauge_subtitle_excellent">Contaminación mínima</string>
+    <string name="health_gauge_label_good">Buena</string>
+    <string name="health_gauge_subtitle_good">Nivel de amenaza bajo</string>
+    <string name="health_gauge_label_fair">Aceptable</string>
+    <string name="health_gauge_subtitle_fair">Contaminación moderada</string>
+    <string name="health_gauge_label_poor">Deficiente</string>
+    <string name="health_gauge_subtitle_poor">Nivel de amenaza alto</string>
+    <string name="health_gauge_label_critical">Crítica</string>
+    <string name="health_gauge_subtitle_critical">Contaminación severa</string>
+    <string name="health_gauge_footer">Salud del ecosistema</string>
+
+    <!-- ================================================================== -->
+    <!-- Componente HealthScoreBreakdown                                      -->
+    <!-- ================================================================== -->
+    <string name="health_breakdown_title">Desglose de puntuación</string>
+    <string name="health_breakdown_factor_debris_density">Densidad de residuos</string>
+    <string name="health_breakdown_factor_risk_level">Nivel de riesgo</string>
+    <string name="health_breakdown_factor_material_variety">Variedad de materiales</string>
+    <string name="health_breakdown_tooltip_title">¿Cómo se calcula?</string>
+    <string name="health_breakdown_tooltip_body">La puntuación de salud parte de 100 y se reduce por tres factores: densidad de residuos (máx. 30 pts), nivel de riesgo ambiental (máx. 50 pts) y variedad de materiales (máx. 10 pts). Menores penalizaciones significan un ecosistema más sano.</string>
+    <string name="health_breakdown_tooltip_cd">Explicación de la puntuación</string>
+    <string name="health_breakdown_factor_debris_density_tip">Penalización por cantidad de residuos. Máx. 30 pts para 10+ elementos detectados.</string>
+    <string name="health_breakdown_factor_risk_level_tip">Riesgo ambiental promedio de los materiales encontrados. Máx. 50 pts.</string>
+    <string name="health_breakdown_factor_material_variety_tip">Penalización por diversidad de materiales contaminantes. Máx. 10 pts para 7+ tipos.</string>
+
+    <!-- ================================================================== -->
+    <!-- Definiciones de tour con Spotlight — usadas como @StringRes en TourDefinitions -->
+    <!-- ================================================================== -->
+
+    <!-- Tour de inicio -->
+    <string name="tour_home_scan_title">Empieza a escanear</string>
+    <string name="tour_home_scan_desc">Toca aquí para tomar una foto o seleccionar de la galería y detectar residuos marinos.</string>
+    <string name="tour_home_model_status_title">Estado de la IA</string>
+    <string name="tour_home_model_status_desc">Indica si el motor de detección está cargado y listo.</string>
+    <string name="tour_home_stats_title">Tu impacto</string>
+    <string name="tour_home_stats_desc">Sigue tus sesiones de escaneo, residuos encontrados y salud media del océano.</string>
+    <string name="tour_home_marinedex_title">MarineDex</string>
+    <string name="tour_home_marinedex_desc">Tu colección de tipos de residuos descubiertos — ¡atrapa todos!</string>
+
+    <!-- Tour de cámara -->
+    <string name="tour_camera_shutter_title">Capturar</string>
+    <string name="tour_camera_shutter_desc">Toca para tomar una foto de residuos marinos.</string>
+    <string name="tour_camera_flash_title">Control del flash</string>
+    <string name="tour_camera_flash_desc">Alterna entre flash apagado, encendido y automático.</string>
+    <string name="tour_camera_grid_title">Cuadrícula superpuesta</string>
+    <string name="tour_camera_grid_desc">Usa la cuadrícula de tercios para encuadrar tu toma.</string>
+
+    <!-- Tour de detección en vivo -->
+    <string name="tour_live_detection_viewfinder_title">Detección en tiempo real</string>
+    <string name="tour_live_detection_viewfinder_desc">Apunta tu cámara a los residuos — las detecciones aparecen como cuadros delimitadores en vivo.</string>
+    <string name="tour_live_detection_fps_title">Rendimiento</string>
+    <string name="tour_live_detection_fps_desc">Muestra los fotogramas por segundo y la latencia de inferencia.</string>
+    <string name="tour_live_detection_capture_title">Capturar fotograma</string>
+    <string name="tour_live_detection_capture_desc">Toca para guardar la detección actual y analizarla.</string>
+
+    <!-- Tour de resultados -->
+    <string name="tour_results_image_title">Resultados de detección</string>
+    <string name="tour_results_image_desc">Tu imagen con los residuos detectados resaltados por cuadros delimitadores.</string>
+    <string name="tour_results_health_title">Puntuación de salud</string>
+    <string name="tour_results_health_desc">Salud general del ecosistema basada en la densidad de residuos y el nivel de riesgo.</string>
+    <string name="tour_results_actions_title">Guardar &amp; compartir</string>
+    <string name="tour_results_actions_desc">Guarda esta sesión en el historial o inicia un nuevo escaneo.</string>
+
+    <!-- Tour de lote -->
+    <string name="tour_batch_grid_title">Análisis en lote</string>
+    <string name="tour_batch_grid_desc">Analiza varias imágenes a la vez. Cada tarjeta muestra su progreso de análisis.</string>
+    <string name="tour_batch_summary_title">Resumen</string>
+    <string name="tour_batch_summary_desc">Una vez procesadas todas las imágenes, aparece una tarjeta de resumen con estadísticas agregadas.</string>
+
+    <!-- Tour de historial -->
+    <string name="tour_history_search_title">Buscar &amp; filtrar</string>
+    <string name="tour_history_search_desc">Busca sesiones por fecha, ubicación o tipo de residuo.</string>
+    <string name="tour_history_card_title">Tarjeta de sesión</string>
+    <string name="tour_history_card_desc">Toca para ver los detalles completos. Desliza a la izquierda para eliminar.</string>
+
+    <!-- Tour de detalle de sesión -->
+    <string name="tour_session_detail_image_title">Imagen anotada</string>
+    <string name="tour_session_detail_image_desc">Tu imagen capturada con los residuos detectados marcados por cuadros delimitadores.</string>
+    <string name="tour_session_detail_health_title">Evaluación de salud</string>
+    <string name="tour_session_detail_health_desc">Desglose detallado de la puntuación de salud del ecosistema para esta sesión.</string>
+    <string name="tour_session_detail_location_title">Ubicación</string>
+    <string name="tour_session_detail_location_desc">Coordenadas GPS donde se capturó esta imagen. Toca editar para corregirlas.</string>
+
+    <!-- Tour de mapa -->
+    <string name="tour_map_view_title">Mapa de detecciones</string>
+    <string name="tour_map_view_desc">Todas tus sesiones de escaneo representadas en el mapa. Los agrupamientos juntan sesiones cercanas.</string>
+    <string name="tour_map_heatmap_title">Mapa de calor</string>
+    <string name="tour_map_heatmap_desc">Activa el mapa de calor para ver los patrones de densidad de residuos.</string>
+    <string name="tour_map_style_title">Estilo del mapa</string>
+    <string name="tour_map_style_desc">Cambia entre estilos de mapa claro, oscuro y de terreno.</string>
+
+    <!-- Tour de informes -->
+    <string name="tour_reports_generate_title">Generar informe</string>
+    <string name="tour_reports_generate_desc">Genera un informe con IA en segundo plano. Puedes salir de la pantalla: el progreso aparece en las notificaciones.</string>
+    <string name="tour_reports_language_title">Idioma</string>
+    <string name="tour_reports_language_desc">Elige el idioma del informe. Abre un informe guardado para compartirlo o exportarlo.</string>
+
+    <!-- Tour de configuración -->
+    <string name="tour_settings_confidence_title">Sensibilidad de detección</string>
+    <string name="tour_settings_confidence_desc">Ajusta el umbral de confianza para la detección de residuos.</string>
+    <string name="tour_settings_deep_analysis_title">Análisis profundo</string>
+    <string name="tour_settings_deep_analysis_desc">Activa o desactiva el análisis profundo de IA para obtener información ambiental más detallada.</string>
+    <string name="tour_settings_theme_title">Modo oscuro</string>
+    <string name="tour_settings_theme_desc">Alterna entre temas oscuro y claro.</string>
+
+    <!-- Tour de MarineDex -->
+    <string name="tour_marinedex_progress_title">Progreso de la colección</string>
+    <string name="tour_marinedex_progress_desc">Sigue cuántos de los 11 tipos de residuos has descubierto.</string>
+    <string name="tour_marinedex_grid_title">Tipos de residuos</string>
+    <string name="tour_marinedex_grid_desc">Toca un tipo descubierto para ver detalles, galería y mapa. Los tipos bloqueados aparecen como siluetas.</string>
+
+    <!-- Tour de detalle de MarineDex -->
+    <string name="tour_marinedex_detail_sprite_title">Sprite del residuo</string>
+    <string name="tour_marinedex_detail_sprite_desc">La representación en pixel art de este tipo de residuo.</string>
+    <string name="tour_marinedex_detail_impact_title">Impacto ambiental</string>
+    <string name="tour_marinedex_detail_impact_desc">Tiempo de degradación, nivel de riesgo y datos de impacto ecológico.</string>
+    <string name="tour_marinedex_detail_tabs_title">Galería &amp; mapa</string>
+    <string name="tour_marinedex_detail_tabs_desc">Cambia de pestaña para ver tus imágenes capturadas y las ubicaciones de detección.</string>
+
+    <!-- Tour de logros -->
+    <string name="tour_achievements_progress_title">Progreso de logros</string>
+    <string name="tour_achievements_progress_desc">Tu progreso general de logros en todas las categorías.</string>
+    <string name="tour_achievements_list_title">Lista de logros</string>
+    <string name="tour_achievements_list_desc">Expande las categorías para ver los logros individuales y sus requisitos.</string>
+
+    <!-- Botones del panel de Spotlight -->
+    <string name="tour_btn_skip">Omitir</string>
+    <string name="tour_btn_next">Siguiente</string>
+    <string name="tour_btn_done">Listo</string>
+
+    <!-- Guided Tour Transition Dialog -->
+    <string name="guided_tour_tab_home">Inicio</string>
+    <string name="guided_tour_tab_map">Mapa</string>
+    <string name="guided_tour_tab_reports">Informes</string>
+    <string name="guided_tour_tab_history">Historial</string>
+    <string name="guided_tour_tab_marinedex">MarineDex</string>
+    <string name="guided_tour_tab_marinedex_detail">Detalle de Especie</string>
+    <string name="guided_tour_tab_achievements">Logros</string>
+    <string name="guided_tour_tab_session_detail">Detalle de Sesión</string>
+    <string name="guided_tour_tab_settings">Ajustes</string>
+    <string name="guided_tour_progress">Paso %1$d de %2$d</string>
+    <string name="guided_tour_screen_done_title">¡Muy bien!</string>
+    <string name="guided_tour_next_desc">A continuación, exploremos la pestaña %1$s.</string>
+    <string name="guided_tour_btn_continue">Continuar</string>
+    <string name="guided_tour_btn_skip_tutorial">Saltar tutorial</string>
+    <string name="guided_tour_btn_finish">¡A explorar!</string>
+    <string name="guided_tour_complete_title">¡Tour completado!</string>
+    <string name="guided_tour_complete_desc">Ya estás listo para proteger nuestros océanos. ¡Feliz escaneo!</string>
+
+    <!-- ================================================================== -->
+    <!-- Cadenas de reporte de zona                                          -->
+    <!-- ================================================================== -->
+    <string name="zone_sheet_btn_generate_report">Generar reporte de zona</string>
+    <string name="report_zone_selector_label">Localización del estudio</string>
+    <string name="report_zone_selector_hint">Selecciona una ubicación</string>
+    <string name="report_zone_no_selection">Selecciona una ubicación para generar reporte</string>
+    <string name="report_zone_preview_days">%d día(s) de inmersión</string>
+    <string name="report_zone_preview_trend_improving">Mejorando</string>
+    <string name="report_zone_preview_trend_degrading">Empeorando</string>
+    <string name="report_zone_preview_trend_stable">Estable</string>
+    <string name="report_btn_generate_zone">Generar reporte de zona</string>
+    <string name="report_no_zones_message">No hay ubicaciones con datos GPS</string>
+    <string name="zone_name_unknown">Zona de estudio</string>
+    <string name="report_zone_fallback">Zona %d</string>
+    <string name="report_snackbar_generated">Reporte generado correctamente</string>
+
+    <!-- ================================================================== -->
+    <!-- Multi-select / Bulk edit                                           -->
+    <!-- ================================================================== -->
+    <string name="bulk_selected_count">%1$d seleccionados</string>
+    <string name="bulk_edit_date">Editar fecha</string>
+    <string name="bulk_edit_location">Editar ubicación</string>
+    <string name="bulk_delete_title">Eliminar sesiones</string>
+    <string name="bulk_delete_message">¿Eliminar %1$d sesiones seleccionadas? Esta acción no se puede deshacer.</string>
+    <string name="bulk_edit_apply">Aplicar a %1$d</string>
+    <string name="bulk_select_all">Seleccionar todo</string>
+    <string name="bulk_edit_location_hint">Buscar un lugar…</string>
+    <string name="cd_exit_selection">Salir del modo selección</string>
+    <string name="cd_edit_date">Editar fecha</string>
+    <string name="datepicker_dot_legend">Días con datos</string>
+
+    <!-- Bottom navigation bar -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_map">Mapa</string>
+    <string name="nav_reports">Informes</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <!-- Zone bottom sheet day summary -->
+    <string name="zone_sheet_day_summary">%1$d img · %2$d objetos</string>
+
+    <!-- Home: Select from Files button -->
+    <string name="home_btn_select_files">Escanear desde archivos</string>
+
+    <!-- Camera mode toggle -->
+    <string name="camera_mode_capture">Captura</string>
+    <string name="camera_mode_live">En vivo</string>
+
+    <!-- Live detection saved frame count -->
+    <string name="live_saved_count">%1$d guardados</string>
+
+    <!-- Achievements i18n -->
+    <string name="achievements_progress_count">%1$d / %2$d Desbloqueados</string>
+    <string name="achievements_percent_complete">%1$s%% completado</string>
+    <string name="achievements_category_count">%1$d / %2$d desbloqueados</string>
+    <string name="achievements_unlocked_date">Desbloqueado %1$s</string>
+
+    <!-- Live Detection HUD -->
+    <string name="live_detection_count">%1$d obj</string>
+
+    <!-- Map zone count -->
+    <string name="map_zone_count_singular">%1$d zona</string>
+    <string name="map_zone_count_plural">%1$d zonas</string>
+
+    <!-- MarineDex Detail -->
+    <string name="marinedex_detail_detected_singular">Detectado %1$d vez</string>
+    <string name="marinedex_detail_detected_plural">Detectado %1$d veces</string>
+
+    <!-- Materials -->
+    <string name="material_plastic">Plástico</string>
+    <string name="material_metal">Metal</string>
+    <string name="material_nylon">Nylon / Sintético</string>
+    <string name="material_mixed">Mixto (Plástico + Tela)</string>
+    <string name="material_rubber">Goma</string>
+    <string name="material_fabric">Tela / Textil</string>
+    <string name="material_glass">Vidrio</string>
+    <string name="material_unknown">Desconocido</string>
+
+    <!-- MarineDex Gallery -->
+    <string name="marinedex_gallery_found_count">%1$d encontrados</string>
+
+    <!-- Report card metadata -->
+    <string name="report_card_meta_singular">%1$d sesión · %2$s · %3$s</string>
+    <string name="report_card_meta_plural">%1$d sesiones · %2$s · %3$s</string>
+    <string name="report_snackbar_view_action">Ver</string>
+
+    <!-- Report generation notification -->
+    <string name="report_notif_title">Generando informe</string>
+    <string name="report_notif_loading_model">Cargando modelo de IA…</string>
+    <string name="report_notif_generating">Redactando informe ambiental…</string>
+    <string name="report_notif_complete">¡Informe listo!</string>
+    <string name="report_notif_error">Error al generar el informe</string>
+
+    <!-- VLM model download -->
+    <string name="vlm_download_dialog_title">Descargar modelo de IA</string>
+    <string name="vlm_download_dialog_message">El modelo de análisis profundo (%1$s) aún no está instalado. ¿Descargarlo ahora por Wi-Fi?</string>
+    <string name="vlm_download_dialog_confirm">Descargar</string>
+    <string name="vlm_download_banner_title">Descargando modelo de IA…</string>
+    <string name="vlm_download_complete_snackbar">¡Modelo de IA listo!</string>
+    <string name="vlm_download_notif_title">Descargando modelo de IA</string>
+    <string name="vlm_download_notif_preparing">Preparando descarga…</string>
+    <string name="vlm_download_notif_progress">%1$d / %2$d MB</string>
+    <string name="vlm_download_notif_installing">Instalando modelo…</string>
+    <string name="vlm_download_notif_complete">¡Modelo de IA listo!</string>
+    <string name="vlm_download_notif_error">Error al descargar el modelo</string>
+
+    <!-- Save to gallery -->
+    <string name="save_to_gallery_cd">Guardar imagen en galería</string>
+    <string name="save_to_gallery_success">Imagen guardada en galería</string>
+    <string name="save_to_gallery_error">No se pudo guardar la imagen</string>
+
+</resources>

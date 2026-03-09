@@ -1,0 +1,76 @@
+# ==============================================================================
+# OceanguardAI-App - Android Mobile Application
+# ==============================================================================
+
+# Android build artifacts
+android/.gradle/
+android/.idea/
+android/.kotlin/
+android/local.properties
+android/app/build/
+android/build/
+*.hprof
+
+# Gradle wrapper (keep gradle-wrapper.jar if needed)
+# android/gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Model files (too large for git)
+*.tflite
+*.onnx
+*.pt
+*.pth
+*.bin
+*.task
+*.litertlm
+*.param
+*.gguf
+*.safetensors
+
+# Keep small model files in assets if needed
+!android/app/src/main/assets/models/*.tflite
+!android/app/src/main/assets/models/*.param
+!android/app/src/main/assets/models/*.bin
+
+# Python
+__pycache__/
+*.py[codz]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment & credentials
+.env
+*.token
+hf_token.txt
+credentials*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Debug logs
+logcat*.txt
+*.log
+
+# Compiled native code
+android/app/src/main/jniLibs/
+*.so
+
+# APK / AAB
+*.apk
+*.aab
+
+# Docker (not needed for app repo)
+docker/
+docker-compose*.yml
+Dockerfile*
+
+# Claude
+.claude/

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.OceanGuard" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/ocean_blue</item>
+        <!-- Navigation bar color -->
+        <item name="android:navigationBarColor">@color/md_theme_light_background</item>
+    </style>
+</resources>

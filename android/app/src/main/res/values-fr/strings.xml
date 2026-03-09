@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OceanGuard AI</string>
+    <string name="app_description">Détection de Déchets Marins</string>
+
+    <!-- ================================================================== -->
+    <!-- Chaînes communes partagées entre plusieurs écrans                    -->
+    <!-- ================================================================== -->
+    <string name="common_back">Retour à l\'accueil</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_save">Enregistrer</string>
+    <string name="common_delete">Supprimer</string>
+    <string name="common_ok">OK</string>
+    <string name="common_share">Partager</string>
+    <string name="common_close">Fermer</string>
+    <string name="common_retry">Réessayer</string>
+    <string name="common_loading">Chargement…</string>
+
+    <!-- Descriptions de contenu (partagées) -->
+    <string name="cd_back">Retour</string>
+    <string name="cd_search">Rechercher</string>
+    <string name="cd_clear">Effacer</string>
+    <string name="cd_camera">Caméra</string>
+    <string name="cd_delete_session">Supprimer la session</string>
+    <string name="cd_gps_location">Localisation GPS enregistrée</string>
+    <string name="cd_add_location">Ajouter un emplacement</string>
+    <string name="cd_edit_location">Modifier l\'emplacement</string>
+    <string name="cd_session_thumbnail">Miniature de la session</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran d\'accueil                                                     -->
+    <!-- ================================================================== -->
+    <string name="home_header_subtitle">Détection Hors Ligne de Déchets Marins</string>
+    <string name="home_btn_take_photo">Lancer le scan</string>
+    <string name="home_btn_live_detection">Analyse par lot</string>
+    <string name="home_btn_select_gallery">Scanner la galerie</string>
+    <string name="home_btn_batch_analysis">Analyse par lot</string>
+
+    <!-- Statut du modèle -->
+    <string name="home_model_ready">Détection prête \u2022 100% Hors ligne</string>
+    <string name="home_model_loading">Chargement...</string>
+    <string name="home_model_warming_up">Initialisation...</string>
+    <string name="home_model_status_ready">Prêt</string>
+    <string name="home_model_status_failed">Échec du chargement</string>
+    <string name="home_model_status_on_demand">Disponible à la demande</string>
+    <string name="home_model_name_detection">Détection IA</string>
+    <string name="home_model_name_deep_analysis">Analyse approfondie</string>
+
+    <!-- Carte des statistiques -->
+    <string name="home_stat_sessions">Sessions</string>
+    <string name="home_stat_debris">Débris</string>
+    <string name="home_stat_avg_health">Santé moy.</string>
+
+    <!-- Carte d\'aperçu MarineDex -->
+    <string name="home_marinedex_title">MarineDex</string>
+    <string name="home_marinedex_empty">Commencez à scanner pour découvrir !</string>
+    <!-- Format : "3 / 11 découverts" -->
+    <string name="home_marinedex_progress">%1$d / 11 découverts</string>
+    <string name="cd_view_marinedex">Voir le MarineDex</string>
+
+    <!-- Carte du dernier succès -->
+    <string name="home_achievement_label">Dernier Succès</string>
+    <string name="cd_view_achievements">Voir les succès</string>
+
+    <!-- Bouton d\'action flottant -->
+    <string name="cd_new_scan">Nouveau Scan</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran d\'intégration                                                 -->
+    <!-- ================================================================== -->
+    <!-- Page 1 -->
+    <string name="onboarding_page1_title">Bienvenue sur\nOceanGuard AI</string>
+    <string name="onboarding_page1_desc">Votre compagnon propulsé par l\'IA pour la détection de déchets marins et le suivi de la santé des océans.</string>
+
+    <!-- Page 2 -->
+    <string name="onboarding_page2_title">Détecter les Déchets\nMarins</string>
+    <string name="onboarding_page2_desc">Pointez votre caméra sur n\'importe quelle scène sous-marine. Notre détecteur IA classe les débris en temps réel avec une précision supérieure à 90 %.</string>
+
+    <!-- Page 3 -->
+    <string name="onboarding_page3_title">Analyse\npar l\'IA</string>
+    <string name="onboarding_page3_desc">Notre modèle de langage visuel (VLM) fournit une analyse environnementale approfondie, un score de santé et des recommandations concrètes.</string>
+
+    <!-- Page 4 -->
+    <string name="onboarding_page4_title">100% Hors ligne\n&amp; Privé</string>
+    <string name="onboarding_page4_desc">Tout le traitement s\'effectue sur l\'appareil. Aucune connexion Internet requise. Vos données ne quittent jamais votre téléphone \u2014 idéal pour le travail de terrain à distance.</string>
+
+    <!-- Boutons -->
+    <string name="onboarding_btn_get_started">Commencer</string>
+    <string name="onboarding_btn_continue">Continuer</string>
+    <string name="onboarding_btn_skip">Passer</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran de la caméra                                                   -->
+    <!-- ================================================================== -->
+    <string name="camera_hint_tap_to_capture">Appuyer pour capturer</string>
+    <string name="camera_btn_retake">Reprendre</string>
+    <string name="camera_btn_analyze">Analyser</string>
+    <string name="camera_permission_title">Accès à la caméra</string>
+    <string name="camera_permission_rationale">L\'autorisation d\'utiliser la caméra est nécessaire pour capturer des photos sous-marines à des fins de détection de débris. Sans cela, vous pouvez toujours utiliser le sélecteur de galerie.</string>
+    <string name="camera_permission_request">OceanGuard AI a besoin d\'accéder à la caméra pour capturer des photos sous-marines de déchets marins.</string>
+    <string name="camera_btn_grant_permission">Autoriser la caméra</string>
+
+    <!-- Descriptions de contenu -->
+    <string name="cd_go_back">Retour</string>
+    <string name="cd_toggle_grid">Activer/désactiver la grille</string>
+    <string name="cd_flash_mode">Mode flash</string>
+    <string name="cd_capture_photo">Capturer une photo</string>
+    <string name="cd_captured_photo_preview">Aperçu de la photo capturée</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran de détection en direct                                         -->
+    <!-- ================================================================== -->
+    <string name="live_permission_required">L\'autorisation de la caméra est requise pour la détection en direct.</string>
+    <string name="live_btn_grant_permission">Autoriser la caméra</string>
+    <string name="live_hint_tap_to_analyze">Appuyer pour capturer &amp; analyser</string>
+
+    <!-- Descriptions de contenu -->
+    <string name="cd_capture_and_analyze">Capturer et analyser</string>
+
+    <!-- Indicateurs HUD — chaînes de format utilisées dans des contextes non extractibles ; conservées comme références -->
+    <!-- Remarque : "%.1f FPS", "${latencyMs}ms", "$detectionCount obj" sont des chaînes de format dynamiques -->
+
+    <!-- ================================================================== -->
+    <!-- Écran des résultats                                                  -->
+    <!-- ================================================================== -->
+    <string name="results_title">Résultats de Détection</string>
+    <string name="results_status_detecting">Détection des débris...</string>
+    <string name="results_status_fast_detection">Détection rapide par IA en cours</string>
+    <string name="results_status_deep_analysis">Analyse approfondie par IA en cours...</string>
+    <string name="results_status_generating">Génération de l\'analyse de l\'écosystème...</string>
+    <string name="results_status_preparing">Préparation de l\'analyse...</string>
+    <string name="results_status_please_wait">Veuillez patienter</string>
+    <!-- Format : "3 objet(s) de débris détecté(s) — analyse approfondie en cours..." -->
+    <string name="results_detections_running">%1$d objet(s) de débris détecté(s) \u2014 analyse approfondie en cours...</string>
+    <!-- Format : "2 détection(s)" -->
+    <string name="results_detection_count">%1$d détection(s)</string>
+
+    <!-- Étiquettes de section -->
+    <string name="results_label_material_breakdown">Répartition des matériaux</string>
+    <string name="results_label_detected_objects">Objets détectés</string>
+    <string name="results_stat_total_debris">Total Débris</string>
+    <string name="results_stat_processing">Traitement</string>
+    <string name="results_stat_deep_analysis">Analyse approfondie</string>
+    <string name="results_stat_yes">Oui</string>
+    <string name="results_stat_no">Non</string>
+
+    <!-- Boutons d\'action -->
+    <string name="results_btn_save_history">Enregistrer dans l\'historique</string>
+    <string name="results_btn_new_scan">Nouveau Scan</string>
+    <string name="results_session_saved">Session enregistrée dans l\'historique</string>
+
+    <!-- État d\'erreur -->
+    <string name="results_error_title">Analyse échouée</string>
+    <string name="results_btn_retry_analysis">Relancer l\'analyse</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran des résultats par lot                                          -->
+    <!-- ================================================================== -->
+    <string name="batch_title">Analyse par lot</string>
+    <string name="batch_status_complete">Lot terminé</string>
+    <!-- Format : "Analyse de l\'image 2 sur 5..." -->
+    <string name="batch_status_analyzing">Analyse de l\'image %1$d sur %2$d...</string>
+    <!-- Format : "3 effectuées" -->
+    <string name="batch_status_done_count">%1$d effectuée(s)</string>
+    <!-- Format : "5 images" -->
+    <string name="batch_images_count">%1$d images</string>
+    <!-- Format : "3 débris" -->
+    <string name="batch_debris_count">%1$d débris</string>
+
+    <!-- Carte récapitulative -->
+    <string name="batch_summary_title">Résumé du lot</string>
+    <string name="batch_summary_total_debris">Total Débris</string>
+    <string name="batch_summary_avg_health">Santé moy.</string>
+    <string name="batch_summary_total_time">Temps total</string>
+    <string name="batch_summary_success_rate">Taux de succès</string>
+    <!-- Format : "Santé globale de l\'océan : Bonne" -->
+    <string name="batch_summary_ocean_health">Santé globale de l\'océan : %1$s</string>
+
+    <!-- Étiquettes de santé utilisées dans le résumé du lot -->
+    <string name="batch_health_excellent">Excellente</string>
+    <string name="batch_health_good">Bonne</string>
+    <string name="batch_health_fair">Moyenne</string>
+    <string name="batch_health_poor">Mauvaise</string>
+    <string name="batch_health_critical">Critique</string>
+
+    <!-- Boutons d\'action -->
+    <string name="batch_btn_new_batch">Nouveau lot</string>
+    <string name="batch_btn_view_history">Voir l\'historique</string>
+    <string name="batch_btn_view_map">Voir sur la carte</string>
+
+    <!-- États vides / d\'erreur -->
+    <string name="batch_empty_title">Aucune image sélectionnée</string>
+    <string name="batch_empty_message">Sélectionnez plusieurs images depuis la galerie pour lancer une session d\'analyse par lot.</string>
+    <string name="batch_error_title">Lot échoué</string>
+    <string name="batch_btn_retry">Relancer le lot</string>
+    <string name="batch_btn_back">Retour à l\'accueil</string>
+
+    <!-- Descriptions de contenu -->
+    <string name="cd_batch_image_thumbnail">Miniature de l\'image du lot</string>
+    <string name="cd_analysis_failed">Analyse échouée</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran de l\'historique                                               -->
+    <!-- ================================================================== -->
+    <string name="history_title">Historique de Détection</string>
+    <string name="history_search_placeholder">Rechercher des sessions...</string>
+    <string name="history_empty_title">Aucune session de détection pour l\'instant</string>
+    <string name="history_empty_message">Prenez une photo ou sélectionnez une image depuis votre galerie pour commencer à détecter des déchets marins. Vos sessions apparaîtront ici.</string>
+    <!-- Format : "3 sessions enregistrées" -->
+    <string name="history_sessions_count_plural">%1$d sessions enregistrées</string>
+    <string name="history_sessions_count_singular">%1$d session enregistrée</string>
+    <!-- Format : "5 objets de débris détectés" / "1 objet de débris détecté" -->
+    <string name="history_debris_count_plural">%1$d objets de débris détectés</string>
+    <string name="history_debris_count_singular">%1$d objet de débris détecté</string>
+    <!-- Format : "Santé : 75" -->
+    <string name="history_health_score">Santé : %1$d</string>
+    <!-- Format : "Qualité : BONNE" -->
+    <string name="history_image_quality">Qualité : %1$s</string>
+
+    <!-- ================================================================== -->
+    <!-- Chaînes héritées (conservées pour la compatibilité ascendante)       -->
+    <!-- ================================================================== -->
+    <string name="welcome_title">OceanGuard AI</string>
+    <string name="welcome_subtitle">Détection Hors Ligne de Déchets Marins</string>
+    <string name="btn_take_photo">Prendre une photo</string>
+    <string name="btn_select_image">Sélectionner depuis la galerie</string>
+    <string name="btn_view_history">Voir l\'historique</string>
+    <string name="analyzing">Analyse de l\'image…</string>
+    <string name="loading_model">Chargement du modèle IA…</string>
+    <string name="detection_complete">Détection terminée</string>
+    <string name="debris_detected">Débris détectés : %d</string>
+    <string name="health_score">Score de santé de l\'écosystème : %d/100</string>
+    <string name="no_debris">Aucun débris détecté</string>
+    <string name="permission_camera_required">L\'autorisation de la caméra est requise pour prendre des photos</string>
+    <string name="permission_storage_required">L\'autorisation de stockage est requise pour sélectionner des images</string>
+    <string name="error_model_not_loaded">Modèle IA non chargé. Veuillez redémarrer l\'application.</string>
+    <string name="error_image_processing">Échec du traitement de l\'image</string>
+    <string name="error_detection_failed">Détection échouée. Veuillez réessayer.</string>
+</resources>

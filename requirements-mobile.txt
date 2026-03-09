@@ -1,0 +1,26 @@
+# AI Edge and Model Conversion Dependencies
+# For converting Gemma 3n models to LiteRT format for Android deployment
+
+# Core conversion libraries
+ai-edge-torch
+ai-edge-litert
+mediapipe
+
+# Model and ML frameworks
+torch
+transformers
+safetensors
+peft
+
+# Utilities
+pillow
+numpy
+requests
+tqdm
+
+# For model download and handling
+huggingface_hub
+accelerate
+# For validation and testing
+opencv-python
+matplotlib

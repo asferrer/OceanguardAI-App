@@ -1,0 +1,196 @@
+# OceanGuard AI - Model Conversion Configuration
+# Configuration for converting Gemma 3n models to LiteRT format for Android deployment
+
+# Base Model Configuration
+base_model:
+  # Model identifier from Hugging Face
+  model_id: "unsloth/gemma-3n-e2b-it"
+
+  # Alternative: Use E4B for better accuracy (but larger size and slower inference)
+  # model_id: "unsloth/gemma-3n-e4b-it"
+
+  # Model variant
+  variant: "E2B"  # Options: E2B (2B params), E4B (4B params)
+
+  # Cache directory for downloaded models
+  cache_dir: "./models_cache"
+
+  # Output format
+  output_format: "litert"  # LiteRT (TensorFlow Lite Runtime)
+
+  # Output file path
+  output_file: "./converted_models/oceanguard_base.bin"
+
+# LoRA Adapter Configuration
+lora_adapter:
+  # Path to fine-tuned LoRA adapter weights
+  # TODO: Update this path after E2B training completes
+  # For RTX 5090 training: "../outputs/gemma3n/runs/gemma3n_e2b_rtx5090_mobile_v1/adapter_model.safetensors"
+  # For RTX 2070 training: "../outputs/gemma3n/runs/gemma3n_e2b_rtx2070_mobile_v1/adapter_model.safetensors"
+  adapter_path: "../outputs/gemma3n/runs/gemma3n_e2b_rtx5090_mobile_v1/adapter_model.safetensors"
+
+  # Alternative paths (if using different training runs)
+  # adapter_path: "../outputs/gemma3n/runs/gemma3n_e2b_waste_peft_v1/adapter_model.safetensors"
+
+  # LoRA configuration (must match training config)
+  rank: 64  # Must match training config (64 for RTX 5090, 32 for RTX 2070)
+  alpha: 64
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+  # Output file path
+  output_file: "./converted_models/oceanguard_adapter.bin"
+
+# Conversion Settings
+conversion:
+  # Backend for inference (GPU required for LoRA support)
+  backend: "gpu"  # Options: cpu, gpu, npu (npu in early access)
+
+  # Quantization settings
+  quantization:
+    enabled: true
+    # Quantization scheme
+    # Options: dynamic_int8, dynamic_int4_weight_only, static_int8
+    scheme: "dynamic_int4_weight_only"
+
+    # Allow precision loss for better performance
+    allow_precision_loss: true
+
+  # Model optimization flags
+  optimization:
+    # Enable XNN Pack delegate for CPU optimization
+    enable_xnnpack: true
+
+    # Number of CPU threads (if using CPU backend)
+    num_threads: 4
+
+    # Enable GPU optimization
+    enable_gpu_optimization: true
+
+    # Precision settings for GPU
+    gpu_precision: "fp16"  # Options: fp32, fp16
+
+  # Vocabulary and tokenizer
+  vocab_model_file: "./models_cache/tokenizer.model"
+  tokenizer_file: "./models_cache/tokenizer.json"
+
+# Validation Settings
+validation:
+  # Enable validation after conversion
+  enabled: true
+
+  # Test images for validation
+  test_images:
+    - "../test_set/underwater_debris_1.jpg"
+    - "../test_set/underwater_debris_2.jpg"
+    - "../test_set/underwater_debris_3.jpg"
+
+  # Prompts for testing
+  test_prompts:
+    detection: |
+      You are OceanGuard AI, a specialized marine debris detection system. Analyze this underwater image and detect all visible debris objects.
+
+      For each piece of debris detected, provide:
+      1. Bounding box coordinates [x, y, width, height] in pixels
+      2. Material type: Plastic, Metal, Fabric, Rubber, Glass, or Other
+      3. Specific debris type: Bottle, Can, Fishing_Net, Glove, Mask, Plastic_Debris, Metal_Debris, Tire, etc.
+      4. Confidence score (0.0-1.0)
+
+      Return results as a JSON array with this structure:
+      {
+        "debris_detected": [
+          {
+            "bbox": [x, y, width, height],
+            "material": "Plastic",
+            "type": "Bottle",
+            "confidence": 0.95
+          }
+        ],
+        "total_count": 1,
+        "image_quality": "good/fair/poor"
+      }
+
+    counting: |
+      Count all visible debris objects in this underwater image. Provide a total count and breakdown by material type.
+
+  # Accuracy tolerance (% difference from PyTorch model)
+  accuracy_tolerance: 0.05  # 5% tolerance
+
+  # Performance benchmarks
+  performance:
+    # Maximum acceptable time-to-first-token (seconds)
+    max_ttft: 1.5
+
+    # Minimum acceptable throughput (tokens/second)
+    min_throughput: 30
+
+    # Maximum memory usage (GB)
+    max_memory: 5.0
+
+# Android Deployment Settings
+android:
+  # Minimum API level
+  min_api_level: 26  # Android 8.0
+
+  # Target API level
+  target_api_level: 34  # Android 14
+
+  # Asset pack configuration
+  asset_pack:
+    enabled: true
+    delivery_type: "fast-follow"  # Options: install-time, fast-follow, on-demand
+
+  # Model file locations in Android project
+  output_directory: "../android/app/src/main/assets/models"
+
+  # Alternative: Use asset pack module
+  # output_directory: "../android/assetpacks/oceanguard_models/src/main/assets"
+
+# Image Preprocessing (Critical for Performance)
+preprocessing:
+  # Target image size (resize long edge to this value)
+  target_size: 512
+
+  # Interpolation method
+  interpolation: "bilinear"  # Options: nearest, bilinear, bicubic
+
+  # Color format
+  color_format: "RGB"
+
+  # Normalization (if required by model)
+  normalize:
+    enabled: false
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# Logging and Debug
+logging:
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
+
+  # Log file path
+  log_file: "./conversion_logs/conversion.log"
+
+  # Verbose output
+  verbose: true
+
+  # Save intermediate results
+  save_intermediate: true
+  intermediate_dir: "./conversion_logs/intermediate"
+
+# Experimental Features
+experimental:
+  # Use NPU acceleration (requires compatible hardware and Android 14+)
+  enable_npu: false
+
+  # Use AICore integration (requires Android 14+)
+  enable_aicore: false
+
+  # Advanced quantization
+  use_custom_quantization: false
+  custom_quantization_config: null

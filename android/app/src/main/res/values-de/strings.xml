@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OceanGuard AI</string>
+    <string name="app_description">Meeresmüll-Erkennung</string>
+
+    <!-- ================================================================== -->
+    <!-- Gemeinsame Zeichenketten für mehrere Bildschirme                    -->
+    <!-- ================================================================== -->
+    <string name="common_back">Zurück zur Startseite</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_save">Speichern</string>
+    <string name="common_delete">Löschen</string>
+    <string name="common_ok">OK</string>
+    <string name="common_share">Teilen</string>
+    <string name="common_close">Schließen</string>
+    <string name="common_retry">Erneut versuchen</string>
+    <string name="common_loading">Wird geladen…</string>
+
+    <!-- Inhaltsbeschreibungen (gemeinsam) -->
+    <string name="cd_back">Zurück</string>
+    <string name="cd_search">Suchen</string>
+    <string name="cd_clear">Löschen</string>
+    <string name="cd_camera">Kamera</string>
+    <string name="cd_delete_session">Sitzung löschen</string>
+    <string name="cd_gps_location">GPS-Standort aufgezeichnet</string>
+    <string name="cd_add_location">Standort hinzufügen</string>
+    <string name="cd_edit_location">Standort bearbeiten</string>
+    <string name="cd_session_thumbnail">Sitzungsvorschau</string>
+
+    <!-- ================================================================== -->
+    <!-- Startbildschirm                                                      -->
+    <!-- ================================================================== -->
+    <string name="home_header_subtitle">Offline Meeresmüll-Erkennung</string>
+    <string name="home_btn_take_photo">Scan starten</string>
+    <string name="home_btn_live_detection">Stapelanalyse</string>
+    <string name="home_btn_select_gallery">Galerie scannen</string>
+    <string name="home_btn_batch_analysis">Stapelanalyse</string>
+
+    <!-- Modellstatus -->
+    <string name="home_model_ready">Erkennung bereit \u2022 100% Offline</string>
+    <string name="home_model_loading">Wird geladen...</string>
+    <string name="home_model_warming_up">Wird vorbereitet...</string>
+    <string name="home_model_status_ready">Bereit</string>
+    <string name="home_model_status_failed">Laden fehlgeschlagen</string>
+    <string name="home_model_status_on_demand">Bei Bedarf verfügbar</string>
+    <string name="home_model_name_detection">KI-Erkennung</string>
+    <string name="home_model_name_deep_analysis">Tiefenanalyse</string>
+
+    <!-- Statistik-Karte -->
+    <string name="home_stat_sessions">Sitzungen</string>
+    <string name="home_stat_debris">Müll</string>
+    <string name="home_stat_avg_health">Durchschn. Gesundheit</string>
+
+    <!-- MarineDex-Vorschau-Karte -->
+    <string name="home_marinedex_title">MarineDex</string>
+    <string name="home_marinedex_empty">Scannen Sie, um neue Einträge zu entdecken!</string>
+    <!-- Format: "3 / 11 entdeckt" -->
+    <string name="home_marinedex_progress">%1$d / 11 entdeckt</string>
+    <string name="cd_view_marinedex">MarineDex ansehen</string>
+
+    <!-- Neueste Errungenschaft-Karte -->
+    <string name="home_achievement_label">Neueste Errungenschaft</string>
+    <string name="cd_view_achievements">Errungenschaften ansehen</string>
+
+    <!-- Aktionsschaltfläche -->
+    <string name="cd_new_scan">Neuer Scan</string>
+
+    <!-- ================================================================== -->
+    <!-- Einführungsbildschirm                                                -->
+    <!-- ================================================================== -->
+    <!-- Seite 1 -->
+    <string name="onboarding_page1_title">Willkommen bei\nOceanGuard AI</string>
+    <string name="onboarding_page1_desc">Ihr KI-gestützter Begleiter zur Erkennung von Meeresmüll und zur Überwachung der Meeresgesundheit.</string>
+
+    <!-- Seite 2 -->
+    <string name="onboarding_page2_title">Meeresmüll\nerkennen</string>
+    <string name="onboarding_page2_desc">Richten Sie Ihre Kamera auf eine Unterwasserszene. Unser KI-Detektor klassifiziert Meeresmüll in Echtzeit mit über 90 % Genauigkeit.</string>
+
+    <!-- Seite 3 -->
+    <string name="onboarding_page3_title">KI-gestützte\nAnalyse</string>
+    <string name="onboarding_page3_desc">Unser Vision Language Model bietet tiefgehende Umweltanalysen, Gesundheitsbewertungen und umsetzbare Empfehlungen.</string>
+
+    <!-- Seite 4 -->
+    <string name="onboarding_page4_title">100% Offline\n&amp; Privat</string>
+    <string name="onboarding_page4_desc">Die gesamte Verarbeitung erfolgt auf dem Gerät. Keine Internetverbindung erforderlich. Ihre Daten verlassen Ihr Telefon nie \u2014 ideal für Feldarbeit an abgelegenen Orten.</string>
+
+    <!-- Schaltflächen -->
+    <string name="onboarding_btn_get_started">Loslegen</string>
+    <string name="onboarding_btn_continue">Weiter</string>
+    <string name="onboarding_btn_skip">Überspringen</string>
+
+    <!-- ================================================================== -->
+    <!-- Kamerabildschirm                                                     -->
+    <!-- ================================================================== -->
+    <string name="camera_hint_tap_to_capture">Tippen zum Aufnehmen</string>
+    <string name="camera_btn_retake">Erneut aufnehmen</string>
+    <string name="camera_btn_analyze">Analysieren</string>
+    <string name="camera_permission_title">Kamerazugriff</string>
+    <string name="camera_permission_rationale">Die Kameraberechtigung ist erforderlich, um Unterwasserfotos zur Müll-Erkennung aufzunehmen. Ohne diese Berechtigung können Sie weiterhin die Galerie verwenden.</string>
+    <string name="camera_permission_request">OceanGuard AI benötigt Kamerazugriff, um Unterwasserfotos von Meeresmüll aufzunehmen.</string>
+    <string name="camera_btn_grant_permission">Kameraberechtigung erteilen</string>
+
+    <!-- Inhaltsbeschreibungen -->
+    <string name="cd_go_back">Zurück</string>
+    <string name="cd_toggle_grid">Raster ein-/ausblenden</string>
+    <string name="cd_flash_mode">Blitzmodus</string>
+    <string name="cd_capture_photo">Foto aufnehmen</string>
+    <string name="cd_captured_photo_preview">Vorschau des aufgenommenen Fotos</string>
+
+    <!-- ================================================================== -->
+    <!-- Live-Erkennungsbildschirm                                            -->
+    <!-- ================================================================== -->
+    <string name="live_permission_required">Für die Live-Erkennung ist eine Kameraberechtigung erforderlich.</string>
+    <string name="live_btn_grant_permission">Kameraberechtigung erteilen</string>
+    <string name="live_hint_tap_to_analyze">Tippen zum Aufnehmen &amp; Analysieren</string>
+
+    <!-- Inhaltsbeschreibungen -->
+    <string name="cd_capture_and_analyze">Aufnehmen und analysieren</string>
+
+    <!-- HUD-Badges — Formatzeichenketten für nicht extrahierbare Kontexte; als Referenzen gespeichert -->
+    <!-- Hinweis: "%.1f FPS", "${latencyMs}ms", "$detectionCount obj" sind dynamische Formatzeichenketten -->
+
+    <!-- ================================================================== -->
+    <!-- Ergebnisbildschirm                                                   -->
+    <!-- ================================================================== -->
+    <string name="results_title">Erkennungsergebnisse</string>
+    <string name="results_status_detecting">Meeresmüll wird erkannt...</string>
+    <string name="results_status_fast_detection">KI-Schnellerkennung läuft</string>
+    <string name="results_status_deep_analysis">KI-Tiefenanalyse läuft...</string>
+    <string name="results_status_generating">Ökosystemanalyse wird erstellt...</string>
+    <string name="results_status_preparing">Analyse wird vorbereitet...</string>
+    <string name="results_status_please_wait">Bitte warten</string>
+    <!-- Format: "3 Müllobjekt(e) erkannt — Tiefenanalyse läuft..." -->
+    <string name="results_detections_running">%1$d Müllobjekt(e) erkannt \u2014 Tiefenanalyse läuft...</string>
+    <!-- Format: "2 Erkennung(en)" -->
+    <string name="results_detection_count">%1$d Erkennung(en)</string>
+
+    <!-- Abschnittsbeschriftungen -->
+    <string name="results_label_material_breakdown">Materialaufschlüsselung</string>
+    <string name="results_label_detected_objects">Erkannte Objekte</string>
+    <string name="results_stat_total_debris">Müll insgesamt</string>
+    <string name="results_stat_processing">Verarbeitung</string>
+    <string name="results_stat_deep_analysis">Tiefenanalyse</string>
+    <string name="results_stat_yes">Ja</string>
+    <string name="results_stat_no">Nein</string>
+
+    <!-- Aktionsschaltflächen -->
+    <string name="results_btn_save_history">Im Verlauf speichern</string>
+    <string name="results_btn_new_scan">Neuer Scan</string>
+    <string name="results_session_saved">Sitzung im Verlauf gespeichert</string>
+
+    <!-- Fehlerzustand -->
+    <string name="results_error_title">Analyse fehlgeschlagen</string>
+    <string name="results_btn_retry_analysis">Analyse wiederholen</string>
+
+    <!-- ================================================================== -->
+    <!-- Stapelergebnisbildschirm                                             -->
+    <!-- ================================================================== -->
+    <string name="batch_title">Stapelanalyse</string>
+    <string name="batch_status_complete">Stapel abgeschlossen</string>
+    <!-- Format: "Bild 2 von 5 wird analysiert..." -->
+    <string name="batch_status_analyzing">Bild %1$d von %2$d wird analysiert...</string>
+    <!-- Format: "3 abgeschlossen" -->
+    <string name="batch_status_done_count">%1$d abgeschlossen</string>
+    <!-- Format: "5 Bilder" -->
+    <string name="batch_images_count">%1$d Bilder</string>
+    <!-- Format: "3 Müll" -->
+    <string name="batch_debris_count">%1$d Müll</string>
+
+    <!-- Zusammenfassungskarte -->
+    <string name="batch_summary_title">Stapelzusammenfassung</string>
+    <string name="batch_summary_total_debris">Müll insgesamt</string>
+    <string name="batch_summary_avg_health">Durchschn. Gesundheit</string>
+    <string name="batch_summary_total_time">Gesamtzeit</string>
+    <string name="batch_summary_success_rate">Erfolgsquote</string>
+    <!-- Format: "Allgemeine Meeresgesundheit: Gut" -->
+    <string name="batch_summary_ocean_health">Allgemeine Meeresgesundheit: %1$s</string>
+
+    <!-- Gesundheitsbeschriftungen in der Stapelzusammenfassung -->
+    <string name="batch_health_excellent">Ausgezeichnet</string>
+    <string name="batch_health_good">Gut</string>
+    <string name="batch_health_fair">Mäßig</string>
+    <string name="batch_health_poor">Schlecht</string>
+    <string name="batch_health_critical">Kritisch</string>
+
+    <!-- Aktionsschaltflächen -->
+    <string name="batch_btn_new_batch">Neuer Stapel</string>
+    <string name="batch_btn_view_history">Verlauf ansehen</string>
+    <string name="batch_btn_view_map">Auf Karte anzeigen</string>
+
+    <!-- Leere / Fehlerzustände -->
+    <string name="batch_empty_title">Keine Bilder ausgewählt</string>
+    <string name="batch_empty_message">Wählen Sie mehrere Bilder aus der Galerie aus, um eine Stapelanalysesitzung durchzuführen.</string>
+    <string name="batch_error_title">Stapel fehlgeschlagen</string>
+    <string name="batch_btn_retry">Stapel wiederholen</string>
+    <string name="batch_btn_back">Zurück zur Startseite</string>
+
+    <!-- Inhaltsbeschreibungen -->
+    <string name="cd_batch_image_thumbnail">Vorschau des Stapelbilds</string>
+    <string name="cd_analysis_failed">Analyse fehlgeschlagen</string>
+
+    <!-- ================================================================== -->
+    <!-- Verlaufsbildschirm                                                   -->
+    <!-- ================================================================== -->
+    <string name="history_title">Erkennungsverlauf</string>
+    <string name="history_search_placeholder">Sitzungen suchen...</string>
+    <string name="history_empty_title">Noch keine Erkennungssitzungen</string>
+    <string name="history_empty_message">Nehmen Sie ein Foto auf oder wählen Sie ein Bild aus Ihrer Galerie, um mit der Erkennung von Meeresmüll zu beginnen. Ihre Sitzungen werden hier angezeigt.</string>
+    <!-- Format: "3 Sitzungen aufgezeichnet" -->
+    <string name="history_sessions_count_plural">%1$d Sitzungen aufgezeichnet</string>
+    <string name="history_sessions_count_singular">%1$d Sitzung aufgezeichnet</string>
+    <!-- Format: "5 Müllobjekte erkannt" / "1 Müllobjekt erkannt" -->
+    <string name="history_debris_count_plural">%1$d Müllobjekte erkannt</string>
+    <string name="history_debris_count_singular">%1$d Müllobjekt erkannt</string>
+    <!-- Format: "Gesundheit: 75" -->
+    <string name="history_health_score">Gesundheit: %1$d</string>
+    <!-- Format: "Qualität: GUT" -->
+    <string name="history_image_quality">Qualität: %1$s</string>
+
+    <!-- ================================================================== -->
+    <!-- Ältere Zeichenketten (zur Abwärtskompatibilität)                    -->
+    <!-- ================================================================== -->
+    <string name="welcome_title">OceanGuard AI</string>
+    <string name="welcome_subtitle">Offline Meeresmüll-Erkennung</string>
+    <string name="btn_take_photo">Foto aufnehmen</string>
+    <string name="btn_select_image">Aus Galerie auswählen</string>
+    <string name="btn_view_history">Verlauf ansehen</string>
+    <string name="analyzing">Bild wird analysiert…</string>
+    <string name="loading_model">KI-Modell wird geladen…</string>
+    <string name="detection_complete">Erkennung abgeschlossen</string>
+    <string name="debris_detected">Meeresmüll erkannt: %d</string>
+    <string name="health_score">Ökosystem-Gesundheitswert: %d/100</string>
+    <string name="no_debris">Kein Meeresmüll erkannt</string>
+    <string name="permission_camera_required">Kameraberechtigung ist zum Aufnehmen von Fotos erforderlich</string>
+    <string name="permission_storage_required">Speicherberechtigung ist zum Auswählen von Bildern erforderlich</string>
+    <string name="error_model_not_loaded">KI-Modell nicht geladen. Bitte starten Sie die App neu.</string>
+    <string name="error_image_processing">Bildverarbeitung fehlgeschlagen</string>
+    <string name="error_detection_failed">Erkennung fehlgeschlagen. Bitte versuchen Sie es erneut.</string>
+</resources>

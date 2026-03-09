@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OceanGuard AI</string>
+    <string name="app_description">Rilevamento Rifiuti Marini</string>
+
+    <!-- ================================================================== -->
+    <!-- Stringhe comuni condivise tra più schermate                         -->
+    <!-- ================================================================== -->
+    <string name="common_back">Torna alla Home</string>
+    <string name="common_cancel">Annulla</string>
+    <string name="common_save">Salva</string>
+    <string name="common_delete">Elimina</string>
+    <string name="common_ok">OK</string>
+    <string name="common_share">Condividi</string>
+    <string name="common_close">Chiudi</string>
+    <string name="common_retry">Riprova</string>
+    <string name="common_loading">Caricamento…</string>
+
+    <!-- Descrizioni contenuto (condivise) -->
+    <string name="cd_back">Torna indietro</string>
+    <string name="cd_search">Cerca</string>
+    <string name="cd_clear">Cancella</string>
+    <string name="cd_camera">Fotocamera</string>
+    <string name="cd_delete_session">Elimina sessione</string>
+    <string name="cd_gps_location">Posizione GPS registrata</string>
+    <string name="cd_add_location">Aggiungi posizione</string>
+    <string name="cd_edit_location">Modifica posizione</string>
+    <string name="cd_session_thumbnail">Miniatura sessione</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Home                                                       -->
+    <!-- ================================================================== -->
+    <string name="home_header_subtitle">Rilevamento Rifiuti Marini Offline</string>
+    <string name="home_btn_take_photo">Avvia scansione</string>
+    <string name="home_btn_live_detection">Analisi in serie</string>
+    <string name="home_btn_select_gallery">Scansiona galleria</string>
+    <string name="home_btn_batch_analysis">Analisi in Serie</string>
+
+    <!-- Stato del modello -->
+    <string name="home_model_ready">Rilevamento pronto \u2022 100% Offline</string>
+    <string name="home_model_loading">Caricamento...</string>
+    <string name="home_model_warming_up">Avvio in corso...</string>
+    <string name="home_model_status_ready">Pronto</string>
+    <string name="home_model_status_failed">Caricamento fallito</string>
+    <string name="home_model_status_on_demand">Disponibile su richiesta</string>
+    <string name="home_model_name_detection">Rilevamento AI</string>
+    <string name="home_model_name_deep_analysis">Analisi Approfondita</string>
+
+    <!-- Scheda statistiche -->
+    <string name="home_stat_sessions">Sessioni</string>
+    <string name="home_stat_debris">Rifiuti</string>
+    <string name="home_stat_avg_health">Salute Media</string>
+
+    <!-- Scheda anteprima MarineDex -->
+    <string name="home_marinedex_title">MarineDex</string>
+    <string name="home_marinedex_empty">Inizia a scansionare per scoprire!</string>
+    <!-- Formato: "3 / 11 scoperti" -->
+    <string name="home_marinedex_progress">%1$d / 11 scoperti</string>
+    <string name="cd_view_marinedex">Visualizza MarineDex</string>
+
+    <!-- Scheda Ultimo Traguardo -->
+    <string name="home_achievement_label">Ultimo Traguardo</string>
+    <string name="cd_view_achievements">Visualizza Traguardi</string>
+
+    <!-- FAB -->
+    <string name="cd_new_scan">Nuova Scansione</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Onboarding                                                 -->
+    <!-- ================================================================== -->
+    <!-- Pagina 1 -->
+    <string name="onboarding_page1_title">Benvenuto in\nOceanGuard AI</string>
+    <string name="onboarding_page1_desc">Il tuo compagno basato sull\'intelligenza artificiale per il rilevamento dei rifiuti marini e il monitoraggio della salute degli oceani.</string>
+
+    <!-- Pagina 2 -->
+    <string name="onboarding_page2_title">Rileva i Rifiuti\nMarini</string>
+    <string name="onboarding_page2_desc">Punta la fotocamera su qualsiasi scena subacquea. Il nostro rilevatore AI classifica i rifiuti in tempo reale con un\'accuratezza superiore al 90%.</string>
+
+    <!-- Pagina 3 -->
+    <string name="onboarding_page3_title">Analisi basata\nsull\'AI</string>
+    <string name="onboarding_page3_desc">Il nostro Vision Language Model fornisce un\'analisi ambientale approfondita, un punteggio di salute e raccomandazioni concrete.</string>
+
+    <!-- Pagina 4 -->
+    <string name="onboarding_page4_title">100% Offline\ne Privato</string>
+    <string name="onboarding_page4_desc">Tutto il processo avviene sul dispositivo. Nessuna connessione internet richiesta. I tuoi dati non lasciano mai il tuo telefono \u2014 perfetto per il lavoro sul campo in zone remote.</string>
+
+    <!-- Pulsanti -->
+    <string name="onboarding_btn_get_started">Inizia</string>
+    <string name="onboarding_btn_continue">Continua</string>
+    <string name="onboarding_btn_skip">Salta</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Fotocamera                                                 -->
+    <!-- ================================================================== -->
+    <string name="camera_hint_tap_to_capture">Tocca per scattare</string>
+    <string name="camera_btn_retake">Rifai</string>
+    <string name="camera_btn_analyze">Analizza</string>
+    <string name="camera_permission_title">Accesso alla Fotocamera</string>
+    <string name="camera_permission_rationale">Il permesso fotocamera è necessario per scattare foto subacquee ai fini del rilevamento dei rifiuti. Senza di esso, puoi comunque usare il selettore dalla galleria.</string>
+    <string name="camera_permission_request">OceanGuard AI ha bisogno dell\'accesso alla fotocamera per scattare foto subacquee dei rifiuti marini.</string>
+    <string name="camera_btn_grant_permission">Concedi Permesso Fotocamera</string>
+
+    <!-- Descrizioni contenuto -->
+    <string name="cd_go_back">Torna indietro</string>
+    <string name="cd_toggle_grid">Attiva/Disattiva Griglia</string>
+    <string name="cd_flash_mode">Modalità Flash</string>
+    <string name="cd_capture_photo">Scatta foto</string>
+    <string name="cd_captured_photo_preview">Anteprima foto scattata</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Rilevamento dal Vivo                                       -->
+    <!-- ================================================================== -->
+    <string name="live_permission_required">Il permesso fotocamera è necessario per il rilevamento dal vivo.</string>
+    <string name="live_btn_grant_permission">Concedi Permesso Fotocamera</string>
+    <string name="live_hint_tap_to_analyze">Tocca per scattare &amp; analizzare</string>
+
+    <!-- Descrizioni contenuto -->
+    <string name="cd_capture_and_analyze">Scatta e analizza</string>
+
+    <!-- Badge HUD — queste sono stringhe di formato usate in contesti non estraibili; mantenute come riferimenti -->
+    <!-- Nota: "%.1f FPS", "${latencyMs}ms", "$detectionCount obj" sono stringhe di formato dinamiche -->
+
+    <!-- ================================================================== -->
+    <!-- Schermata Risultati                                                  -->
+    <!-- ================================================================== -->
+    <string name="results_title">Risultati Rilevamento</string>
+    <string name="results_status_detecting">Rilevamento rifiuti in corso...</string>
+    <string name="results_status_fast_detection">Esecuzione rilevamento rapido AI</string>
+    <string name="results_status_deep_analysis">Esecuzione analisi approfondita AI...</string>
+    <string name="results_status_generating">Generazione analisi dell\'ecosistema...</string>
+    <string name="results_status_preparing">Preparazione analisi...</string>
+    <string name="results_status_please_wait">Attendi</string>
+    <!-- Formato: "3 oggetto/i rifiuto rilevato/i — analisi approfondita in esecuzione..." -->
+    <string name="results_detections_running">%1$d oggetto/i rifiuto rilevato/i \u2014 analisi approfondita in esecuzione...</string>
+    <!-- Formato: "2 rilevamento/i" -->
+    <string name="results_detection_count">%1$d rilevamento/i</string>
+
+    <!-- Etichette di sezione -->
+    <string name="results_label_material_breakdown">Composizione Materiali</string>
+    <string name="results_label_detected_objects">Oggetti Rilevati</string>
+    <string name="results_stat_total_debris">Rifiuti Totali</string>
+    <string name="results_stat_processing">Elaborazione</string>
+    <string name="results_stat_deep_analysis">Analisi Approfondita</string>
+    <string name="results_stat_yes">Sì</string>
+    <string name="results_stat_no">No</string>
+
+    <!-- Pulsanti azione -->
+    <string name="results_btn_save_history">Salva nella Cronologia</string>
+    <string name="results_btn_new_scan">Nuova Scansione</string>
+    <string name="results_session_saved">Sessione salvata nella cronologia</string>
+
+    <!-- Stato di errore -->
+    <string name="results_error_title">Analisi Fallita</string>
+    <string name="results_btn_retry_analysis">Riprova Analisi</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Risultati in Serie                                         -->
+    <!-- ================================================================== -->
+    <string name="batch_title">Analisi in Serie</string>
+    <string name="batch_status_complete">Serie completata</string>
+    <!-- Formato: "Analisi immagine 2 di 5..." -->
+    <string name="batch_status_analyzing">Analisi immagine %1$d di %2$d...</string>
+    <!-- Formato: "3 completate" -->
+    <string name="batch_status_done_count">%1$d completate</string>
+    <!-- Formato: "5 immagini" -->
+    <string name="batch_images_count">%1$d immagini</string>
+    <!-- Formato: "3 rifiuti" -->
+    <string name="batch_debris_count">%1$d rifiuti</string>
+
+    <!-- Scheda riepilogo -->
+    <string name="batch_summary_title">Riepilogo Serie</string>
+    <string name="batch_summary_total_debris">Rifiuti Totali</string>
+    <string name="batch_summary_avg_health">Salute Media</string>
+    <string name="batch_summary_total_time">Tempo Totale</string>
+    <string name="batch_summary_success_rate">Tasso di Successo</string>
+    <!-- Formato: "Salute complessiva dell'oceano: Buona" -->
+    <string name="batch_summary_ocean_health">Salute complessiva dell\'oceano: %1$s</string>
+
+    <!-- Etichette salute usate nel riepilogo serie -->
+    <string name="batch_health_excellent">Eccellente</string>
+    <string name="batch_health_good">Buona</string>
+    <string name="batch_health_fair">Discreta</string>
+    <string name="batch_health_poor">Scarsa</string>
+    <string name="batch_health_critical">Critica</string>
+
+    <!-- Pulsanti azione -->
+    <string name="batch_btn_new_batch">Nuova Serie</string>
+    <string name="batch_btn_view_history">Visualizza Cronologia</string>
+    <string name="batch_btn_view_map">Visualizza su Mappa</string>
+
+    <!-- Stati vuoti / di errore -->
+    <string name="batch_empty_title">Nessuna immagine selezionata</string>
+    <string name="batch_empty_message">Seleziona più immagini dalla galleria per avviare una sessione di analisi in serie.</string>
+    <string name="batch_error_title">Serie Fallita</string>
+    <string name="batch_btn_retry">Riprova Serie</string>
+    <string name="batch_btn_back">Torna alla Home</string>
+
+    <!-- Descrizioni contenuto -->
+    <string name="cd_batch_image_thumbnail">Miniatura immagine serie</string>
+    <string name="cd_analysis_failed">Analisi fallita</string>
+
+    <!-- ================================================================== -->
+    <!-- Schermata Cronologia                                                 -->
+    <!-- ================================================================== -->
+    <string name="history_title">Cronologia Rilevamenti</string>
+    <string name="history_search_placeholder">Cerca sessioni...</string>
+    <string name="history_empty_title">Nessuna sessione di rilevamento ancora</string>
+    <string name="history_empty_message">Scatta una foto o seleziona un\'immagine dalla galleria per iniziare a rilevare i rifiuti marini. Le tue sessioni appariranno qui.</string>
+    <!-- Formato: "3 sessioni registrate" -->
+    <string name="history_sessions_count_plural">%1$d sessioni registrate</string>
+    <string name="history_sessions_count_singular">%1$d sessione registrata</string>
+    <!-- Formato: "5 oggetti rifiuto rilevati" / "1 oggetto rifiuto rilevato" -->
+    <string name="history_debris_count_plural">%1$d oggetti rifiuto rilevati</string>
+    <string name="history_debris_count_singular">%1$d oggetto rifiuto rilevato</string>
+    <!-- Formato: "Salute: 75" -->
+    <string name="history_health_score">Salute: %1$d</string>
+    <!-- Formato: "Qualità: BUONA" -->
+    <string name="history_image_quality">Qualità: %1$s</string>
+
+    <!-- ================================================================== -->
+    <!-- Stringhe legacy (mantenute per compatibilità retroattiva)            -->
+    <!-- ================================================================== -->
+    <string name="welcome_title">OceanGuard AI</string>
+    <string name="welcome_subtitle">Rilevamento Rifiuti Marini Offline</string>
+    <string name="btn_take_photo">Scatta Foto</string>
+    <string name="btn_select_image">Seleziona dalla Galleria</string>
+    <string name="btn_view_history">Visualizza Cronologia</string>
+    <string name="analyzing">Analisi immagine in corso…</string>
+    <string name="loading_model">Caricamento modello AI…</string>
+    <string name="detection_complete">Rilevamento Completato</string>
+    <string name="debris_detected">Rifiuti Rilevati: %d</string>
+    <string name="health_score">Punteggio di Salute dell\'Ecosistema: %d/100</string>
+    <string name="no_debris">Nessun rifiuto rilevato</string>
+    <string name="permission_camera_required">Il permesso fotocamera è necessario per scattare foto</string>
+    <string name="permission_storage_required">Il permesso di archiviazione è necessario per selezionare immagini</string>
+    <string name="error_model_not_loaded">Modello AI non caricato. Riavvia l\'app.</string>
+    <string name="error_image_processing">Elaborazione immagine fallita</string>
+    <string name="error_detection_failed">Rilevamento fallito. Riprova.</string>
+</resources>

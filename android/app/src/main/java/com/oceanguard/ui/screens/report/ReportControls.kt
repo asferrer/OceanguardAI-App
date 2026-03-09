@@ -1,0 +1,319 @@
+package com.oceanguard.ai.ui.screens.report
+
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import com.oceanguard.ai.R
+import com.oceanguard.ai.data.SettingsRepository
+import com.oceanguard.ai.inference.VlmDownloadState
+import com.oceanguard.ai.ui.components.pressableScale
+import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
+import androidx.compose.material.icons.filled.Download
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DateLanguageRow(
+    dateRangeStartMs: Long?,
+    dateRangeEndMs: Long?,
+    onDateRangeCleared: () -> Unit,
+    onDateRangeClick: () -> Unit,
+    selectedLanguage: String,
+    onLanguageSelected: (String) -> Unit,
+    enabled: Boolean,
+    boundsMap: MutableMap<String, androidx.compose.ui.geometry.Rect>,
+) {
+    val dateFormatter = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
+    val hasDateRange = dateRangeStartMs != null || dateRangeEndMs != null
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = hasDateRange,
+            onClick = {
+                if (hasDateRange) onDateRangeCleared()
+                else onDateRangeClick()
+            },
+            label = {
+                if (hasDateRange) {
+                    val s = dateRangeStartMs?.let { dateFormatter.format(Date(it)) } ?: "…"
+                    val e = dateRangeEndMs?.let { dateFormatter.format(Date(it)) } ?: "…"
+                    Text("$s – $e", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                } else {
+                    Text(stringResource(R.string.report_filter_date_range))
+                }
+            },
+            leadingIcon = if (hasDateRange) {
+                { Icon(Icons.Filled.Clear, contentDescription = null, Modifier.size(16.dp)) }
+            } else null,
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Language,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Box(modifier = Modifier.spotlightTarget("reports_language", boundsMap)) {
+                LanguageChip(
+                    selectedLanguage = selectedLanguage,
+                    onLanguageSelected = onLanguageSelected,
+                    enabled = enabled,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun LanguageChip(
+    selectedLanguage: String,
+    onLanguageSelected: (String) -> Unit,
+    enabled: Boolean,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val languageName = SettingsRepository.SUPPORTED_LANGUAGES[selectedLanguage] ?: selectedLanguage
+
+    Box {
+        FilterChip(
+            selected = true,
+            onClick = { if (enabled) expanded = true },
+            label = { Text(languageName, style = MaterialTheme.typography.labelMedium) },
+            enabled = enabled,
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            SettingsRepository.SUPPORTED_LANGUAGES.forEach { (code, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        onLanguageSelected(code)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun GenerateButton(
+    isGenerating: Boolean,
+    hasZoneSelected: Boolean,
+    sessionCount: Int,
+    onGenerate: () -> Unit,
+    boundsMap: MutableMap<String, androidx.compose.ui.geometry.Rect>,
+) {
+    Button(
+        onClick = onGenerate,
+        modifier = Modifier
+            .pressableScale()
+            .fillMaxWidth()
+            .height(52.dp)
+            .spotlightTarget("reports_generate", boundsMap),
+        enabled = !isGenerating && hasZoneSelected && sessionCount > 0,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+        ),
+    ) {
+        if (isGenerating) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.report_btn_generating),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Filled.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = if (!hasZoneSelected) {
+                    stringResource(R.string.report_zone_no_selection)
+                } else {
+                    stringResource(R.string.report_btn_generate_zone)
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun GeneratingBanner(
+    isLoadingModel: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = if (isLoadingModel) {
+                        stringResource(R.string.report_loading_engine)
+                    } else {
+                        stringResource(R.string.report_btn_generating)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun VlmDownloadBanner(
+    downloadState: VlmDownloadState,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Download,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.vlm_download_banner_title),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    if (downloadState is VlmDownloadState.Downloading) {
+                        val mbDownloaded = downloadState.downloadedBytes / (1024 * 1024)
+                        val mbTotal = downloadState.totalBytes / (1024 * 1024)
+                        Text(
+                            text = "$mbDownloaded / $mbTotal MB",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+                TextButton(onClick = onCancel) {
+                    Text(
+                        text = stringResource(R.string.common_cancel),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+            when (downloadState) {
+                is VlmDownloadState.Downloading -> {
+                    LinearProgressIndicator(
+                        progress = { downloadState.progress },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.tertiary,
+                        trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                    )
+                }
+                else -> {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.tertiary,
+                        trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                    )
+                }
+            }
+        }
+    }
+}

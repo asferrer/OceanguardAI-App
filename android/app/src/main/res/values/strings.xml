@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OceanGuard AI</string>
+    <string name="app_description">Marine Debris Detection</string>
+
+    <!-- ================================================================== -->
+    <!-- Common strings shared across multiple screens                        -->
+    <!-- ================================================================== -->
+    <string name="common_back">Back to Home</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_ok">OK</string>
+    <string name="common_share">Share</string>
+    <string name="common_close">Close</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_loading">Loading…</string>
+
+    <!-- Content descriptions (shared) -->
+    <string name="cd_back">Go back</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear">Clear</string>
+    <string name="cd_camera">Camera</string>
+    <string name="cd_delete_session">Delete session</string>
+    <string name="cd_gps_location">GPS location recorded</string>
+    <string name="cd_add_location">Add location</string>
+    <string name="cd_edit_location">Edit location</string>
+    <string name="cd_session_thumbnail">Session thumbnail</string>
+
+    <!-- ================================================================== -->
+    <!-- Home screen                                                          -->
+    <!-- ================================================================== -->
+    <string name="home_header_subtitle">Offline Marine Debris Detection</string>
+    <string name="home_btn_take_photo">Start Scanning</string>
+    <string name="home_btn_live_detection">Batch Analysis</string>
+    <string name="home_btn_select_gallery">Scan from Gallery</string>
+    <string name="home_btn_batch_analysis">Batch Analysis</string>
+
+    <!-- Model status -->
+    <string name="home_model_ready">Detection ready \u2022 100% Offline</string>
+    <string name="home_model_loading">Loading...</string>
+    <string name="home_model_warming_up">Warming up...</string>
+    <string name="home_model_status_ready">Ready</string>
+    <string name="home_model_status_failed">Failed to load</string>
+    <string name="home_model_status_on_demand">Available on demand</string>
+    <string name="home_model_name_detection">AI Detection</string>
+    <string name="home_model_name_deep_analysis">Deep Analysis</string>
+
+    <!-- Stats card -->
+    <string name="home_stat_sessions">Sessions</string>
+    <string name="home_stat_debris">Debris</string>
+    <string name="home_stat_avg_health">Avg Health</string>
+
+    <!-- MarineDex preview card -->
+    <string name="home_marinedex_title">MarineDex</string>
+    <string name="home_marinedex_empty">Start scanning to discover!</string>
+    <!-- Format: "3 / 11 discovered" -->
+    <string name="home_marinedex_progress">%1$d / 11 discovered</string>
+    <string name="cd_view_marinedex">View MarineDex</string>
+
+    <!-- Latest Achievement card -->
+    <string name="home_achievement_label">Latest Achievement</string>
+    <string name="cd_view_achievements">View Achievements</string>
+
+    <!-- FAB -->
+    <string name="cd_new_scan">New Scan</string>
+
+    <!-- ================================================================== -->
+    <!-- Onboarding screen                                                    -->
+    <!-- ================================================================== -->
+    <!-- Page 1 -->
+    <string name="onboarding_page1_title">Welcome to\nOceanGuard AI</string>
+    <string name="onboarding_page1_desc">Your AI-powered companion for marine debris detection and ocean health monitoring.</string>
+
+    <!-- Page 2 -->
+    <string name="onboarding_page2_title">Detect Marine\nDebris</string>
+    <string name="onboarding_page2_desc">Point your camera at any underwater scene. Our AI detector classifies debris in real-time with 90%+ accuracy.</string>
+
+    <!-- Page 3 -->
+    <string name="onboarding_page3_title">AI-Powered\nAnalysis</string>
+    <string name="onboarding_page3_desc">Our Vision Language Model provides deep environmental analysis, health scoring, and actionable recommendations.</string>
+
+    <!-- Page 4 -->
+    <string name="onboarding_page4_title">100% Offline\n&amp; Private</string>
+    <string name="onboarding_page4_desc">All processing happens on-device. No internet required. Your data never leaves your phone \u2014 perfect for remote field work.</string>
+
+    <!-- Buttons -->
+    <string name="onboarding_btn_get_started">Get Started</string>
+    <string name="onboarding_btn_continue">Continue</string>
+    <string name="onboarding_btn_skip">Skip</string>
+
+    <!-- ================================================================== -->
+    <!-- Camera screen                                                        -->
+    <!-- ================================================================== -->
+    <string name="camera_hint_tap_to_capture">Tap to capture</string>
+    <string name="camera_btn_retake">Retake</string>
+    <string name="camera_btn_analyze">Analyze</string>
+    <string name="camera_permission_title">Camera Access</string>
+    <string name="camera_permission_rationale">Camera permission is required to capture underwater photos for debris detection. Without it, you can still use the gallery picker.</string>
+    <string name="camera_permission_request">OceanGuard AI needs camera access to capture underwater photos of marine debris.</string>
+    <string name="camera_btn_grant_permission">Grant Camera Permission</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_go_back">Go back</string>
+    <string name="cd_toggle_grid">Toggle Grid</string>
+    <string name="cd_flash_mode">Flash Mode</string>
+    <string name="cd_capture_photo">Capture photo</string>
+    <string name="cd_captured_photo_preview">Captured photo preview</string>
+
+    <!-- ================================================================== -->
+    <!-- Live Detection screen                                                -->
+    <!-- ================================================================== -->
+    <string name="live_permission_required">Camera permission is required for live detection.</string>
+    <string name="live_btn_grant_permission">Grant Camera Permission</string>
+    <string name="live_hint_tap_to_analyze">Tap to capture &amp; analyze</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_capture_and_analyze">Capture and analyze</string>
+
+    <!-- HUD badges — these are format strings used in non-extractable contexts; kept as references -->
+    <!-- Note: "%.1f FPS", "${latencyMs}ms", "$detectionCount obj" are dynamic format strings -->
+
+    <!-- ================================================================== -->
+    <!-- Results screen                                                       -->
+    <!-- ================================================================== -->
+    <string name="results_title">Detection Results</string>
+    <string name="results_status_detecting">Detecting debris...</string>
+    <string name="results_status_fast_detection">Running AI fast detection</string>
+    <string name="results_status_deep_analysis">Running deep AI analysis...</string>
+    <string name="results_status_generating">Generating ecosystem analysis...</string>
+    <string name="results_status_preparing">Preparing analysis...</string>
+    <string name="results_status_please_wait">Please wait</string>
+    <!-- Format: "3 debris object(s) detected — deep analysis running..." -->
+    <string name="results_detections_running">%1$d debris object(s) detected \u2014 deep analysis running...</string>
+    <!-- Format: "2 detection(s)" -->
+    <string name="results_detection_count">%1$d detection(s)</string>
+
+    <!-- Section labels -->
+    <string name="results_label_material_breakdown">Material Breakdown</string>
+    <string name="results_label_detected_objects">Detected Objects</string>
+    <string name="results_stat_total_debris">Total Debris</string>
+    <string name="results_stat_processing">Processing</string>
+    <string name="results_stat_deep_analysis">Deep Analysis</string>
+    <string name="results_stat_yes">Yes</string>
+    <string name="results_stat_no">No</string>
+
+    <!-- Action buttons -->
+    <string name="results_btn_save_history">Save to History</string>
+    <string name="results_btn_new_scan">New Scan</string>
+    <string name="results_session_saved">Session saved to history</string>
+
+    <!-- Error state -->
+    <string name="results_error_title">Analysis Failed</string>
+    <string name="results_btn_retry_analysis">Retry Analysis</string>
+
+    <!-- ================================================================== -->
+    <!-- Batch Results screen                                                 -->
+    <!-- ================================================================== -->
+    <string name="batch_title">Batch Analysis</string>
+    <string name="batch_status_complete">Batch complete</string>
+    <!-- Format: "Analyzing image 2 of 5..." -->
+    <string name="batch_status_analyzing">Analyzing image %1$d of %2$d...</string>
+    <!-- Format: "3 done" -->
+    <string name="batch_status_done_count">%1$d done</string>
+    <!-- Format: "5 images" -->
+    <string name="batch_images_count">%1$d images</string>
+    <!-- Format: "3 debris" -->
+    <string name="batch_debris_count">%1$d debris</string>
+
+    <!-- Summary card -->
+    <string name="batch_summary_title">Batch Summary</string>
+    <string name="batch_summary_total_debris">Total Debris</string>
+    <string name="batch_summary_avg_health">Avg Health</string>
+    <string name="batch_summary_total_time">Total Time</string>
+    <string name="batch_summary_success_rate">Success Rate</string>
+    <!-- Format: "Overall ocean health: Good" -->
+    <string name="batch_summary_ocean_health">Overall ocean health: %1$s</string>
+
+    <!-- Health labels used in batch summary -->
+    <string name="batch_health_excellent">Excellent</string>
+    <string name="batch_health_good">Good</string>
+    <string name="batch_health_fair">Fair</string>
+    <string name="batch_health_poor">Poor</string>
+    <string name="batch_health_critical">Critical</string>
+
+    <!-- Action buttons -->
+    <string name="batch_btn_new_batch">New Batch</string>
+    <string name="batch_btn_view_history">View History</string>
+    <string name="batch_btn_view_map">View on Map</string>
+
+    <!-- Empty / error states -->
+    <string name="batch_empty_title">No images selected</string>
+    <string name="batch_empty_message">Select multiple images from the gallery to run a batch analysis session.</string>
+    <string name="batch_error_title">Batch Failed</string>
+    <string name="batch_btn_retry">Retry Batch</string>
+    <string name="batch_btn_back">Back to Home</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_batch_image_thumbnail">Batch image thumbnail</string>
+    <string name="cd_analysis_failed">Analysis failed</string>
+
+    <!-- ================================================================== -->
+    <!-- History screen                                                       -->
+    <!-- ================================================================== -->
+    <string name="history_title">Detection History</string>
+    <string name="history_search_placeholder">Search sessions...</string>
+    <string name="history_empty_title">No detection sessions yet</string>
+    <string name="history_empty_message">Take a photo or select an image from your gallery to start detecting marine debris. Your sessions will appear here.</string>
+    <!-- Format: "3 sessions recorded" -->
+    <string name="history_sessions_count_plural">%1$d sessions recorded</string>
+    <string name="history_sessions_count_singular">%1$d session recorded</string>
+    <!-- Format: "5 debris objects detected" / "1 debris object detected" -->
+    <string name="history_debris_count_plural">%1$d debris objects detected</string>
+    <string name="history_debris_count_singular">%1$d debris object detected</string>
+    <!-- Format: "Health: 75" -->
+    <string name="history_health_score">Health: %1$d</string>
+    <!-- Format: "Quality: GOOD" -->
+    <string name="history_image_quality">Quality: %1$s</string>
+
+    <!-- ================================================================== -->
+    <!-- Legacy strings (kept for backward compatibility)                     -->
+    <!-- ================================================================== -->
+    <string name="welcome_title">OceanGuard AI</string>
+    <string name="welcome_subtitle">Offline Marine Debris Detection</string>
+    <string name="btn_take_photo">Take Photo</string>
+    <string name="btn_select_image">Select from Gallery</string>
+    <string name="btn_view_history">View History</string>
+    <string name="analyzing">Analyzing image…</string>
+    <string name="loading_model">Loading AI model…</string>
+    <string name="detection_complete">Detection Complete</string>
+    <string name="debris_detected">Debris Detected: %d</string>
+    <string name="health_score">Ecosystem Health Score: %d/100</string>
+    <string name="no_debris">No debris detected</string>
+    <string name="permission_camera_required">Camera permission is required to take photos</string>
+    <string name="permission_storage_required">Storage permission is required to select images</string>
+    <string name="error_model_not_loaded">AI model not loaded. Please restart the app.</string>
+    <string name="error_image_processing">Failed to process image</string>
+    <string name="error_detection_failed">Detection failed. Please try again.</string>
+</resources>
