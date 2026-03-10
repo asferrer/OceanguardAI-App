@@ -4,15 +4,15 @@
     <!-- ================================================================== -->
     <!-- Sitzungsdetailbildschirm                                             -->
     <!-- ================================================================== -->
-    <string name="session_detail_title">Sitzungsdetails</string>
-    <string name="session_detail_dialog_delete_title">Sitzung löschen</string>
-    <string name="session_detail_dialog_delete_message">Möchten Sie diese Erkennungssitzung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="session_detail_title">Analysedetails</string>
+    <string name="session_detail_dialog_delete_title">Analyse löschen</string>
+    <string name="session_detail_dialog_delete_message">Möchten Sie diese Analyse wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="session_detail_btn_delete">Löschen</string>
     <string name="session_detail_cd_back">Zurück</string>
     <string name="session_detail_cd_edit_location">Standort bearbeiten</string>
-    <string name="session_detail_cd_delete_session">Sitzung löschen</string>
+    <string name="session_detail_cd_delete_session">Analyse löschen</string>
     <string name="session_detail_cd_annotated_image">Annotiertes Erkennungsbild</string>
-    <string name="session_detail_empty">Sitzung nicht gefunden</string>
+    <string name="session_detail_empty">Analyse nicht gefunden</string>
     <string name="session_detail_label_total_debris">Müll insgesamt</string>
     <string name="session_detail_label_processing">Verarbeitung</string>
     <string name="session_detail_label_quality">Qualität</string>
@@ -24,7 +24,7 @@
     <!-- ================================================================== -->
     <!-- Kartenbildschirm                                                     -->
     <!-- ================================================================== -->
-    <string name="map_title">Sitzungskarte</string>
+    <string name="map_title">Analysekarte</string>
     <!-- Sitzungsanzahl-Untertitel verwendet Pluralformat-Argumente — wird im Code erstellt -->
     <string name="map_cd_go_back">Zurück</string>
     <string name="map_zone_avg_health">Durchschn. Gesundheit: %1$d</string>
@@ -37,9 +37,9 @@
     <string name="map_legend_poor">20-39   Schlecht</string>
     <string name="map_legend_critical">0-19    Kritisch</string>
     <string name="map_empty_no_location_title">Keine Standortdaten</string>
-    <string name="map_empty_no_location_message">Keine Ihrer aufgezeichneten Sitzungen enthält Standortdaten. Erteilen Sie die Standortberechtigung und nehmen Sie ein neues Bild auf, um GPS-Markierungen auf der Karte zu sehen.</string>
-    <string name="map_empty_no_sessions_title">Noch keine Sitzungen</string>
-    <string name="map_empty_no_sessions_message">Es wurden noch keine Erkennungssitzungen aufgezeichnet. Nehmen Sie ein Bild mit der Kamera auf oder wählen Sie eines aus der Galerie aus, um zu beginnen.</string>
+    <string name="map_empty_no_location_message">Keine Ihrer aufgezeichneten Analysen enthält Standortdaten. Erteilen Sie die Standortberechtigung und nehmen Sie ein neues Bild auf, um GPS-Markierungen auf der Karte zu sehen.</string>
+    <string name="map_empty_no_sessions_title">Noch keine Analysen</string>
+    <string name="map_empty_no_sessions_message">Es wurden noch keine Analysen aufgezeichnet. Nehmen Sie ein Bild mit der Kamera auf oder wählen Sie eines aus der Galerie aus, um zu beginnen.</string>
 
     <!-- Karten-FAB-Steuerung (MapControls.kt) -->
     <string name="map_fab_cd_show_pins">Pins anzeigen</string>
@@ -64,7 +64,7 @@
     <!-- Zonen-Infobereich -->
     <string name="zone_sheet_stat_dives">Tauchgänge</string>
     <string name="zone_sheet_stat_images">Bilder</string>
-    <string name="zone_sheet_stat_sessions">Sitzungen</string>
+    <string name="zone_sheet_stat_sessions">Analysen</string>
     <string name="zone_sheet_stat_total_items">Gesamt Objekte</string>
     <string name="zone_sheet_stat_avg_health">Ø Gesundheit</string>
     <string name="zone_sheet_sessions_header">Aktivität in dieser Zone</string>
@@ -73,7 +73,7 @@
     <!-- Berichtsfilter -->
     <string name="report_filter_location">Standort</string>
     <string name="report_filter_date_range">Zeitraum</string>
-    <string name="report_filter_sessions_selected">%1$d von %2$d Sitzungen</string>
+    <string name="report_filter_sessions_selected">%1$d von %2$d Analysen</string>
 
     <!-- Erweiterte Verlaufsfilter -->
     <string name="history_filter_debris_type">Abfallart</string>
@@ -92,14 +92,14 @@
     <string name="report_label_language">Berichtssprache</string>
     <string name="report_btn_generating">Wird erstellt…</string>
     <string name="report_btn_generate_sample">Beispielbericht erstellen</string>
-    <!-- Pluralstil: wird im Code als "Bericht erstellen (%d Sitzungen)" erstellt -->
-    <string name="report_btn_generate">Bericht erstellen (%d Sitzungen)</string>
+    <!-- Pluralstil: wird im Code als "Bericht erstellen (%d Analysen)" erstellt -->
+    <string name="report_btn_generate">Bericht erstellen (%d Analysen)</string>
     <string name="report_dropdown_selected">Ausgewählt</string>
     <string name="report_empty_title">Noch kein Bericht erstellt</string>
-    <string name="report_empty_message_with_sessions">Wählen Sie eine Sprache aus und tippen Sie auf „Bericht erstellen", um eine Umweltzusammenfassung Ihrer Erhebungssitzungen zu erstellen.</string>
-    <string name="report_empty_message_no_sessions">Keine Erkennungssitzungen gefunden. Nehmen Sie Unterwasserbilder auf, führen Sie die Analyse durch und speichern Sie die Sitzungen. Kehren Sie dann hierher zurück, um einen Bericht zu erstellen.</string>
-    <!-- Pluralstil-Sitzungsanzahl-Badge wird im Code erstellt -->
-    <string name="report_sessions_available">%d Sitzung(en) für die Analyse verfügbar</string>
+    <string name="report_empty_message_with_sessions">Wählen Sie eine Sprache aus und tippen Sie auf „Bericht erstellen", um eine Umweltzusammenfassung Ihrer Analysen zu erstellen.</string>
+    <string name="report_empty_message_no_sessions">Keine Analysen gefunden. Nehmen Sie Unterwasserbilder auf, führen Sie die Analyse durch und speichern Sie die Analysen. Kehren Sie dann hierher zurück, um einen Bericht zu erstellen.</string>
+    <!-- Pluralstil-Analysenanzahl-Badge wird im Code erstellt -->
+    <string name="report_sessions_available">%d Analyse(n) für die Auswertung verfügbar</string>
     <string name="report_saved_title">Gespeicherte Berichte (%d)</string>
     <string name="report_card_ai_label">KI-Bericht</string>
     <string name="report_card_template_label">Vorlagenbericht</string>
@@ -117,6 +117,7 @@
     <string name="report_snackbar_export_error">Exportdatei konnte nicht erstellt werden. Überprüfen Sie die Speicherberechtigungen.</string>
     <string name="report_cd_download_pdf">PDF herunterladen</string>
     <string name="report_snackbar_pdf_error">PDF konnte nicht erstellt werden.</string>
+    <string name="report_images_title">Analysierte Bilder</string>
 
     <!-- ================================================================== -->
     <!-- Einstellungsbildschirm                                               -->
@@ -154,10 +155,10 @@
     <!-- Datenabschnitt -->
     <string name="settings_section_data">Daten</string>
     <string name="settings_label_reset_all_data">Alle Daten zurücksetzen</string>
-    <string name="settings_desc_reset_all_data">Alle Sitzungen, MarineDex-Einträge und Errungenschaften entfernen, um von vorne zu beginnen</string>
+    <string name="settings_desc_reset_all_data">Alle Analysen, MarineDex-Einträge und Errungenschaften entfernen, um von vorne zu beginnen</string>
     <string name="settings_btn_reset_all_data">Alle Daten zurücksetzen</string>
     <string name="settings_dialog_clear_title">Alle Daten löschen</string>
-    <string name="settings_dialog_clear_message">Dadurch werden alle Erkennungssitzungen, MarineDex-Entdeckungen und Errungenschaften dauerhaft gelöscht. Sie beginnen vollständig von vorne. Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="settings_dialog_clear_message">Dadurch werden alle Analysen, MarineDex-Entdeckungen und Errungenschaften dauerhaft gelöscht. Sie beginnen vollständig von vorne. Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="settings_dialog_clear_confirm">Alles löschen</string>
 
     <!-- Geführte Touren-Abschnitt -->
@@ -327,7 +328,7 @@
     <string name="tour_home_model_status_title">KI-Status</string>
     <string name="tour_home_model_status_desc">Zeigt an, ob das Erkennungsmodul geladen und bereit ist.</string>
     <string name="tour_home_stats_title">Ihre Wirkung</string>
-    <string name="tour_home_stats_desc">Verfolgen Sie Ihre Scan-Sitzungen, gefundenen Müll und die durchschnittliche Meeresgesundheit.</string>
+    <string name="tour_home_stats_desc">Verfolgen Sie Ihre Analysen, gefundenen Müll und die durchschnittliche Meeresgesundheit.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
     <string name="tour_home_marinedex_desc">Ihre Sammlung entdeckter Mülltypen — sammeln Sie sie alle!</string>
 
@@ -353,7 +354,7 @@
     <string name="tour_results_health_title">Gesundheitswert</string>
     <string name="tour_results_health_desc">Allgemeine Ökosystemgesundheit basierend auf Mülldichte und Risikostufe.</string>
     <string name="tour_results_actions_title">Speichern &amp; Teilen</string>
-    <string name="tour_results_actions_desc">Sitzung im Verlauf speichern oder neuen Scan starten.</string>
+    <string name="tour_results_actions_desc">Analyse im Verlauf speichern oder neuen Scan starten.</string>
 
     <!-- Stapel-Tour -->
     <string name="tour_batch_grid_title">Stapelanalyse</string>
@@ -363,21 +364,21 @@
 
     <!-- Verlaufs-Tour -->
     <string name="tour_history_search_title">Suchen &amp; Filtern</string>
-    <string name="tour_history_search_desc">Sitzungen nach Datum, Standort oder Mülltyp suchen.</string>
-    <string name="tour_history_card_title">Sitzungskarte</string>
+    <string name="tour_history_search_desc">Analysen nach Datum, Standort oder Mülltyp suchen.</string>
+    <string name="tour_history_card_title">Analysekarte</string>
     <string name="tour_history_card_desc">Tippen zum Anzeigen der vollständigen Details. Nach links wischen zum Löschen.</string>
 
     <!-- Sitzungsdetail-Tour -->
     <string name="tour_session_detail_image_title">Annotiertes Bild</string>
     <string name="tour_session_detail_image_desc">Ihr aufgenommenes Bild mit erkanntem Meeresmüll, markiert durch Begrenzungsrahmen.</string>
     <string name="tour_session_detail_health_title">Gesundheitsbewertung</string>
-    <string name="tour_session_detail_health_desc">Detaillierte Aufschlüsselung des Ökosystem-Gesundheitswerts für diese Sitzung.</string>
+    <string name="tour_session_detail_health_desc">Detaillierte Aufschlüsselung des Ökosystem-Gesundheitswerts für diese Analyse.</string>
     <string name="tour_session_detail_location_title">Standort</string>
     <string name="tour_session_detail_location_desc">GPS-Koordinaten, an denen dieses Bild aufgenommen wurde. Tippen Sie auf Bearbeiten, um zu korrigieren.</string>
 
     <!-- Karten-Tour -->
     <string name="tour_map_view_title">Erkennungskarte</string>
-    <string name="tour_map_view_desc">Alle Ihre Scan-Sitzungen auf der Karte eingetragen. Cluster gruppieren nahe Sitzungen.</string>
+    <string name="tour_map_view_desc">Alle Ihre Analysen auf der Karte eingetragen. Cluster gruppieren nahe Analysen.</string>
     <string name="tour_map_heatmap_title">Heatmap</string>
     <string name="tour_map_heatmap_desc">Heatmap-Ansicht umschalten, um Mülldichtemuster zu sehen.</string>
     <string name="tour_map_style_title">Kartenstil</string>
@@ -430,7 +431,7 @@
     <string name="guided_tour_tab_marinedex">MarineDex</string>
     <string name="guided_tour_tab_marinedex_detail">Artdetail</string>
     <string name="guided_tour_tab_achievements">Errungenschaften</string>
-    <string name="guided_tour_tab_session_detail">Sitzungsdetail</string>
+    <string name="guided_tour_tab_session_detail">Analysedetail</string>
     <string name="guided_tour_tab_settings">Einstellungen</string>
     <string name="guided_tour_progress">Schritt %1$d von %2$d</string>
     <string name="guided_tour_screen_done_title">Gut gemacht!</string>
@@ -464,8 +465,8 @@
     <string name="bulk_selected_count">%1$d ausgewählt</string>
     <string name="bulk_edit_date">Datum bearbeiten</string>
     <string name="bulk_edit_location">Standort bearbeiten</string>
-    <string name="bulk_delete_title">Sitzungen löschen</string>
-    <string name="bulk_delete_message">%1$d ausgewählte Sitzungen löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="bulk_delete_title">Analysen löschen</string>
+    <string name="bulk_delete_message">%1$d ausgewählte Analysen löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="bulk_edit_apply">Auf %1$d anwenden</string>
     <string name="bulk_select_all">Alle auswählen</string>
     <string name="bulk_edit_location_hint">Ort suchen…</string>
@@ -524,8 +525,8 @@
     <string name="marinedex_gallery_found_count">%1$d gefunden</string>
 
     <!-- Report card metadata -->
-    <string name="report_card_meta_singular">%1$d Sitzung · %2$s · %3$s</string>
-    <string name="report_card_meta_plural">%1$d Sitzungen · %2$s · %3$s</string>
+    <string name="report_card_meta_singular">%1$d Bild · %2$s · %3$s</string>
+    <string name="report_card_meta_plural">%1$d Bilder · %2$s · %3$s</string>
     <string name="report_snackbar_view_action">Ansehen</string>
 
     <!-- Report generation notification -->

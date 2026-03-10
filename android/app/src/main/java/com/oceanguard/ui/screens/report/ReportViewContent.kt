@@ -1,7 +1,10 @@
 package com.oceanguard.ai.ui.screens.report
 
 import android.content.Context
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
@@ -39,11 +42,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.data.GeneratedReport
@@ -322,6 +328,7 @@ internal fun ReportFullScreenView(
     onShare: () -> Unit,
     onDownloadPdf: () -> Unit = {},
     isExportingPdf: Boolean = false,
+    sessions: List<DetectionSession> = emptyList(),
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()) }
 
@@ -405,11 +412,16 @@ internal fun ReportFullScreenView(
                         .weight(1f),
                     animate = false,
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
                     ) {
+                        // Thumbnail gallery
+                        if (sessions.isNotEmpty()) {
+                            SessionThumbnailStrip(sessions = sessions)
+                        }
+
                         MarkdownText(
                             text = report.text,
                             modifier = Modifier.fillMaxWidth(),
@@ -418,6 +430,52 @@ internal fun ReportFullScreenView(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Horizontal scrollable strip showing annotated thumbnails from sessions.
+ */
+@Composable
+private fun SessionThumbnailStrip(sessions: List<DetectionSession>) {
+    val thumbnails = remember(sessions) {
+        sessions.mapNotNull { s ->
+            val uri = s.thumbnailUri ?: s.imageUri
+            uri.takeIf { it.isNotBlank() }
+        }
+    }
+    if (thumbnails.isEmpty()) return
+
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = stringResource(R.string.report_images_title),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 6.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            thumbnails.forEach { uriStr ->
+                AsyncImage(
+                    model = Uri.parse(uriStr),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant,
+                            RoundedCornerShape(8.dp),
+                        ),
+                )
             }
         }
     }

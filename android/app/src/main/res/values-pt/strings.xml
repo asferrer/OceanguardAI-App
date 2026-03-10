@@ -21,11 +21,11 @@
     <string name="cd_search">Pesquisar</string>
     <string name="cd_clear">Limpar</string>
     <string name="cd_camera">Câmera</string>
-    <string name="cd_delete_session">Excluir sessão</string>
+    <string name="cd_delete_session">Excluir análise</string>
     <string name="cd_gps_location">Localização GPS registrada</string>
     <string name="cd_add_location">Adicionar localização</string>
     <string name="cd_edit_location">Editar localização</string>
-    <string name="cd_session_thumbnail">Miniatura da sessão</string>
+    <string name="cd_session_thumbnail">Miniatura da análise</string>
 
     <!-- ================================================================== -->
     <!-- Tela inicial                                                         -->
@@ -47,7 +47,7 @@
     <string name="home_model_name_deep_analysis">Análise Profunda</string>
 
     <!-- Cartão de estatísticas -->
-    <string name="home_stat_sessions">Sessões</string>
+    <string name="home_stat_sessions">Análises</string>
     <string name="home_stat_debris">Resíduos</string>
     <string name="home_stat_avg_health">Saúde Média</string>
 
@@ -147,7 +147,7 @@
     <!-- Botões de ação -->
     <string name="results_btn_save_history">Salvar no Histórico</string>
     <string name="results_btn_new_scan">Nova Análise</string>
-    <string name="results_session_saved">Sessão salva no histórico</string>
+    <string name="results_session_saved">Análise salva no histórico</string>
 
     <!-- Estado de erro -->
     <string name="results_error_title">Análise Falhou</string>
@@ -190,7 +190,7 @@
 
     <!-- Estados vazio / erro -->
     <string name="batch_empty_title">Nenhuma imagem selecionada</string>
-    <string name="batch_empty_message">Selecione várias imagens da galeria para executar uma sessão de análise em lote.</string>
+    <string name="batch_empty_message">Selecione várias imagens da galeria para executar uma análise em lote.</string>
     <string name="batch_error_title">Lote Falhou</string>
     <string name="batch_btn_retry">Repetir Lote</string>
     <string name="batch_btn_back">Voltar ao Início</string>
@@ -203,12 +203,12 @@
     <!-- Tela de histórico                                                    -->
     <!-- ================================================================== -->
     <string name="history_title">Histórico de Detecções</string>
-    <string name="history_search_placeholder">Pesquisar sessões...</string>
-    <string name="history_empty_title">Nenhuma sessão de detecção ainda</string>
-    <string name="history_empty_message">Tire uma foto ou selecione uma imagem da sua galeria para começar a detectar detritos marinhos. Suas sessões aparecerão aqui.</string>
-    <!-- Formato: "3 sessões registradas" -->
-    <string name="history_sessions_count_plural">%1$d sessões registradas</string>
-    <string name="history_sessions_count_singular">%1$d sessão registrada</string>
+    <string name="history_search_placeholder">Pesquisar análises...</string>
+    <string name="history_empty_title">Nenhuma análise ainda</string>
+    <string name="history_empty_message">Tire uma foto ou selecione uma imagem da sua galeria para começar a detectar detritos marinhos. Suas análises aparecerão aqui.</string>
+    <!-- Formato: "3 imagens analisadas" -->
+    <string name="history_sessions_count_plural">%1$d imagens analisadas</string>
+    <string name="history_sessions_count_singular">%1$d imagem analisada</string>
     <!-- Formato: "5 objetos de resíduos detectados" / "1 objeto de resíduos detectado" -->
     <string name="history_debris_count_plural">%1$d objetos de resíduos detectados</string>
     <string name="history_debris_count_singular">%1$d objeto de resíduos detectado</string>

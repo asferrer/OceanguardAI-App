@@ -151,9 +151,9 @@ fun HealthTrendChart(
                     )
                     Text(
                         text = if (points.isEmpty()) {
-                            "No sessions recorded"
+                            "No analyses recorded"
                         } else {
-                            "${points.size} session${if (points.size != 1) "s" else ""}"
+                            "${points.size} analys${if (points.size != 1) "es" else "is"}"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -414,7 +414,7 @@ private fun EmptyTrendPlaceholder() {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "No session data available.\nComplete a scan to see the trend.",
+            text = "No analysis data available.\nComplete a scan to see the trend.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -452,7 +452,7 @@ private fun SinglePointPlaceholder(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Record more sessions to see the trend",
+                text = "Record more analyses to see the trend",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

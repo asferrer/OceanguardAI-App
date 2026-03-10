@@ -188,7 +188,7 @@ internal fun ZonePreviewCard(
                     value = "$dayCount",
                 )
                 StatItem(
-                    label = "Sessions",
+                    label = "Analyses",
                     value = "${zone.sessions.size}",
                 )
                 StatItem(

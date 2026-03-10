@@ -92,7 +92,7 @@ object PdfReportExporter {
             if (report.centroidLat != null && report.centroidLon != null) {
                 add("Coordinates: ${String.format("%.4f", report.centroidLat)}, ${String.format("%.4f", report.centroidLon)}")
             }
-            add("Sessions analyzed: ${report.sessionCount}")
+            add("Images analyzed: ${report.sessionCount}")
             add("Analysis: ${if (report.usedAi) "AI-powered (Gemma 3n)" else "Template-based"}")
             add("Language: ${report.language.uppercase()}")
         }
@@ -125,32 +125,97 @@ object PdfReportExporter {
                 listOf("Avg. health score", String.format("%.1f / 100", avgHealth)),
                 listOf("Dominant material", dominant.replace("_", " ")),
                 listOf("High-risk items", highRisk.toString()),
-                listOf("Survey sessions", report.sessionCount.toString()),
+                listOf("Images analyzed", report.sessionCount.toString()),
             ),
         )
     }
 
+    private val TABLE_ROW_RE = Regex("""^\|(.+)\|$""")
+    private val TABLE_SEP_RE = Regex("""^\|[\s:?-]+(\|[\s:?-]+)+\|$""")
+    private val BULLET_RE = Regex("""^[-*+]\s+(.+)""")
+    private val ORDERED_RE = Regex("""^(\d+)\.\s+(.+)""")
+
     private fun drawReportBody(pdf: PdfPageCanvas, text: String) {
         val lines = text.lines()
-        for (line in lines) {
-            val trimmed = line.trim()
+        var i = 0
+        while (i < lines.size) {
+            val trimmed = lines[i].trim()
             when {
-                trimmed.startsWith("## ") -> pdf.drawSubtitle(trimmed.removePrefix("## "))
-                trimmed.startsWith("# ") -> pdf.drawSubtitle(trimmed.removePrefix("# "))
-                trimmed.startsWith("**") && trimmed.endsWith("**") ->
-                    pdf.drawBoldParagraph(trimmed.removeSurrounding("**"))
-                trimmed.startsWith("---") || trimmed.startsWith("***") -> pdf.drawSeparator()
-                trimmed.isEmpty() -> pdf.addSpacing(4)
+                // Markdown table: header + separator + data rows
+                TABLE_ROW_RE.matches(trimmed) && i + 1 < lines.size &&
+                    TABLE_SEP_RE.matches(lines[i + 1].trim()) -> {
+                    val headers = parseTableCells(trimmed)
+                    i += 2 // skip header + separator
+                    val rows = mutableListOf<List<String>>()
+                    while (i < lines.size && TABLE_ROW_RE.matches(lines[i].trim())) {
+                        rows.add(parseTableCells(lines[i].trim()))
+                        i++
+                    }
+                    pdf.drawTable(headers = headers, rows = rows)
+                    pdf.addSpacing(4)
+                }
+
+                trimmed.startsWith("### ") -> {
+                    pdf.drawH3(stripInline(trimmed.removePrefix("### ")))
+                    i++
+                }
+                trimmed.startsWith("## ") -> {
+                    pdf.drawSubtitle(stripInline(trimmed.removePrefix("## ")))
+                    i++
+                }
+                trimmed.startsWith("# ") -> {
+                    pdf.drawSubtitle(stripInline(trimmed.removePrefix("# ")))
+                    i++
+                }
+                trimmed.startsWith("> ") || trimmed == ">" -> {
+                    val quoteLines = mutableListOf<String>()
+                    while (i < lines.size) {
+                        val ql = lines[i].trim()
+                        if (!ql.startsWith("> ") && ql != ">") break
+                        quoteLines.add(ql.removePrefix("> ").removePrefix(">").trim())
+                        i++
+                    }
+                    pdf.drawBlockquote(stripInline(quoteLines.joinToString(" ")))
+                }
+                BULLET_RE.matches(trimmed) -> {
+                    val match = BULLET_RE.find(trimmed)!!
+                    pdf.drawBulletItem(stripInline(match.groupValues[1]))
+                    i++
+                }
+                ORDERED_RE.matches(trimmed) -> {
+                    val match = ORDERED_RE.find(trimmed)!!
+                    pdf.drawNumberedItem(match.groupValues[1], stripInline(match.groupValues[2]))
+                    i++
+                }
+                trimmed.startsWith("**") && trimmed.endsWith("**") -> {
+                    pdf.drawBoldParagraph(stripInline(trimmed.removeSurrounding("**")))
+                    i++
+                }
+                trimmed.startsWith("---") || trimmed.startsWith("***") -> {
+                    pdf.drawSeparator()
+                    i++
+                }
+                trimmed.isEmpty() -> {
+                    pdf.addSpacing(4)
+                    i++
+                }
                 else -> {
-                    // Strip inline markdown: **bold** -> bold, *italic* -> italic
-                    val clean = trimmed
-                        .replace(Regex("""\*\*(.+?)\*\*"""), "$1")
-                        .replace(Regex("""\*(.+?)\*"""), "$1")
-                        .replace(Regex("""`(.+?)`"""), "$1")
-                    pdf.drawParagraph(clean)
+                    pdf.drawParagraph(stripInline(trimmed))
+                    i++
                 }
             }
         }
+    }
+
+    private fun stripInline(text: String): String = text
+        .replace(Regex("""\*\*(.+?)\*\*"""), "$1")
+        .replace(Regex("""\*(.+?)\*"""), "$1")
+        .replace(Regex("""`(.+?)`"""), "$1")
+
+    private fun parseTableCells(line: String): List<String> {
+        return line.trim().removePrefix("|").removeSuffix("|")
+            .split("|")
+            .map { stripInline(it.trim()) }
     }
 
     private suspend fun drawSessionImages(

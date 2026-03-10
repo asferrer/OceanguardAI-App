@@ -65,6 +65,12 @@ internal class PdfPageCanvas(private val outputFile: File) {
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
+    private val h3Paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textSize = 12f
+        color = Color.parseColor("#1565C0")
+    }
+
     private val captionPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
         textSize = 8.5f
@@ -140,6 +146,12 @@ internal class PdfPageCanvas(private val outputFile: File) {
         drawStaticLayout(text, subtitlePaint, Layout.Alignment.ALIGN_NORMAL, 6)
     }
 
+    fun drawH3(text: String) {
+        ensureSpace(20)
+        cursorY += 4
+        drawStaticLayout(text, h3Paint, Layout.Alignment.ALIGN_NORMAL, 4)
+    }
+
     fun drawParagraph(text: String) {
         drawStaticLayout(text, bodyPaint, Layout.Alignment.ALIGN_NORMAL, 4)
     }
@@ -150,6 +162,80 @@ internal class PdfPageCanvas(private val outputFile: File) {
 
     fun drawCaption(text: String) {
         drawStaticLayout(text, captionPaint, Layout.Alignment.ALIGN_CENTER, 4)
+    }
+
+    fun drawBlockquote(text: String) {
+        ensureSpace(20)
+        val canvas = currentCanvas ?: return
+        val barPaint = Paint().apply { color = Color.parseColor("#1976D2"); style = Paint.Style.FILL }
+        val bgPaint = Paint().apply { color = Color.parseColor("#E3F2FD"); style = Paint.Style.FILL }
+
+        val indent = 12
+        val layout = StaticLayout.Builder
+            .obtain(text, 0, text.length, captionPaint, CONTENT_WIDTH - indent - 8)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(2f, 1f)
+            .build()
+        val height = layout.height + 12
+
+        ensureSpace(height)
+        canvas.drawRect(
+            MARGIN.toFloat(), cursorY.toFloat(),
+            (MARGIN + CONTENT_WIDTH).toFloat(), (cursorY + height).toFloat(), bgPaint,
+        )
+        canvas.drawRect(
+            MARGIN.toFloat(), cursorY.toFloat(),
+            (MARGIN + 3).toFloat(), (cursorY + height).toFloat(), barPaint,
+        )
+        canvas.save()
+        canvas.translate((MARGIN + indent).toFloat(), (cursorY + 6).toFloat())
+        layout.draw(canvas)
+        canvas.restore()
+        cursorY += height + 4
+    }
+
+    fun drawBulletItem(text: String) {
+        val indent = 14
+        val layout = StaticLayout.Builder
+            .obtain(text, 0, text.length, bodyPaint, CONTENT_WIDTH - indent)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(2f, 1f)
+            .build()
+        val height = layout.height
+        ensureSpace(height + 4)
+        val canvas = currentCanvas ?: return
+
+        val bulletPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#0D47A1"); style = Paint.Style.FILL
+        }
+        canvas.drawCircle(
+            (MARGIN + 5).toFloat(), (cursorY + 6).toFloat(), 2.2f, bulletPaint,
+        )
+        canvas.save()
+        canvas.translate((MARGIN + indent).toFloat(), cursorY.toFloat())
+        layout.draw(canvas)
+        canvas.restore()
+        cursorY += height + 4
+    }
+
+    fun drawNumberedItem(number: String, text: String) {
+        val indent = 18
+        val layout = StaticLayout.Builder
+            .obtain(text, 0, text.length, bodyPaint, CONTENT_WIDTH - indent)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(2f, 1f)
+            .build()
+        val height = layout.height
+        ensureSpace(height + 4)
+        val canvas = currentCanvas ?: return
+
+        val numPaint = TextPaint(boldBodyPaint).apply { color = Color.parseColor("#0D47A1") }
+        canvas.drawText("$number.", MARGIN.toFloat(), (cursorY + 10).toFloat(), numPaint)
+        canvas.save()
+        canvas.translate((MARGIN + indent).toFloat(), cursorY.toFloat())
+        layout.draw(canvas)
+        canvas.restore()
+        cursorY += height + 4
     }
 
     fun drawSeparator() {
@@ -179,60 +265,124 @@ internal class PdfPageCanvas(private val outputFile: File) {
         val colCount = headers.size
         if (colCount == 0) return
 
-        val rowHeight = 18
-        val totalHeight = rowHeight * (rows.size + 1) + 4
-        ensureSpace(minOf(totalHeight, 200))
-
         val canvas = currentCanvas ?: return
+        val cellPadH = 4
+        val cellPadV = 4
         val colWidth = CONTENT_WIDTH / colCount
+        val cellTextWidth = colWidth - cellPadH * 2
         val borderPaint = Paint().apply { color = tableBorderColor; style = Paint.Style.STROKE; strokeWidth = 0.5f }
         val headerBgPaint = Paint().apply { color = tableHeaderBg; style = Paint.Style.FILL }
+        val altRowBgPaint = Paint().apply { color = Color.parseColor("#F5F5F5"); style = Paint.Style.FILL }
         val cellPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 9f; color = Color.parseColor("#212121") }
         val headerTextPaint = TextPaint(cellPaint).apply { typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) }
 
-        // Header row
-        val startY = cursorY
-        canvas.drawRect(
-            MARGIN.toFloat(), startY.toFloat(),
-            (MARGIN + CONTENT_WIDTH).toFloat(), (startY + rowHeight).toFloat(),
+        // Measure header row height
+        val headerHeight = measureRowHeight(headers, headerTextPaint, cellTextWidth, cellPadV)
+        ensureSpace(headerHeight + 20)
+        val tableStartY = cursorY
+
+        // Draw header background
+        currentCanvas?.drawRect(
+            MARGIN.toFloat(), cursorY.toFloat(),
+            (MARGIN + CONTENT_WIDTH).toFloat(), (cursorY + headerHeight).toFloat(),
             headerBgPaint,
         )
-        for ((i, header) in headers.withIndex()) {
-            val x = MARGIN + i * colWidth + 4
-            canvas.drawText(header, x.toFloat(), (startY + 13).toFloat(), headerTextPaint)
-        }
-        cursorY += rowHeight
+        drawRowCells(headers, headerTextPaint, colWidth, cellPadH, cellPadV, headerHeight)
+        cursorY += headerHeight
 
         // Data rows
-        for (row in rows) {
-            if (cursorY + rowHeight > PAGE_HEIGHT - MARGIN - 20) {
+        for ((rowIdx, row) in rows.withIndex()) {
+            val rowH = measureRowHeight(row, cellPaint, cellTextWidth, cellPadV)
+            if (cursorY + rowH > PAGE_HEIGHT - MARGIN - 20) {
+                // Draw borders for current page portion before break
+                drawTableBorders(borderPaint, colCount, colWidth, tableStartY, cursorY)
                 startNewPage()
             }
-            for ((i, cell) in row.withIndex()) {
-                val x = MARGIN + i * colWidth + 4
-                canvas.drawText(cell, x.toFloat(), (cursorY + 13).toFloat(), cellPaint)
+            // Alternate row background
+            if (rowIdx % 2 == 1) {
+                currentCanvas?.drawRect(
+                    MARGIN.toFloat(), cursorY.toFloat(),
+                    (MARGIN + CONTENT_WIDTH).toFloat(), (cursorY + rowH).toFloat(),
+                    altRowBgPaint,
+                )
             }
-            // Row border
-            canvas.drawLine(
-                MARGIN.toFloat(), (cursorY + rowHeight).toFloat(),
-                (MARGIN + CONTENT_WIDTH).toFloat(), (cursorY + rowHeight).toFloat(),
+            val padded = row + List((colCount - row.size).coerceAtLeast(0)) { "" }
+            drawRowCells(padded, cellPaint, colWidth, cellPadH, cellPadV, rowH)
+            // Row separator
+            currentCanvas?.drawLine(
+                MARGIN.toFloat(), (cursorY + rowH).toFloat(),
+                (MARGIN + CONTENT_WIDTH).toFloat(), (cursorY + rowH).toFloat(),
                 borderPaint,
             )
-            cursorY += rowHeight
+            cursorY += rowH
         }
 
-        // Outer border
+        // Outer + column borders
+        drawTableBorders(borderPaint, colCount, colWidth, tableStartY, cursorY)
+        cursorY += 8
+    }
+
+    private fun measureRowHeight(
+        cells: List<String>,
+        paint: TextPaint,
+        cellTextWidth: Int,
+        padV: Int,
+    ): Int {
+        var maxH = 0
+        for (cell in cells) {
+            val layout = StaticLayout.Builder
+                .obtain(cell, 0, cell.length, paint, cellTextWidth.coerceAtLeast(20))
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(1f, 1f)
+                .build()
+            maxH = maxOf(maxH, layout.height)
+        }
+        return maxH + padV * 2
+    }
+
+    private fun drawRowCells(
+        cells: List<String>,
+        paint: TextPaint,
+        colWidth: Int,
+        padH: Int,
+        padV: Int,
+        rowHeight: Int,
+    ) {
+        val canvas = currentCanvas ?: return
+        val cellTextWidth = colWidth - padH * 2
+        for ((i, cell) in cells.withIndex()) {
+            val layout = StaticLayout.Builder
+                .obtain(cell, 0, cell.length, paint, cellTextWidth.coerceAtLeast(20))
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(1f, 1f)
+                .build()
+            canvas.save()
+            canvas.translate(
+                (MARGIN + i * colWidth + padH).toFloat(),
+                (cursorY + padV).toFloat(),
+            )
+            layout.draw(canvas)
+            canvas.restore()
+        }
+    }
+
+    private fun drawTableBorders(
+        borderPaint: Paint,
+        colCount: Int,
+        colWidth: Int,
+        startY: Int,
+        endY: Int,
+    ) {
+        val canvas = currentCanvas ?: return
         canvas.drawRect(
             MARGIN.toFloat(), startY.toFloat(),
-            (MARGIN + CONTENT_WIDTH).toFloat(), cursorY.toFloat(),
+            (MARGIN + CONTENT_WIDTH).toFloat(), endY.toFloat(),
             borderPaint,
         )
-        // Column borders
         for (i in 1 until colCount) {
             val x = MARGIN + i * colWidth
-            canvas.drawLine(x.toFloat(), startY.toFloat(), x.toFloat(), cursorY.toFloat(), borderPaint)
+            canvas.drawLine(x.toFloat(), startY.toFloat(), x.toFloat(), endY.toFloat(), borderPaint)
         }
-        cursorY += 8
     }
 
     fun addSpacing(pts: Int) {

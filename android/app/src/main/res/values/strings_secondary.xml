@@ -4,15 +4,15 @@
     <!-- ================================================================== -->
     <!-- Session Detail Screen                                               -->
     <!-- ================================================================== -->
-    <string name="session_detail_title">Session Detail</string>
-    <string name="session_detail_dialog_delete_title">Delete Session</string>
-    <string name="session_detail_dialog_delete_message">Are you sure you want to delete this detection session? This action cannot be undone.</string>
+    <string name="session_detail_title">Analysis Detail</string>
+    <string name="session_detail_dialog_delete_title">Delete Analysis</string>
+    <string name="session_detail_dialog_delete_message">Are you sure you want to delete this analysis? This action cannot be undone.</string>
     <string name="session_detail_btn_delete">Delete</string>
     <string name="session_detail_cd_back">Back</string>
     <string name="session_detail_cd_edit_location">Edit location</string>
-    <string name="session_detail_cd_delete_session">Delete session</string>
+    <string name="session_detail_cd_delete_session">Delete analysis</string>
     <string name="session_detail_cd_annotated_image">Annotated detection image</string>
-    <string name="session_detail_empty">Session not found</string>
+    <string name="session_detail_empty">Analysis not found</string>
     <string name="session_detail_label_total_debris">Total Debris</string>
     <string name="session_detail_label_processing">Processing</string>
     <string name="session_detail_label_quality">Quality</string>
@@ -24,7 +24,7 @@
     <!-- ================================================================== -->
     <!-- Map Screen                                                           -->
     <!-- ================================================================== -->
-    <string name="map_title">Session Map</string>
+    <string name="map_title">Analysis Map</string>
     <!-- session count subtitle uses plural-style format args — built in code -->
     <string name="map_cd_go_back">Go back</string>
     <string name="map_zone_avg_health">Avg health: %d</string>
@@ -37,9 +37,9 @@
     <string name="map_legend_poor">20-39   Poor</string>
     <string name="map_legend_critical">0-19    Critical</string>
     <string name="map_empty_no_location_title">No location data</string>
-    <string name="map_empty_no_location_message">None of your recorded sessions include location data. Grant location permission and capture a new image to see GPS markers on the map.</string>
-    <string name="map_empty_no_sessions_title">No sessions yet</string>
-    <string name="map_empty_no_sessions_message">No detection sessions recorded yet. Capture an image with the camera or select one from the gallery to get started.</string>
+    <string name="map_empty_no_location_message">None of your recorded analyses include location data. Grant location permission and capture a new image to see GPS markers on the map.</string>
+    <string name="map_empty_no_sessions_title">No analyses yet</string>
+    <string name="map_empty_no_sessions_message">No analyses recorded yet. Capture an image with the camera or select one from the gallery to get started.</string>
 
     <!-- Map FAB Controls (MapControls.kt) -->
     <string name="map_fab_cd_show_pins">Show pins</string>
@@ -64,7 +64,7 @@
     <!-- Zone Bottom Sheet -->
     <string name="zone_sheet_stat_dives">Dives</string>
     <string name="zone_sheet_stat_images">Images</string>
-    <string name="zone_sheet_stat_sessions">Sessions</string>
+    <string name="zone_sheet_stat_sessions">Analyses</string>
     <string name="zone_sheet_stat_total_items">Total Items</string>
     <string name="zone_sheet_stat_avg_health">Avg Health</string>
     <string name="zone_sheet_sessions_header">Activity in this zone</string>
@@ -73,7 +73,7 @@
     <!-- Report Filters -->
     <string name="report_filter_location">Location</string>
     <string name="report_filter_date_range">Date Range</string>
-    <string name="report_filter_sessions_selected">%1$d of %2$d sessions</string>
+    <string name="report_filter_sessions_selected">%1$d of %2$d images</string>
 
     <!-- History advanced filters -->
     <string name="history_filter_debris_type">Debris Type</string>
@@ -93,13 +93,13 @@
     <string name="report_btn_generating">Generating…</string>
     <string name="report_btn_generate_sample">Generate Sample Report</string>
     <!-- plural-style: built in code as "Generate Report (%d sessions)" -->
-    <string name="report_btn_generate">Generate Report (%d sessions)</string>
+    <string name="report_btn_generate">Generate Report (%d images)</string>
     <string name="report_dropdown_selected">Selected</string>
     <string name="report_empty_title">No report generated yet</string>
-    <string name="report_empty_message_with_sessions">Select a language and tap \"Generate Report\" to create an environmental summary of your survey sessions.</string>
-    <string name="report_empty_message_no_sessions">No detection sessions found. Capture underwater images, run the analysis, and save sessions. Then return here to generate a report.</string>
-    <!-- plural-style session count badge built in code -->
-    <string name="report_sessions_available">%d session(s) available for analysis</string>
+    <string name="report_empty_message_with_sessions">Select a language and tap \"Generate Report\" to create an environmental summary of your analyzed images.</string>
+    <string name="report_empty_message_no_sessions">No analyses found. Capture underwater images, run the detection, and save results. Then return here to generate a report.</string>
+    <!-- plural-style image count badge built in code -->
+    <string name="report_sessions_available">%d image(s) available for analysis</string>
     <string name="report_saved_title">Saved Reports (%d)</string>
     <string name="report_card_ai_label">AI Report</string>
     <string name="report_card_template_label">Template Report</string>
@@ -117,6 +117,7 @@
     <string name="report_snackbar_export_error">Could not create export file. Check storage permissions.</string>
     <string name="report_cd_download_pdf">Download PDF</string>
     <string name="report_snackbar_pdf_error">Could not create PDF.</string>
+    <string name="report_images_title">Analysed Images</string>
 
     <!-- ================================================================== -->
     <!-- Settings Screen                                                      -->
@@ -154,10 +155,10 @@
     <!-- Data section -->
     <string name="settings_section_data">Data</string>
     <string name="settings_label_reset_all_data">Reset All Data</string>
-    <string name="settings_desc_reset_all_data">Remove all sessions, MarineDex entries, and achievements to start fresh</string>
+    <string name="settings_desc_reset_all_data">Remove all analyses, MarineDex entries, and achievements to start fresh</string>
     <string name="settings_btn_reset_all_data">Reset All Data</string>
     <string name="settings_dialog_clear_title">Clear All Data</string>
-    <string name="settings_dialog_clear_message">This will permanently delete all detection sessions, MarineDex discoveries, and achievements. You will start completely fresh. This action cannot be undone.</string>
+    <string name="settings_dialog_clear_message">This will permanently delete all analyses, MarineDex discoveries, and achievements. You will start completely fresh. This action cannot be undone.</string>
     <string name="settings_dialog_clear_confirm">Delete All</string>
 
     <!-- Guided Tours section -->
@@ -327,7 +328,7 @@
     <string name="tour_home_model_status_title">AI Status</string>
     <string name="tour_home_model_status_desc">Shows whether the detection engine is loaded and ready.</string>
     <string name="tour_home_stats_title">Your Impact</string>
-    <string name="tour_home_stats_desc">Track your scanning sessions, debris found, and average ocean health.</string>
+    <string name="tour_home_stats_desc">Track your analyses, debris found, and average ocean health.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
     <string name="tour_home_marinedex_desc">Your collection of discovered debris types — catch them all!</string>
 
@@ -353,7 +354,7 @@
     <string name="tour_results_health_title">Health Score</string>
     <string name="tour_results_health_desc">Overall ecosystem health based on debris density and risk level.</string>
     <string name="tour_results_actions_title">Save &amp; Share</string>
-    <string name="tour_results_actions_desc">Save this session to history or start a new scan.</string>
+    <string name="tour_results_actions_desc">Save this analysis to history or start a new scan.</string>
 
     <!-- Batch tour -->
     <string name="tour_batch_grid_title">Batch Analysis</string>
@@ -363,21 +364,21 @@
 
     <!-- History tour -->
     <string name="tour_history_search_title">Search &amp; Filter</string>
-    <string name="tour_history_search_desc">Search sessions by date, location, or debris type.</string>
-    <string name="tour_history_card_title">Session Card</string>
+    <string name="tour_history_search_desc">Search analyses by date, location, or debris type.</string>
+    <string name="tour_history_card_title">Analysis Card</string>
     <string name="tour_history_card_desc">Tap to view full details. Swipe left to delete.</string>
 
     <!-- Session Detail tour -->
     <string name="tour_session_detail_image_title">Annotated Image</string>
     <string name="tour_session_detail_image_desc">Your captured image with detected debris marked by bounding boxes.</string>
     <string name="tour_session_detail_health_title">Health Assessment</string>
-    <string name="tour_session_detail_health_desc">Detailed breakdown of the ecosystem health score for this session.</string>
+    <string name="tour_session_detail_health_desc">Detailed breakdown of the ecosystem health score for this analysis.</string>
     <string name="tour_session_detail_location_title">Location</string>
     <string name="tour_session_detail_location_desc">GPS coordinates where this image was captured. Tap edit to correct.</string>
 
     <!-- Map tour -->
     <string name="tour_map_view_title">Detection Map</string>
-    <string name="tour_map_view_desc">All your scanning sessions plotted on the map. Clusters group nearby sessions.</string>
+    <string name="tour_map_view_desc">All your analyses plotted on the map. Clusters group nearby detections.</string>
     <string name="tour_map_heatmap_title">Heatmap</string>
     <string name="tour_map_heatmap_desc">Toggle heatmap view to see debris density patterns.</string>
     <string name="tour_map_style_title">Map Style</string>
@@ -432,7 +433,7 @@
     <string name="guided_tour_tab_map">Map</string>
     <string name="guided_tour_tab_reports">Reports</string>
     <string name="guided_tour_tab_history">History</string>
-    <string name="guided_tour_tab_session_detail">Session Detail</string>
+    <string name="guided_tour_tab_session_detail">Analysis Detail</string>
     <string name="guided_tour_tab_settings">Settings</string>
     <string name="guided_tour_progress">Step %1$d of %2$d</string>
     <string name="guided_tour_screen_done_title">Great job!</string>
@@ -466,8 +467,8 @@
     <string name="bulk_selected_count">%1$d selected</string>
     <string name="bulk_edit_date">Edit Date</string>
     <string name="bulk_edit_location">Edit Location</string>
-    <string name="bulk_delete_title">Delete Sessions</string>
-    <string name="bulk_delete_message">Delete %1$d selected sessions? This action cannot be undone.</string>
+    <string name="bulk_delete_title">Delete Analyses</string>
+    <string name="bulk_delete_message">Delete %1$d selected analyses? This action cannot be undone.</string>
     <string name="bulk_edit_apply">Apply to %1$d</string>
     <string name="bulk_select_all">Select All</string>
     <string name="bulk_edit_location_hint">Search for a place…</string>
@@ -526,8 +527,8 @@
     <string name="marinedex_gallery_found_count">%1$d found</string>
 
     <!-- Report card metadata -->
-    <string name="report_card_meta_singular">%1$d session · %2$s · %3$s</string>
-    <string name="report_card_meta_plural">%1$d sessions · %2$s · %3$s</string>
+    <string name="report_card_meta_singular">%1$d image · %2$s · %3$s</string>
+    <string name="report_card_meta_plural">%1$d images · %2$s · %3$s</string>
     <string name="report_snackbar_view_action">View</string>
 
     <!-- Report generation notification -->

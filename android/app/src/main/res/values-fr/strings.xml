@@ -21,11 +21,11 @@
     <string name="cd_search">Rechercher</string>
     <string name="cd_clear">Effacer</string>
     <string name="cd_camera">Caméra</string>
-    <string name="cd_delete_session">Supprimer la session</string>
+    <string name="cd_delete_session">Supprimer l\'analyse</string>
     <string name="cd_gps_location">Localisation GPS enregistrée</string>
     <string name="cd_add_location">Ajouter un emplacement</string>
     <string name="cd_edit_location">Modifier l\'emplacement</string>
-    <string name="cd_session_thumbnail">Miniature de la session</string>
+    <string name="cd_session_thumbnail">Miniature de l\'analyse</string>
 
     <!-- ================================================================== -->
     <!-- Écran d\'accueil                                                     -->
@@ -47,7 +47,7 @@
     <string name="home_model_name_deep_analysis">Analyse approfondie</string>
 
     <!-- Carte des statistiques -->
-    <string name="home_stat_sessions">Sessions</string>
+    <string name="home_stat_sessions">Analyses</string>
     <string name="home_stat_debris">Débris</string>
     <string name="home_stat_avg_health">Santé moy.</string>
 
@@ -147,7 +147,7 @@
     <!-- Boutons d\'action -->
     <string name="results_btn_save_history">Enregistrer dans l\'historique</string>
     <string name="results_btn_new_scan">Nouveau Scan</string>
-    <string name="results_session_saved">Session enregistrée dans l\'historique</string>
+    <string name="results_session_saved">Image analysée enregistrée dans l\'historique</string>
 
     <!-- État d\'erreur -->
     <string name="results_error_title">Analyse échouée</string>
@@ -190,7 +190,7 @@
 
     <!-- États vides / d\'erreur -->
     <string name="batch_empty_title">Aucune image sélectionnée</string>
-    <string name="batch_empty_message">Sélectionnez plusieurs images depuis la galerie pour lancer une session d\'analyse par lot.</string>
+    <string name="batch_empty_message">Sélectionnez plusieurs images depuis la galerie pour lancer une analyse par lot.</string>
     <string name="batch_error_title">Lot échoué</string>
     <string name="batch_btn_retry">Relancer le lot</string>
     <string name="batch_btn_back">Retour à l\'accueil</string>
@@ -203,12 +203,12 @@
     <!-- Écran de l\'historique                                               -->
     <!-- ================================================================== -->
     <string name="history_title">Historique de Détection</string>
-    <string name="history_search_placeholder">Rechercher des sessions...</string>
-    <string name="history_empty_title">Aucune session de détection pour l\'instant</string>
-    <string name="history_empty_message">Prenez une photo ou sélectionnez une image depuis votre galerie pour commencer à détecter des déchets marins. Vos sessions apparaîtront ici.</string>
+    <string name="history_search_placeholder">Rechercher des analyses...</string>
+    <string name="history_empty_title">Aucune analyse pour l\'instant</string>
+    <string name="history_empty_message">Prenez une photo ou sélectionnez une image depuis votre galerie pour commencer à détecter des déchets marins. Vos analyses apparaîtront ici.</string>
     <!-- Format : "3 sessions enregistrées" -->
-    <string name="history_sessions_count_plural">%1$d sessions enregistrées</string>
-    <string name="history_sessions_count_singular">%1$d session enregistrée</string>
+    <string name="history_sessions_count_plural">%1$d images analysées</string>
+    <string name="history_sessions_count_singular">%1$d image analysée</string>
     <!-- Format : "5 objets de débris détectés" / "1 objet de débris détecté" -->
     <string name="history_debris_count_plural">%1$d objets de débris détectés</string>
     <string name="history_debris_count_singular">%1$d objet de débris détecté</string>

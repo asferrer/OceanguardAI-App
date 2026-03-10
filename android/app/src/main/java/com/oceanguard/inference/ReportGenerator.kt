@@ -111,19 +111,36 @@ class ReportGenerator(private val inference: OceanGuardInference) {
     // -----------------------------------------------------------------
 
     private fun buildVlmPrompt(languageName: String, jsonSummary: String): String {
-        return """As a marine conservation scientist, write a detailed environmental assessment report in $languageName. Use markdown with ## headings. Structure:
+        return """You are a marine conservation scientist writing an environmental assessment report in $languageName.
+
+STRICT RULES:
+- Use ONLY the dates, numbers and facts from the JSON data below. Do NOT invent dates, locations or statistics.
+- Use markdown with ## headings.
+- Use markdown tables (| col | col |) for structured data like material breakdowns.
+- If only one analysis date exists, do NOT imply multiple survey days.
+- Refer to data points as "analyzed images", never as "sessions".
+
+Structure:
+
 ## Executive Summary
 2-3 sentences: overall contamination level and dominant concern.
+
 ## Survey Overview
-Dates, number of sessions, geographic coverage, methodology notes.
+Exact dates from the data, number of analyzed images, methodology: on-device AI detection (OceanGuard).
+
 ## Findings by Material
-For each material detected: count, percentage of total, ecological risk level (low/medium/high/critical), specific harm to marine fauna.
+Present as a markdown table:
+| Material | Count | % of Total | Risk Level | Impact |
+Use the exact counts from material_breakdown. Calculate percentages from total_debris_items.
+
 ## Risk Assessment
-High-risk items identified, potential impact on marine ecosystems, ingestion/entanglement hazards, microplastic fragmentation risk.
+High-risk items count, ingestion/entanglement hazards, microplastic fragmentation risk.
+
 ## Conservation Recommendations
-3-5 actionable items prioritised by urgency. Include: immediate cleanup targets, prevention strategies, monitoring suggestions.
-Be specific with numbers and percentages. Formal scientific tone.
-Data: $jsonSummary"""
+3-5 actionable items prioritised by urgency.
+
+Data:
+$jsonSummary"""
     }
 
     private fun buildJsonSummary(sessions: List<DetectionSession>): String {
@@ -148,21 +165,32 @@ Data: $jsonSummary"""
             mapOf("count" to 0, "note" to "No GPS data recorded")
         }
         val sorted = sessions.sortedBy { it.timestamp }
-        val dateRange = if (sorted.isNotEmpty()) {
-            "${DATE_FORMAT.format(sorted.first().timestamp)} to ${DATE_FORMAT.format(sorted.last().timestamp)}"
-        } else "N/A"
         val dominantMaterial = materialMap.maxByOrNull { it.value }?.key ?: "N/A"
         val highRiskCount = sessions.sumOf { s -> s.debrisList.count { it.getRiskScore() >= 4 } }
 
+        // Per-session details so VLM has exact timestamps
+        val sessionDetails = JSONArray()
+        sorted.forEach { s ->
+            sessionDetails.put(JSONObject().apply {
+                put("timestamp", DATE_FORMAT.format(s.timestamp))
+                put("debris_count", s.totalCount)
+                put("health_score", s.healthScore)
+                if (s.location != null) {
+                    put("lat", String.format("%.4f", s.location.latitude))
+                    put("lon", String.format("%.4f", s.location.longitude))
+                }
+            })
+        }
+
         return JSONObject().apply {
-            put("survey_sessions", sessions.size)
-            put("date_range", dateRange)
+            put("analyzed_images", sessions.size)
             put("total_debris_items", totalDebris)
             put("average_health_score", String.format("%.1f", avgHealth))
             put("dominant_material", dominantMaterial)
             put("high_risk_items", highRiskCount)
             put("material_breakdown", JSONObject(materialMap as Map<*, *>))
             put("locations", JSONObject(locationSummary as Map<*, *>))
+            put("sessions", sessionDetails)
         }.toString(2)
     }
 
@@ -175,19 +203,38 @@ Data: $jsonSummary"""
         jsonSummary: String,
         locationName: String,
     ): String {
-        return """As a marine conservation scientist, write a detailed zone assessment report in $languageName for $locationName. Use markdown with ## headings. Structure:
+        return """You are a marine conservation scientist writing a zone assessment report in $languageName for $locationName.
+
+STRICT RULES:
+- Use ONLY the dates, numbers and facts from the JSON data below. Do NOT invent dates, locations or statistics.
+- Use markdown with ## headings and markdown tables (| col | col |) for structured data.
+- If survey_days has only 1 entry, do NOT describe day-by-day changes or imply multiple visits.
+- All numbers must match the JSON exactly.
+- Refer to data points as "analyzed images", never as "sessions".
+
+Structure:
+
 ## Zone Profile
-Location name, coordinates, total survey effort (sessions, dates), general site characterization.
+Location name, coordinates from data, total analyzed images and exact survey dates from survey_days array.
+
 ## Day-by-Day Analysis
-For each survey day: date, debris count, health score, notable changes from previous day. Highlight significant increases or decreases.
+If multiple days: present as a markdown table:
+| Date | Sessions | Debris | Health Score | Notable Change |
+If only one day: describe that single survey day without inventing comparisons.
+
 ## Material Composition
-Breakdown by material type: count, percentage, ecological risk. Compare composition across survey days if multiple days.
+Present as a markdown table:
+| Material | Count | % of Total | Risk Level |
+Use exact counts from material_breakdown. Calculate percentages from total_debris_items.
+
 ## Trend Assessment
-Overall trend (improving/stable/degrading) with supporting evidence. Rate of change if quantifiable.
+Use the "trend" field from the data. If only 1 survey day, state that trend assessment requires more data.
+
 ## Site-Specific Recommendations
-3-5 actionable items tailored to this location. Include: cleanup priorities, source identification, monitoring frequency, stakeholder engagement.
-Be specific with numbers and percentages. Formal scientific tone.
-Data: $jsonSummary"""
+3-5 actionable items tailored to this location.
+
+Data:
+$jsonSummary"""
     }
 
     private fun buildZoneJsonSummary(input: ZoneReportInput): String {
@@ -220,7 +267,7 @@ Data: $jsonSummary"""
         }
 
         val overall = JSONObject().apply {
-            put("total_sessions", input.sessions.size)
+            put("total_analyzed_images", input.sessions.size)
             put("total_debris_items", totalDebris)
             put("average_health_score", String.format("%.1f", avgHealth))
             put("dominant_material", dominantMaterial)

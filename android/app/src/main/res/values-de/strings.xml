@@ -21,11 +21,11 @@
     <string name="cd_search">Suchen</string>
     <string name="cd_clear">Löschen</string>
     <string name="cd_camera">Kamera</string>
-    <string name="cd_delete_session">Sitzung löschen</string>
+    <string name="cd_delete_session">Analyse löschen</string>
     <string name="cd_gps_location">GPS-Standort aufgezeichnet</string>
     <string name="cd_add_location">Standort hinzufügen</string>
     <string name="cd_edit_location">Standort bearbeiten</string>
-    <string name="cd_session_thumbnail">Sitzungsvorschau</string>
+    <string name="cd_session_thumbnail">Analysevorschau</string>
 
     <!-- ================================================================== -->
     <!-- Startbildschirm                                                      -->
@@ -47,7 +47,7 @@
     <string name="home_model_name_deep_analysis">Tiefenanalyse</string>
 
     <!-- Statistik-Karte -->
-    <string name="home_stat_sessions">Sitzungen</string>
+    <string name="home_stat_sessions">Analysen</string>
     <string name="home_stat_debris">Müll</string>
     <string name="home_stat_avg_health">Durchschn. Gesundheit</string>
 
@@ -147,7 +147,7 @@
     <!-- Aktionsschaltflächen -->
     <string name="results_btn_save_history">Im Verlauf speichern</string>
     <string name="results_btn_new_scan">Neuer Scan</string>
-    <string name="results_session_saved">Sitzung im Verlauf gespeichert</string>
+    <string name="results_session_saved">Analyse im Verlauf gespeichert</string>
 
     <!-- Fehlerzustand -->
     <string name="results_error_title">Analyse fehlgeschlagen</string>
@@ -203,12 +203,12 @@
     <!-- Verlaufsbildschirm                                                   -->
     <!-- ================================================================== -->
     <string name="history_title">Erkennungsverlauf</string>
-    <string name="history_search_placeholder">Sitzungen suchen...</string>
-    <string name="history_empty_title">Noch keine Erkennungssitzungen</string>
-    <string name="history_empty_message">Nehmen Sie ein Foto auf oder wählen Sie ein Bild aus Ihrer Galerie, um mit der Erkennung von Meeresmüll zu beginnen. Ihre Sitzungen werden hier angezeigt.</string>
-    <!-- Format: "3 Sitzungen aufgezeichnet" -->
-    <string name="history_sessions_count_plural">%1$d Sitzungen aufgezeichnet</string>
-    <string name="history_sessions_count_singular">%1$d Sitzung aufgezeichnet</string>
+    <string name="history_search_placeholder">Analysen suchen...</string>
+    <string name="history_empty_title">Noch keine Analysen</string>
+    <string name="history_empty_message">Nehmen Sie ein Foto auf oder wählen Sie ein Bild aus Ihrer Galerie, um mit der Erkennung von Meeresmüll zu beginnen. Ihre Analysen werden hier angezeigt.</string>
+    <!-- Format: "3 Bilder analysiert" -->
+    <string name="history_sessions_count_plural">%1$d Bilder analysiert</string>
+    <string name="history_sessions_count_singular">%1$d Bild analysiert</string>
     <!-- Format: "5 Müllobjekte erkannt" / "1 Müllobjekt erkannt" -->
     <string name="history_debris_count_plural">%1$d Müllobjekte erkannt</string>
     <string name="history_debris_count_singular">%1$d Müllobjekt erkannt</string>

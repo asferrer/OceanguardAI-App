@@ -21,11 +21,11 @@
     <string name="cd_search">Cerca</string>
     <string name="cd_clear">Cancella</string>
     <string name="cd_camera">Fotocamera</string>
-    <string name="cd_delete_session">Elimina sessione</string>
+    <string name="cd_delete_session">Elimina analisi</string>
     <string name="cd_gps_location">Posizione GPS registrata</string>
     <string name="cd_add_location">Aggiungi posizione</string>
     <string name="cd_edit_location">Modifica posizione</string>
-    <string name="cd_session_thumbnail">Miniatura sessione</string>
+    <string name="cd_session_thumbnail">Miniatura analisi</string>
 
     <!-- ================================================================== -->
     <!-- Schermata Home                                                       -->
@@ -47,7 +47,7 @@
     <string name="home_model_name_deep_analysis">Analisi Approfondita</string>
 
     <!-- Scheda statistiche -->
-    <string name="home_stat_sessions">Sessioni</string>
+    <string name="home_stat_sessions">Analisi</string>
     <string name="home_stat_debris">Rifiuti</string>
     <string name="home_stat_avg_health">Salute Media</string>
 
@@ -147,7 +147,7 @@
     <!-- Pulsanti azione -->
     <string name="results_btn_save_history">Salva nella Cronologia</string>
     <string name="results_btn_new_scan">Nuova Scansione</string>
-    <string name="results_session_saved">Sessione salvata nella cronologia</string>
+    <string name="results_session_saved">Analisi salvata nella cronologia</string>
 
     <!-- Stato di errore -->
     <string name="results_error_title">Analisi Fallita</string>
@@ -190,7 +190,7 @@
 
     <!-- Stati vuoti / di errore -->
     <string name="batch_empty_title">Nessuna immagine selezionata</string>
-    <string name="batch_empty_message">Seleziona più immagini dalla galleria per avviare una sessione di analisi in serie.</string>
+    <string name="batch_empty_message">Seleziona più immagini dalla galleria per avviare un\'analisi in serie.</string>
     <string name="batch_error_title">Serie Fallita</string>
     <string name="batch_btn_retry">Riprova Serie</string>
     <string name="batch_btn_back">Torna alla Home</string>
@@ -203,12 +203,12 @@
     <!-- Schermata Cronologia                                                 -->
     <!-- ================================================================== -->
     <string name="history_title">Cronologia Rilevamenti</string>
-    <string name="history_search_placeholder">Cerca sessioni...</string>
-    <string name="history_empty_title">Nessuna sessione di rilevamento ancora</string>
-    <string name="history_empty_message">Scatta una foto o seleziona un\'immagine dalla galleria per iniziare a rilevare i rifiuti marini. Le tue sessioni appariranno qui.</string>
-    <!-- Formato: "3 sessioni registrate" -->
-    <string name="history_sessions_count_plural">%1$d sessioni registrate</string>
-    <string name="history_sessions_count_singular">%1$d sessione registrata</string>
+    <string name="history_search_placeholder">Cerca analisi...</string>
+    <string name="history_empty_title">Ancora nessuna analisi</string>
+    <string name="history_empty_message">Scatta una foto o seleziona un\'immagine dalla galleria per iniziare a rilevare i rifiuti marini. Le tue analisi appariranno qui.</string>
+    <!-- Formato: "3 immagini analizzate" -->
+    <string name="history_sessions_count_plural">%1$d immagini analizzate</string>
+    <string name="history_sessions_count_singular">%1$d immagine analizzata</string>
     <!-- Formato: "5 oggetti rifiuto rilevati" / "1 oggetto rifiuto rilevato" -->
     <string name="history_debris_count_plural">%1$d oggetti rifiuto rilevati</string>
     <string name="history_debris_count_singular">%1$d oggetto rifiuto rilevato</string>

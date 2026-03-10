@@ -4,15 +4,15 @@
     <!-- ================================================================== -->
     <!-- Tela de Detalhes da Sessão                                          -->
     <!-- ================================================================== -->
-    <string name="session_detail_title">Detalhes da Sessão</string>
-    <string name="session_detail_dialog_delete_title">Excluir Sessão</string>
-    <string name="session_detail_dialog_delete_message">Tem certeza de que deseja excluir esta sessão de detecção? Esta ação não pode ser desfeita.</string>
+    <string name="session_detail_title">Detalhes da Análise</string>
+    <string name="session_detail_dialog_delete_title">Excluir Análise</string>
+    <string name="session_detail_dialog_delete_message">Tem certeza de que deseja excluir esta análise? Esta ação não pode ser desfeita.</string>
     <string name="session_detail_btn_delete">Excluir</string>
     <string name="session_detail_cd_back">Voltar</string>
     <string name="session_detail_cd_edit_location">Editar localização</string>
-    <string name="session_detail_cd_delete_session">Excluir sessão</string>
+    <string name="session_detail_cd_delete_session">Excluir análise</string>
     <string name="session_detail_cd_annotated_image">Imagem de detecção anotada</string>
-    <string name="session_detail_empty">Sessão não encontrada</string>
+    <string name="session_detail_empty">Análise não encontrada</string>
     <string name="session_detail_label_total_debris">Total de Resíduos</string>
     <string name="session_detail_label_processing">Processamento</string>
     <string name="session_detail_label_quality">Qualidade</string>
@@ -24,8 +24,8 @@
     <!-- ================================================================== -->
     <!-- Tela do Mapa                                                        -->
     <!-- ================================================================== -->
-    <string name="map_title">Mapa de Sessões</string>
-    <!-- subtítulo com contagem de sessões usa args de formato no estilo plural — criado no código -->
+    <string name="map_title">Mapa das Análises</string>
+    <!-- subtítulo com contagem de análises usa args de formato no estilo plural — criado no código -->
     <string name="map_cd_go_back">Voltar</string>
     <string name="map_zone_avg_health">Saúde média: %1$d</string>
     <string name="map_legend_title">Pontuação de Saúde</string>
@@ -37,9 +37,9 @@
     <string name="map_legend_poor">20-39   Ruim</string>
     <string name="map_legend_critical">0-19    Crítico</string>
     <string name="map_empty_no_location_title">Sem dados de localização</string>
-    <string name="map_empty_no_location_message">Nenhuma das suas sessões registradas inclui dados de localização. Conceda permissão de localização e capture uma nova imagem para ver marcadores GPS no mapa.</string>
-    <string name="map_empty_no_sessions_title">Nenhuma sessão ainda</string>
-    <string name="map_empty_no_sessions_message">Nenhuma sessão de detecção registrada ainda. Capture uma imagem com a câmera ou selecione uma da galeria para começar.</string>
+    <string name="map_empty_no_location_message">Nenhuma das suas análises registradas inclui dados de localização. Conceda permissão de localização e capture uma nova imagem para ver marcadores GPS no mapa.</string>
+    <string name="map_empty_no_sessions_title">Nenhuma análise ainda</string>
+    <string name="map_empty_no_sessions_message">Nenhuma análise registrada ainda. Capture uma imagem com a câmera ou selecione uma da galeria para começar.</string>
 
     <!-- Controles FAB do mapa (MapControls.kt) -->
     <string name="map_fab_cd_show_pins">Mostrar marcadores</string>
@@ -64,7 +64,7 @@
     <!-- Painel inferior de zona -->
     <string name="zone_sheet_stat_dives">Mergulhos</string>
     <string name="zone_sheet_stat_images">Imagens</string>
-    <string name="zone_sheet_stat_sessions">Sessões</string>
+    <string name="zone_sheet_stat_sessions">Análises</string>
     <string name="zone_sheet_stat_total_items">Total Itens</string>
     <string name="zone_sheet_stat_avg_health">Saúde Média</string>
     <string name="zone_sheet_sessions_header">Atividade nesta zona</string>
@@ -73,7 +73,7 @@
     <!-- Filtros de relatório -->
     <string name="report_filter_location">Localização</string>
     <string name="report_filter_date_range">Período</string>
-    <string name="report_filter_sessions_selected">%1$d de %2$d sessões</string>
+    <string name="report_filter_sessions_selected">%1$d de %2$d análises</string>
 
     <!-- Filtros avançados do histórico -->
     <string name="history_filter_debris_type">Tipo de resíduo</string>
@@ -92,14 +92,14 @@
     <string name="report_label_language">Idioma do relatório</string>
     <string name="report_btn_generating">Gerando…</string>
     <string name="report_btn_generate_sample">Gerar Relatório de Amostra</string>
-    <!-- no estilo plural: criado no código como "Gerar Relatório (%d sessões)" -->
-    <string name="report_btn_generate">Gerar Relatório (%d sessões)</string>
+    <!-- no estilo plural: criado no código como "Gerar Relatório (%d análises)" -->
+    <string name="report_btn_generate">Gerar Relatório (%d análises)</string>
     <string name="report_dropdown_selected">Selecionado</string>
     <string name="report_empty_title">Nenhum relatório gerado ainda</string>
-    <string name="report_empty_message_with_sessions">Selecione um idioma e toque em \"Gerar Relatório\" para criar um resumo ambiental das suas sessões de pesquisa.</string>
-    <string name="report_empty_message_no_sessions">Nenhuma sessão de detecção encontrada. Capture imagens subaquáticas, execute a análise e salve as sessões. Em seguida, volte aqui para gerar um relatório.</string>
-    <!-- emblema de contagem de sessões no estilo plural criado no código -->
-    <string name="report_sessions_available">%d sessão(ões) disponível(is) para análise</string>
+    <string name="report_empty_message_with_sessions">Selecione um idioma e toque em \"Gerar Relatório\" para criar um resumo ambiental das suas análises.</string>
+    <string name="report_empty_message_no_sessions">Nenhuma análise encontrada. Capture imagens subaquáticas, execute a análise e salve-as. Em seguida, volte aqui para gerar um relatório.</string>
+    <!-- emblema de contagem de análises no estilo plural criado no código -->
+    <string name="report_sessions_available">%d análise(s) disponível(is) para relatório</string>
     <string name="report_saved_title">Relatórios Salvos (%d)</string>
     <string name="report_card_ai_label">Relatório de IA</string>
     <string name="report_card_template_label">Relatório Modelo</string>
@@ -117,6 +117,7 @@
     <string name="report_snackbar_export_error">Não foi possível criar o arquivo de exportação. Verifique as permissões de armazenamento.</string>
     <string name="report_cd_download_pdf">Baixar PDF</string>
     <string name="report_snackbar_pdf_error">Não foi possível criar o PDF.</string>
+    <string name="report_images_title">Imagens analisadas</string>
 
     <!-- ================================================================== -->
     <!-- Tela de Configurações                                               -->
@@ -154,10 +155,10 @@
     <!-- Seção de Dados -->
     <string name="settings_section_data">Dados</string>
     <string name="settings_label_reset_all_data">Redefinir Todos os Dados</string>
-    <string name="settings_desc_reset_all_data">Remover todas as sessões, entradas do MarineDex e conquistas para começar do zero</string>
+    <string name="settings_desc_reset_all_data">Remover todas as análises, entradas do MarineDex e conquistas para começar do zero</string>
     <string name="settings_btn_reset_all_data">Redefinir Todos os Dados</string>
     <string name="settings_dialog_clear_title">Limpar Todos os Dados</string>
-    <string name="settings_dialog_clear_message">Isso excluirá permanentemente todas as sessões de detecção, descobertas do MarineDex e conquistas. Você começará completamente do zero. Esta ação não pode ser desfeita.</string>
+    <string name="settings_dialog_clear_message">Isso excluirá permanentemente todas as análises, descobertas do MarineDex e conquistas. Você começará completamente do zero. Esta ação não pode ser desfeita.</string>
     <string name="settings_dialog_clear_confirm">Excluir Tudo</string>
 
     <!-- Seção de Visitas Guiadas -->
@@ -327,7 +328,7 @@
     <string name="tour_home_model_status_title">Status da IA</string>
     <string name="tour_home_model_status_desc">Indica se o mecanismo de detecção está carregado e pronto.</string>
     <string name="tour_home_stats_title">Seu Impacto</string>
-    <string name="tour_home_stats_desc">Acompanhe suas sessões de análise, resíduos encontrados e saúde média do oceano.</string>
+    <string name="tour_home_stats_desc">Acompanhe suas análises, resíduos encontrados e saúde média do oceano.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
     <string name="tour_home_marinedex_desc">Sua coleção de tipos de resíduos descobertos — colete todos!</string>
 
@@ -353,7 +354,7 @@
     <string name="tour_results_health_title">Pontuação de Saúde</string>
     <string name="tour_results_health_desc">Saúde geral do ecossistema com base na densidade de resíduos e nível de risco.</string>
     <string name="tour_results_actions_title">Salvar &amp; Compartilhar</string>
-    <string name="tour_results_actions_desc">Salve esta sessão no histórico ou inicie uma nova análise.</string>
+    <string name="tour_results_actions_desc">Salve esta análise no histórico ou inicie uma nova análise.</string>
 
     <!-- Tour em lote -->
     <string name="tour_batch_grid_title">Análise em Lote</string>
@@ -363,21 +364,21 @@
 
     <!-- Tour do histórico -->
     <string name="tour_history_search_title">Pesquisar &amp; Filtrar</string>
-    <string name="tour_history_search_desc">Pesquise sessões por data, localização ou tipo de resíduo.</string>
-    <string name="tour_history_card_title">Cartão de Sessão</string>
+    <string name="tour_history_search_desc">Pesquise análises por data, localização ou tipo de resíduo.</string>
+    <string name="tour_history_card_title">Cartão de Análise</string>
     <string name="tour_history_card_desc">Toque para ver detalhes completos. Deslize para a esquerda para excluir.</string>
 
     <!-- Tour de detalhes da sessão -->
     <string name="tour_session_detail_image_title">Imagem Anotada</string>
     <string name="tour_session_detail_image_desc">Sua imagem capturada com os detritos detectados marcados por caixas delimitadoras.</string>
     <string name="tour_session_detail_health_title">Avaliação de Saúde</string>
-    <string name="tour_session_detail_health_desc">Detalhamento da pontuação de saúde do ecossistema para esta sessão.</string>
+    <string name="tour_session_detail_health_desc">Detalhamento da pontuação de saúde do ecossistema para esta análise.</string>
     <string name="tour_session_detail_location_title">Localização</string>
     <string name="tour_session_detail_location_desc">Coordenadas GPS onde esta imagem foi capturada. Toque em editar para corrigir.</string>
 
     <!-- Tour do mapa -->
     <string name="tour_map_view_title">Mapa de Detecções</string>
-    <string name="tour_map_view_desc">Todas as suas sessões de análise plotadas no mapa. Agrupamentos reúnem sessões próximas.</string>
+    <string name="tour_map_view_desc">Todas as suas análises plotadas no mapa. Agrupamentos reúnem análises próximas.</string>
     <string name="tour_map_heatmap_title">Mapa de Calor</string>
     <string name="tour_map_heatmap_desc">Alterne a visualização do mapa de calor para ver padrões de densidade de resíduos.</string>
     <string name="tour_map_style_title">Estilo do Mapa</string>
@@ -430,7 +431,7 @@
     <string name="guided_tour_tab_marinedex">MarineDex</string>
     <string name="guided_tour_tab_marinedex_detail">Detalhe da Espécie</string>
     <string name="guided_tour_tab_achievements">Conquistas</string>
-    <string name="guided_tour_tab_session_detail">Detalhe da Sessão</string>
+    <string name="guided_tour_tab_session_detail">Detalhe da Análise</string>
     <string name="guided_tour_tab_settings">Configurações</string>
     <string name="guided_tour_progress">Passo %1$d de %2$d</string>
     <string name="guided_tour_screen_done_title">Muito bem!</string>
@@ -464,8 +465,8 @@
     <string name="bulk_selected_count">%1$d selecionados</string>
     <string name="bulk_edit_date">Editar data</string>
     <string name="bulk_edit_location">Editar localização</string>
-    <string name="bulk_delete_title">Eliminar sessões</string>
-    <string name="bulk_delete_message">Eliminar %1$d sessões selecionadas? Esta ação não pode ser desfeita.</string>
+    <string name="bulk_delete_title">Eliminar análises</string>
+    <string name="bulk_delete_message">Eliminar %1$d análises selecionadas? Esta ação não pode ser desfeita.</string>
     <string name="bulk_edit_apply">Aplicar a %1$d</string>
     <string name="bulk_select_all">Selecionar tudo</string>
     <string name="bulk_edit_location_hint">Procurar um local…</string>
@@ -524,8 +525,8 @@
     <string name="marinedex_gallery_found_count">%1$d encontrados</string>
 
     <!-- Report card metadata -->
-    <string name="report_card_meta_singular">%1$d sessão · %2$s · %3$s</string>
-    <string name="report_card_meta_plural">%1$d sessões · %2$s · %3$s</string>
+    <string name="report_card_meta_singular">%1$d imagem · %2$s · %3$s</string>
+    <string name="report_card_meta_plural">%1$d imagens · %2$s · %3$s</string>
     <string name="report_snackbar_view_action">Ver</string>
 
     <!-- Report generation notification -->

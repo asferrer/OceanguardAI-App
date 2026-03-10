@@ -508,6 +508,7 @@ fun ReportScreen(
                         }
                     },
                     isExportingPdf = isExportingPdf,
+                    sessions = filteredZoneSessions,
                 )
             }
         }

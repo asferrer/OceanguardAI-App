@@ -21,11 +21,11 @@
     <string name="cd_search">Search</string>
     <string name="cd_clear">Clear</string>
     <string name="cd_camera">Camera</string>
-    <string name="cd_delete_session">Delete session</string>
+    <string name="cd_delete_session">Delete analysis</string>
     <string name="cd_gps_location">GPS location recorded</string>
     <string name="cd_add_location">Add location</string>
     <string name="cd_edit_location">Edit location</string>
-    <string name="cd_session_thumbnail">Session thumbnail</string>
+    <string name="cd_session_thumbnail">Analysis thumbnail</string>
 
     <!-- ================================================================== -->
     <!-- Home screen                                                          -->
@@ -47,7 +47,7 @@
     <string name="home_model_name_deep_analysis">Deep Analysis</string>
 
     <!-- Stats card -->
-    <string name="home_stat_sessions">Sessions</string>
+    <string name="home_stat_sessions">Analyses</string>
     <string name="home_stat_debris">Debris</string>
     <string name="home_stat_avg_health">Avg Health</string>
 
@@ -147,7 +147,7 @@
     <!-- Action buttons -->
     <string name="results_btn_save_history">Save to History</string>
     <string name="results_btn_new_scan">New Scan</string>
-    <string name="results_session_saved">Session saved to history</string>
+    <string name="results_session_saved">Analysis saved to history</string>
 
     <!-- Error state -->
     <string name="results_error_title">Analysis Failed</string>
@@ -190,7 +190,7 @@
 
     <!-- Empty / error states -->
     <string name="batch_empty_title">No images selected</string>
-    <string name="batch_empty_message">Select multiple images from the gallery to run a batch analysis session.</string>
+    <string name="batch_empty_message">Select multiple images from the gallery to run a batch analysis.</string>
     <string name="batch_error_title">Batch Failed</string>
     <string name="batch_btn_retry">Retry Batch</string>
     <string name="batch_btn_back">Back to Home</string>
@@ -203,12 +203,12 @@
     <!-- History screen                                                       -->
     <!-- ================================================================== -->
     <string name="history_title">Detection History</string>
-    <string name="history_search_placeholder">Search sessions...</string>
-    <string name="history_empty_title">No detection sessions yet</string>
-    <string name="history_empty_message">Take a photo or select an image from your gallery to start detecting marine debris. Your sessions will appear here.</string>
-    <!-- Format: "3 sessions recorded" -->
-    <string name="history_sessions_count_plural">%1$d sessions recorded</string>
-    <string name="history_sessions_count_singular">%1$d session recorded</string>
+    <string name="history_search_placeholder">Search analyses...</string>
+    <string name="history_empty_title">No analyses yet</string>
+    <string name="history_empty_message">Take a photo or select an image from your gallery to start detecting marine debris. Your analyses will appear here.</string>
+    <!-- Format: "3 images analyzed" -->
+    <string name="history_sessions_count_plural">%1$d images analyzed</string>
+    <string name="history_sessions_count_singular">%1$d image analyzed</string>
     <!-- Format: "5 debris objects detected" / "1 debris object detected" -->
     <string name="history_debris_count_plural">%1$d debris objects detected</string>
     <string name="history_debris_count_singular">%1$d debris object detected</string>

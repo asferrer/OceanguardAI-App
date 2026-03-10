@@ -1,10 +1,21 @@
 package com.oceanguard.ai.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -12,12 +23,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 
@@ -29,7 +43,9 @@ import androidx.compose.ui.unit.dp
  * - `**bold**` and `*italic*`
  * - `---` horizontal dividers
  * - `> blockquotes`
- * - `1.` numbered lists
+ * - `1.` numbered lists (ordered)
+ * - `- ` / `* ` bullet lists (unordered)
+ * - `| col | col |` markdown tables
  * - Regular paragraphs
  */
 @Composable
@@ -41,47 +57,54 @@ fun MarkdownText(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         blocks.forEach { block ->
             when (block) {
-                is MarkdownBlock.H1 -> {
+                is MdBlock.H1 -> {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = parseInlineFormatting(block.content),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                is MarkdownBlock.H2 -> {
+                is MdBlock.H2 -> {
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = parseInlineFormatting(block.content),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                is MarkdownBlock.H3 -> {
+                is MdBlock.H3 -> {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = parseInlineFormatting(block.content),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                 }
 
-                is MarkdownBlock.Divider -> {
+                is MdBlock.Divider -> {
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
 
-                is MarkdownBlock.Blockquote -> {
+                is MdBlock.Blockquote -> {
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                     ) {
@@ -103,8 +126,12 @@ fun MarkdownText(
                     }
                 }
 
-                is MarkdownBlock.ListItem -> {
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                is MdBlock.OrderedItem -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                    ) {
                         Text(
                             text = "${block.number}. ",
                             style = MaterialTheme.typography.bodyMedium,
@@ -120,16 +147,44 @@ fun MarkdownText(
                     }
                 }
 
-                is MarkdownBlock.Paragraph -> {
+                is MdBlock.BulletItem -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 8.dp, end = 8.dp)
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                        )
+                        Text(
+                            text = parseInlineFormatting(block.content),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                is MdBlock.Table -> {
+                    MarkdownTable(block)
+                }
+
+                is MdBlock.Paragraph -> {
                     Text(
                         text = parseInlineFormatting(block.content),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 3.dp),
                     )
                 }
 
-                is MarkdownBlock.Spacer -> {
-                    // Empty line — small vertical gap handled by Column spacing
+                is MdBlock.Gap -> {
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
         }
@@ -137,24 +192,133 @@ fun MarkdownText(
 }
 
 // ---------------------------------------------------------------------------
+// Table rendering
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun MarkdownTable(table: MdBlock.Table) {
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
+    val headerBg = MaterialTheme.colorScheme.surfaceContainerHigh
+    val rowBg = MaterialTheme.colorScheme.surfaceContainerLow
+    val altRowBg = MaterialTheme.colorScheme.surfaceContainer
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .border(1.dp, borderColor, RoundedCornerShape(8.dp)),
+        ) {
+            // Header row
+            if (table.headers.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .background(headerBg)
+                        .height(IntrinsicSize.Min),
+                ) {
+                    table.headers.forEachIndexed { colIdx, cell ->
+                        Box(
+                            modifier = Modifier
+                                .width(TABLE_COL_WIDTH)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = parseInlineFormatting(cell),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (colIdx < table.headers.lastIndex) {
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(IntrinsicSize.Max)
+                                    .background(borderColor),
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(color = borderColor)
+            }
+
+            // Data rows
+            table.rows.forEachIndexed { rowIdx, row ->
+                val bg = if (rowIdx % 2 == 0) rowBg else altRowBg
+                Row(
+                    modifier = Modifier
+                        .background(bg)
+                        .height(IntrinsicSize.Min),
+                ) {
+                    val colCount = table.headers.size.coerceAtLeast(row.size)
+                    for (colIdx in 0 until colCount) {
+                        val cell = row.getOrElse(colIdx) { "" }
+                        Box(
+                            modifier = Modifier
+                                .width(TABLE_COL_WIDTH)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = parseInlineFormatting(cell),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (colIdx < colCount - 1) {
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(IntrinsicSize.Max)
+                                    .background(borderColor),
+                            )
+                        }
+                    }
+                }
+                if (rowIdx < table.rows.lastIndex) {
+                    HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
+                }
+            }
+        }
+    }
+}
+
+private val TABLE_COL_WIDTH = 120.dp
+
+// ---------------------------------------------------------------------------
 // Block-level parsing
 // ---------------------------------------------------------------------------
 
-private sealed class MarkdownBlock {
-    data class H1(val content: String) : MarkdownBlock()
-    data class H2(val content: String) : MarkdownBlock()
-    data class H3(val content: String) : MarkdownBlock()
-    data object Divider : MarkdownBlock()
-    data class Blockquote(val content: String) : MarkdownBlock()
-    data class ListItem(val number: Int, val content: String) : MarkdownBlock()
-    data class Paragraph(val content: String) : MarkdownBlock()
-    data object Spacer : MarkdownBlock()
+private sealed class MdBlock {
+    data class H1(val content: String) : MdBlock()
+    data class H2(val content: String) : MdBlock()
+    data class H3(val content: String) : MdBlock()
+    data object Divider : MdBlock()
+    data class Blockquote(val content: String) : MdBlock()
+    data class OrderedItem(val number: Int, val content: String) : MdBlock()
+    data class BulletItem(val content: String) : MdBlock()
+    data class Table(
+        val headers: List<String>,
+        val rows: List<List<String>>,
+    ) : MdBlock()
+    data class Paragraph(val content: String) : MdBlock()
+    data object Gap : MdBlock()
 }
 
 private val ORDERED_LIST_REGEX = Regex("""^(\d+)\.\s+(.+)""")
+private val UNORDERED_LIST_REGEX = Regex("""^[-*+]\s+(.+)""")
+private val TABLE_ROW_REGEX = Regex("""^\|(.+)\|$""")
+private val TABLE_SEPARATOR_REGEX = Regex("""^\|[\s:?-]+(\|[\s:?-]+)+\|$""")
 
-private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
-    val blocks = mutableListOf<MarkdownBlock>()
+private fun parseMarkdownBlocks(text: String): List<MdBlock> {
+    val blocks = mutableListOf<MdBlock>()
     val lines = text.lines()
 
     var i = 0
@@ -164,62 +328,99 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
         when {
             // Empty line
             line.isBlank() -> {
-                blocks.add(MarkdownBlock.Spacer)
+                // Collapse consecutive blank lines into a single gap
+                if (blocks.lastOrNull() !is MdBlock.Gap) {
+                    blocks.add(MdBlock.Gap)
+                }
                 i++
             }
 
             // Horizontal rule
             line.matches(Regex("""^-{3,}\s*$""")) -> {
-                blocks.add(MarkdownBlock.Divider)
+                blocks.add(MdBlock.Divider)
                 i++
             }
 
             // H3 (must check before H2 and H1)
             line.startsWith("### ") -> {
-                blocks.add(MarkdownBlock.H3(line.removePrefix("### ").trim()))
+                blocks.add(MdBlock.H3(line.removePrefix("### ").trim()))
                 i++
             }
 
             // H2
             line.startsWith("## ") -> {
-                blocks.add(MarkdownBlock.H2(line.removePrefix("## ").trim()))
+                blocks.add(MdBlock.H2(line.removePrefix("## ").trim()))
                 i++
             }
 
             // H1
             line.startsWith("# ") -> {
-                blocks.add(MarkdownBlock.H1(line.removePrefix("# ").trim()))
+                blocks.add(MdBlock.H1(line.removePrefix("# ").trim()))
                 i++
             }
 
             // Blockquote — accumulate consecutive > lines
-            line.startsWith("> ") || line.startsWith(">") -> {
+            line.startsWith("> ") || line == ">" -> {
                 val quoteLines = mutableListOf<String>()
-                while (i < lines.size && (lines[i].trimEnd().startsWith("> ") || lines[i].trimEnd().startsWith(">"))) {
-                    quoteLines.add(lines[i].trimEnd().removePrefix("> ").removePrefix(">").trim())
+                while (i < lines.size) {
+                    val ql = lines[i].trimEnd()
+                    if (!ql.startsWith("> ") && ql != ">") break
+                    quoteLines.add(ql.removePrefix("> ").removePrefix(">").trim())
                     i++
                 }
-                blocks.add(MarkdownBlock.Blockquote(quoteLines.joinToString(" ")))
+                blocks.add(MdBlock.Blockquote(quoteLines.joinToString(" ")))
+            }
+
+            // Markdown table — detect header + separator + rows
+            TABLE_ROW_REGEX.matches(line) && i + 1 < lines.size &&
+                TABLE_SEPARATOR_REGEX.matches(lines[i + 1].trimEnd()) -> {
+                val headers = parseTableCells(line)
+                i += 2 // skip header + separator
+                val rows = mutableListOf<List<String>>()
+                while (i < lines.size && TABLE_ROW_REGEX.matches(lines[i].trimEnd())) {
+                    rows.add(parseTableCells(lines[i].trimEnd()))
+                    i++
+                }
+                blocks.add(MdBlock.Table(headers, rows))
             }
 
             // Ordered list item
             ORDERED_LIST_REGEX.matches(line) -> {
                 val match = ORDERED_LIST_REGEX.find(line)!!
                 val number = match.groupValues[1].toInt()
-                // Accumulate continuation lines (indented or same paragraph)
                 val contentLines = mutableListOf(match.groupValues[2])
                 i++
                 while (i < lines.size) {
                     val nextLine = lines[i].trimEnd()
-                    // Stop if next line is empty, a new block, or a new list item
                     if (nextLine.isBlank() || nextLine.startsWith("#") ||
                         nextLine.startsWith("---") || nextLine.startsWith("> ") ||
-                        ORDERED_LIST_REGEX.matches(nextLine)
+                        ORDERED_LIST_REGEX.matches(nextLine) ||
+                        UNORDERED_LIST_REGEX.matches(nextLine) ||
+                        TABLE_ROW_REGEX.matches(nextLine)
                     ) break
                     contentLines.add(nextLine.trim())
                     i++
                 }
-                blocks.add(MarkdownBlock.ListItem(number, contentLines.joinToString(" ")))
+                blocks.add(MdBlock.OrderedItem(number, contentLines.joinToString(" ")))
+            }
+
+            // Unordered list item
+            UNORDERED_LIST_REGEX.matches(line) -> {
+                val match = UNORDERED_LIST_REGEX.find(line)!!
+                val contentLines = mutableListOf(match.groupValues[1])
+                i++
+                while (i < lines.size) {
+                    val nextLine = lines[i].trimEnd()
+                    if (nextLine.isBlank() || nextLine.startsWith("#") ||
+                        nextLine.startsWith("---") || nextLine.startsWith("> ") ||
+                        ORDERED_LIST_REGEX.matches(nextLine) ||
+                        UNORDERED_LIST_REGEX.matches(nextLine) ||
+                        TABLE_ROW_REGEX.matches(nextLine)
+                    ) break
+                    contentLines.add(nextLine.trim())
+                    i++
+                }
+                blocks.add(MdBlock.BulletItem(contentLines.joinToString(" ")))
             }
 
             // Regular paragraph — accumulate consecutive non-empty lines
@@ -229,17 +430,26 @@ private fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
                     val nextLine = lines[i].trimEnd()
                     if (nextLine.isBlank() || nextLine.startsWith("#") ||
                         nextLine.startsWith("---") || nextLine.startsWith("> ") ||
-                        ORDERED_LIST_REGEX.matches(nextLine)
+                        ORDERED_LIST_REGEX.matches(nextLine) ||
+                        UNORDERED_LIST_REGEX.matches(nextLine) ||
+                        TABLE_ROW_REGEX.matches(nextLine)
                     ) break
                     paragraphLines.add(nextLine)
                     i++
                 }
-                blocks.add(MarkdownBlock.Paragraph(paragraphLines.joinToString(" ")))
+                blocks.add(MdBlock.Paragraph(paragraphLines.joinToString(" ")))
             }
         }
     }
 
     return blocks
+}
+
+/** Splits `| cell1 | cell2 | cell3 |` into `["cell1", "cell2", "cell3"]`. */
+private fun parseTableCells(line: String): List<String> {
+    return line.trim().removePrefix("|").removeSuffix("|")
+        .split("|")
+        .map { it.trim() }
 }
 
 // ---------------------------------------------------------------------------

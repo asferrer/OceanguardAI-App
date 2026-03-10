@@ -4,15 +4,15 @@
     <!-- ================================================================== -->
     <!-- Schermata Dettaglio Sessione                                         -->
     <!-- ================================================================== -->
-    <string name="session_detail_title">Dettaglio Sessione</string>
-    <string name="session_detail_dialog_delete_title">Elimina Sessione</string>
-    <string name="session_detail_dialog_delete_message">Sei sicuro di voler eliminare questa sessione di rilevamento? Questa azione non può essere annullata.</string>
+    <string name="session_detail_title">Dettaglio Analisi</string>
+    <string name="session_detail_dialog_delete_title">Elimina Analisi</string>
+    <string name="session_detail_dialog_delete_message">Sei sicuro di voler eliminare questa analisi? Questa azione non può essere annullata.</string>
     <string name="session_detail_btn_delete">Elimina</string>
     <string name="session_detail_cd_back">Indietro</string>
     <string name="session_detail_cd_edit_location">Modifica posizione</string>
-    <string name="session_detail_cd_delete_session">Elimina sessione</string>
+    <string name="session_detail_cd_delete_session">Elimina analisi</string>
     <string name="session_detail_cd_annotated_image">Immagine di rilevamento annotata</string>
-    <string name="session_detail_empty">Sessione non trovata</string>
+    <string name="session_detail_empty">Analisi non trovata</string>
     <string name="session_detail_label_total_debris">Rifiuti Totali</string>
     <string name="session_detail_label_processing">Elaborazione</string>
     <string name="session_detail_label_quality">Qualità</string>
@@ -24,7 +24,7 @@
     <!-- ================================================================== -->
     <!-- Schermata Mappa                                                      -->
     <!-- ================================================================== -->
-    <string name="map_title">Mappa Sessioni</string>
+    <string name="map_title">Mappa delle analisi</string>
     <!-- il sottotitolo con il numero di sessioni usa argomenti in stile plurale — costruito nel codice -->
     <string name="map_cd_go_back">Torna indietro</string>
     <string name="map_zone_avg_health">Salute media: %1$d</string>
@@ -37,9 +37,9 @@
     <string name="map_legend_poor">20-39   Scarsa</string>
     <string name="map_legend_critical">0-19    Critica</string>
     <string name="map_empty_no_location_title">Nessun dato di posizione</string>
-    <string name="map_empty_no_location_message">Nessuna delle sessioni registrate include dati di posizione. Concedi il permesso di localizzazione e scatta una nuova immagine per vedere i marcatori GPS sulla mappa.</string>
-    <string name="map_empty_no_sessions_title">Nessuna sessione ancora</string>
-    <string name="map_empty_no_sessions_message">Nessuna sessione di rilevamento registrata ancora. Scatta un\'immagine con la fotocamera o selezionane una dalla galleria per iniziare.</string>
+    <string name="map_empty_no_location_message">Nessuna delle analisi registrate include dati di posizione. Concedi il permesso di localizzazione e scatta una nuova immagine per vedere i marcatori GPS sulla mappa.</string>
+    <string name="map_empty_no_sessions_title">Ancora nessuna analisi</string>
+    <string name="map_empty_no_sessions_message">Nessuna analisi registrata ancora. Scatta un\'immagine con la fotocamera o selezionane una dalla galleria per iniziare.</string>
 
     <!-- Controlli FAB Mappa (MapControls.kt) -->
     <string name="map_fab_cd_show_pins">Mostra segnaposto</string>
@@ -64,7 +64,7 @@
     <!-- Pannello inferiore zona -->
     <string name="zone_sheet_stat_dives">Immersioni</string>
     <string name="zone_sheet_stat_images">Immagini</string>
-    <string name="zone_sheet_stat_sessions">Sessioni</string>
+    <string name="zone_sheet_stat_sessions">Analisi</string>
     <string name="zone_sheet_stat_total_items">Totale Elementi</string>
     <string name="zone_sheet_stat_avg_health">Salute Media</string>
     <string name="zone_sheet_sessions_header">Attività in questa zona</string>
@@ -73,7 +73,7 @@
     <!-- Filtri report -->
     <string name="report_filter_location">Posizione</string>
     <string name="report_filter_date_range">Periodo</string>
-    <string name="report_filter_sessions_selected">%1$d di %2$d sessioni</string>
+    <string name="report_filter_sessions_selected">%1$d di %2$d analisi</string>
 
     <!-- Filtri avanzati cronologia -->
     <string name="history_filter_debris_type">Tipo di rifiuto</string>
@@ -93,13 +93,13 @@
     <string name="report_btn_generating">Generazione…</string>
     <string name="report_btn_generate_sample">Genera Report di Esempio</string>
     <!-- stile plurale: costruito nel codice come "Genera Report (%d sessioni)" -->
-    <string name="report_btn_generate">Genera Report (%d sessioni)</string>
+    <string name="report_btn_generate">Genera Report (%d analisi)</string>
     <string name="report_dropdown_selected">Selezionato</string>
     <string name="report_empty_title">Nessun report generato ancora</string>
-    <string name="report_empty_message_with_sessions">Seleziona una lingua e tocca \"Genera Report\" per creare un riepilogo ambientale delle tue sessioni di rilevamento.</string>
-    <string name="report_empty_message_no_sessions">Nessuna sessione di rilevamento trovata. Scatta immagini subacquee, esegui l\'analisi e salva le sessioni. Poi torna qui per generare un report.</string>
+    <string name="report_empty_message_with_sessions">Seleziona una lingua e tocca \"Genera Report\" per creare un riepilogo ambientale delle tue analisi.</string>
+    <string name="report_empty_message_no_sessions">Nessuna analisi trovata. Scatta immagini subacquee, esegui l\'analisi e salvale. Poi torna qui per generare un report.</string>
     <!-- badge conteggio sessioni in stile plurale costruito nel codice -->
-    <string name="report_sessions_available">%d sessione/i disponibile/i per l\'analisi</string>
+    <string name="report_sessions_available">%d analisi disponibile/i</string>
     <string name="report_saved_title">Report Salvati (%d)</string>
     <string name="report_card_ai_label">Report AI</string>
     <string name="report_card_template_label">Report Modello</string>
@@ -117,6 +117,7 @@
     <string name="report_snackbar_export_error">Impossibile creare il file di esportazione. Controlla i permessi di archiviazione.</string>
     <string name="report_cd_download_pdf">Scarica PDF</string>
     <string name="report_snackbar_pdf_error">Impossibile creare il PDF.</string>
+    <string name="report_images_title">Immagini analizzate</string>
 
     <!-- ================================================================== -->
     <!-- Schermata Impostazioni                                               -->
@@ -154,10 +155,10 @@
     <!-- Sezione Dati -->
     <string name="settings_section_data">Dati</string>
     <string name="settings_label_reset_all_data">Reimposta Tutti i Dati</string>
-    <string name="settings_desc_reset_all_data">Rimuovi tutte le sessioni, le voci del MarineDex e i traguardi per ricominciare da capo</string>
+    <string name="settings_desc_reset_all_data">Rimuovi tutte le analisi, le voci del MarineDex e i traguardi per ricominciare da capo</string>
     <string name="settings_btn_reset_all_data">Reimposta Tutti i Dati</string>
     <string name="settings_dialog_clear_title">Cancella Tutti i Dati</string>
-    <string name="settings_dialog_clear_message">Questa operazione eliminerà definitivamente tutte le sessioni di rilevamento, le scoperte del MarineDex e i traguardi. Ricomincerai completamente da capo. Questa azione non può essere annullata.</string>
+    <string name="settings_dialog_clear_message">Questa operazione eliminerà definitivamente tutte le analisi, le scoperte del MarineDex e i traguardi. Ricomincerai completamente da capo. Questa azione non può essere annullata.</string>
     <string name="settings_dialog_clear_confirm">Elimina Tutto</string>
 
     <!-- Sezione Tour Guidati -->
@@ -327,7 +328,7 @@
     <string name="tour_home_model_status_title">Stato AI</string>
     <string name="tour_home_model_status_desc">Mostra se il motore di rilevamento è caricato e pronto.</string>
     <string name="tour_home_stats_title">Il Tuo Impatto</string>
-    <string name="tour_home_stats_desc">Tieni traccia delle tue sessioni di scansione, dei rifiuti trovati e della salute media dell\'oceano.</string>
+    <string name="tour_home_stats_desc">Tieni traccia delle tue analisi, dei rifiuti trovati e della salute media dell\'oceano.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
     <string name="tour_home_marinedex_desc">La tua collezione di tipi di rifiuti scoperti — catturali tutti!</string>
 
@@ -353,7 +354,7 @@
     <string name="tour_results_health_title">Punteggio di Salute</string>
     <string name="tour_results_health_desc">Salute complessiva dell\'ecosistema basata sulla densità dei rifiuti e sul livello di rischio.</string>
     <string name="tour_results_actions_title">Salva &amp; Condividi</string>
-    <string name="tour_results_actions_desc">Salva questa sessione nella cronologia o avvia una nuova scansione.</string>
+    <string name="tour_results_actions_desc">Salva questa analisi nella cronologia o avvia una nuova scansione.</string>
 
     <!-- Tour Serie -->
     <string name="tour_batch_grid_title">Analisi in Serie</string>
@@ -363,21 +364,21 @@
 
     <!-- Tour Cronologia -->
     <string name="tour_history_search_title">Cerca &amp; Filtra</string>
-    <string name="tour_history_search_desc">Cerca sessioni per data, posizione o tipo di rifiuto.</string>
-    <string name="tour_history_card_title">Scheda Sessione</string>
+    <string name="tour_history_search_desc">Cerca analisi per data, posizione o tipo di rifiuto.</string>
+    <string name="tour_history_card_title">Scheda Analisi</string>
     <string name="tour_history_card_desc">Tocca per visualizzare i dettagli completi. Scorri a sinistra per eliminare.</string>
 
     <!-- Tour Dettaglio Sessione -->
     <string name="tour_session_detail_image_title">Immagine Annotata</string>
     <string name="tour_session_detail_image_desc">La tua immagine acquisita con i rifiuti rilevati contrassegnati dai riquadri di delimitazione.</string>
     <string name="tour_session_detail_health_title">Valutazione della Salute</string>
-    <string name="tour_session_detail_health_desc">Analisi dettagliata del punteggio di salute dell\'ecosistema per questa sessione.</string>
+    <string name="tour_session_detail_health_desc">Analisi dettagliata del punteggio di salute dell\'ecosistema per questa analisi.</string>
     <string name="tour_session_detail_location_title">Posizione</string>
     <string name="tour_session_detail_location_desc">Coordinate GPS dove è stata acquisita questa immagine. Tocca modifica per correggere.</string>
 
     <!-- Tour Mappa -->
     <string name="tour_map_view_title">Mappa Rilevamenti</string>
-    <string name="tour_map_view_desc">Tutte le tue sessioni di scansione tracciate sulla mappa. I cluster raggruppano le sessioni vicine.</string>
+    <string name="tour_map_view_desc">Tutte le tue analisi tracciate sulla mappa. I cluster raggruppano le analisi vicine.</string>
     <string name="tour_map_heatmap_title">Mappa di Calore</string>
     <string name="tour_map_heatmap_desc">Attiva la vista a mappa di calore per vedere i pattern di densità dei rifiuti.</string>
     <string name="tour_map_style_title">Stile Mappa</string>
@@ -430,7 +431,7 @@
     <string name="guided_tour_tab_marinedex">MarineDex</string>
     <string name="guided_tour_tab_marinedex_detail">Dettaglio Specie</string>
     <string name="guided_tour_tab_achievements">Traguardi</string>
-    <string name="guided_tour_tab_session_detail">Dettaglio Sessione</string>
+    <string name="guided_tour_tab_session_detail">Dettaglio Analisi</string>
     <string name="guided_tour_tab_settings">Impostazioni</string>
     <string name="guided_tour_progress">Passo %1$d di %2$d</string>
     <string name="guided_tour_screen_done_title">Ottimo lavoro!</string>
@@ -464,8 +465,8 @@
     <string name="bulk_selected_count">%1$d selezionati</string>
     <string name="bulk_edit_date">Modifica data</string>
     <string name="bulk_edit_location">Modifica posizione</string>
-    <string name="bulk_delete_title">Elimina sessioni</string>
-    <string name="bulk_delete_message">Eliminare %1$d sessioni selezionate? Questa azione non può essere annullata.</string>
+    <string name="bulk_delete_title">Elimina analisi</string>
+    <string name="bulk_delete_message">Eliminare %1$d analisi selezionate? Questa azione non può essere annullata.</string>
     <string name="bulk_edit_apply">Applica a %1$d</string>
     <string name="bulk_select_all">Seleziona tutto</string>
     <string name="bulk_edit_location_hint">Cerca un luogo…</string>
@@ -524,8 +525,8 @@
     <string name="marinedex_gallery_found_count">%1$d trovati</string>
 
     <!-- Report card metadata -->
-    <string name="report_card_meta_singular">%1$d sessione · %2$s · %3$s</string>
-    <string name="report_card_meta_plural">%1$d sessioni · %2$s · %3$s</string>
+    <string name="report_card_meta_singular">%1$d immagine · %2$s · %3$s</string>
+    <string name="report_card_meta_plural">%1$d immagini · %2$s · %3$s</string>
     <string name="report_snackbar_view_action">Vedi</string>
 
     <!-- Report generation notification -->
