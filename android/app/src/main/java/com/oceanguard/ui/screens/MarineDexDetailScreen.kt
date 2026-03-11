@@ -284,7 +284,9 @@ private fun InfoTabContent(
             style = MaterialTheme.typography.bodyMedium,
             color = OceanBlueLight,
         )
-        StatsRow(entry = entry, dateFormat = dateFormat)
+        Box(modifier = Modifier.spotlightTarget("dex_detail_stats", boundsMap)) {
+            StatsRow(entry = entry, dateFormat = dateFormat)
+        }
         Box(modifier = Modifier.spotlightTarget("dex_detail_impact", boundsMap)) {
             EnvironmentalImpactCard(impact = impact)
         }

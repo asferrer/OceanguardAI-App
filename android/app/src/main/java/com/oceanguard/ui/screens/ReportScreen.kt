@@ -375,21 +375,25 @@ fun ReportScreen(
 
                 // Zone selector
                 if (zoneClusters.isNotEmpty() && zoneNames.size == zoneClusters.size) {
-                    ZoneSelector(
-                        zoneNames = zoneNames,
-                        selectedIndex = selectedZoneIndex,
-                        onZoneSelected = { selectedZoneIndex = it },
-                        enabled = !isGenerating,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Box(modifier = Modifier.spotlightTarget("reports_zone", boundsMap)) {
+                        ZoneSelector(
+                            zoneNames = zoneNames,
+                            selectedIndex = selectedZoneIndex,
+                            onZoneSelected = { selectedZoneIndex = it },
+                            enabled = !isGenerating,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 } else if (zoneClusters.isNotEmpty() && zoneNamesLoading) {
-                    ZoneSelector(
-                        zoneNames = emptyList(),
-                        selectedIndex = null,
-                        onZoneSelected = {},
-                        enabled = false,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Box(modifier = Modifier.spotlightTarget("reports_zone", boundsMap)) {
+                        ZoneSelector(
+                            zoneNames = emptyList(),
+                            selectedIndex = null,
+                            onZoneSelected = {},
+                            enabled = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 } else if (sessions.isNotEmpty() && locatedSessions.isEmpty()) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -406,11 +410,13 @@ fun ReportScreen(
 
                 // Zone preview card
                 if (selectedZone != null && selectedZoneIndex!! < zoneNames.size) {
-                    ZonePreviewCard(
-                        zone = selectedZone,
-                        zoneName = selectedZoneName,
-                        dayCount = dayGroups.size,
-                    )
+                    Box(modifier = Modifier.spotlightTarget("reports_preview", boundsMap)) {
+                        ZonePreviewCard(
+                            zone = selectedZone,
+                            zoneName = selectedZoneName,
+                            dayCount = dayGroups.size,
+                        )
+                    }
                 }
 
                 // Date range + language row

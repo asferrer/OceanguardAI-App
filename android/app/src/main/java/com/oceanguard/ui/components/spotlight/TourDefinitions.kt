@@ -45,7 +45,9 @@ object TourDefinitions {
     )
 
     val HISTORY = listOf(
+        SpotlightStep("history_media_filter", R.string.tour_history_media_filter_title, R.string.tour_history_media_filter_desc),
         SpotlightStep("history_search", R.string.tour_history_search_title, R.string.tour_history_search_desc),
+        SpotlightStep("history_filters", R.string.tour_history_filters_title, R.string.tour_history_filters_desc),
         SpotlightStep("history_card", R.string.tour_history_card_title, R.string.tour_history_card_desc),
     )
 
@@ -56,20 +58,26 @@ object TourDefinitions {
     )
 
     val MAP = listOf(
+        SpotlightStep("map_filters", R.string.tour_map_filters_title, R.string.tour_map_filters_desc),
         SpotlightStep("map_view", R.string.tour_map_view_title, R.string.tour_map_view_desc),
         SpotlightStep("map_heatmap", R.string.tour_map_heatmap_title, R.string.tour_map_heatmap_desc, SpotlightShape.CIRCLE),
+        SpotlightStep("map_fit_all", R.string.tour_map_fit_all_title, R.string.tour_map_fit_all_desc, SpotlightShape.CIRCLE),
         SpotlightStep("map_style", R.string.tour_map_style_title, R.string.tour_map_style_desc, SpotlightShape.CIRCLE),
     )
 
     val REPORTS = listOf(
-        SpotlightStep("reports_generate", R.string.tour_reports_generate_title, R.string.tour_reports_generate_desc),
+        SpotlightStep("reports_zone", R.string.tour_reports_zone_title, R.string.tour_reports_zone_desc),
         SpotlightStep("reports_language", R.string.tour_reports_language_title, R.string.tour_reports_language_desc),
+        SpotlightStep("reports_generate", R.string.tour_reports_generate_title, R.string.tour_reports_generate_desc),
     )
 
     val SETTINGS = listOf(
         SpotlightStep("settings_confidence", R.string.tour_settings_confidence_title, R.string.tour_settings_confidence_desc),
         SpotlightStep("settings_deep_analysis", R.string.tour_settings_deep_analysis_title, R.string.tour_settings_deep_analysis_desc),
+        SpotlightStep("settings_language", R.string.tour_settings_language_title, R.string.tour_settings_language_desc),
         SpotlightStep("settings_theme", R.string.tour_settings_theme_title, R.string.tour_settings_theme_desc),
+        SpotlightStep("settings_data", R.string.tour_settings_data_title, R.string.tour_settings_data_desc),
+        SpotlightStep("settings_tours", R.string.tour_settings_tours_title, R.string.tour_settings_tours_desc),
     )
 
     val MARINEDEX = listOf(
@@ -79,6 +87,7 @@ object TourDefinitions {
 
     val MARINEDEX_DETAIL = listOf(
         SpotlightStep("dex_detail_sprite", R.string.tour_marinedex_detail_sprite_title, R.string.tour_marinedex_detail_sprite_desc),
+        SpotlightStep("dex_detail_stats", R.string.tour_marinedex_detail_stats_title, R.string.tour_marinedex_detail_stats_desc),
         SpotlightStep("dex_detail_impact", R.string.tour_marinedex_detail_impact_title, R.string.tour_marinedex_detail_impact_desc),
         SpotlightStep("dex_detail_tabs", R.string.tour_marinedex_detail_tabs_title, R.string.tour_marinedex_detail_tabs_desc),
     )

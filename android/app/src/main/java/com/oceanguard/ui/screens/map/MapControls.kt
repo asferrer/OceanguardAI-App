@@ -62,6 +62,7 @@ fun MapFabControls(
         // Fit all markers in view
         SmallFloatingActionButton(
             onClick = onFitAll,
+            modifier = Modifier.spotlightTarget("map_fit_all", boundsMap),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ) {

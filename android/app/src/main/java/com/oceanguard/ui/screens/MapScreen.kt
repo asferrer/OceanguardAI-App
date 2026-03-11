@@ -191,7 +191,8 @@ fun MapScreen(
                     onDateRangeClick = { showDatePicker = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 16.dp)
+                        .spotlightTarget("map_filters", boundsMap),
                 )
             }
 
@@ -237,7 +238,8 @@ fun MapScreen(
                             avgScore = zoneClusters.map { it.aggregateHealthScore }.average().toInt(),
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .padding(16.dp),
+                                .padding(16.dp)
+                                .spotlightTarget("map_zones", boundsMap),
                         )
                     }
 
@@ -245,7 +247,8 @@ fun MapScreen(
                         MapLegend(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(16.dp),
+                                .padding(16.dp)
+                                .spotlightTarget("map_legend", boundsMap),
                         )
                     }
                 }
