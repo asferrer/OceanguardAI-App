@@ -37,7 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -236,7 +236,7 @@ private fun DetailTabRow(
         stringResource(R.string.marinedex_detail_tab_gallery),
         stringResource(R.string.marinedex_detail_tab_map),
     )
-    TabRow(
+    PrimaryTabRow(
         selectedTabIndex = selectedTab,
         modifier = modifier,
     ) {

@@ -53,6 +53,7 @@ private const val MAX_DIVERSITY_IMPACT = 10
  * Each row shows a coloured progress bar and the numeric value as X / MAX
  * so the colour alone never conveys the only meaning (WCAG 1.4.1).
  */
+@Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthScoreBreakdown(
@@ -85,7 +86,7 @@ fun HealthScoreBreakdown(
                 )
 
                 TooltipBox(
-                    positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                     tooltip = {
                         RichTooltip(
                             title = {
@@ -136,6 +137,7 @@ fun HealthScoreBreakdown(
 // Private helpers
 // ---------------------------------------------------------------------------
 
+@Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FactorRow(
@@ -148,7 +150,7 @@ private fun FactorRow(
     val fraction = if (maxImpact > 0) (impact.toFloat() / maxImpact).coerceIn(0f, 1f) else 0f
 
     TooltipBox(
-        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
         tooltip = {
             if (tooltip.isNotEmpty()) {
                 PlainTooltip { Text(tooltip) }

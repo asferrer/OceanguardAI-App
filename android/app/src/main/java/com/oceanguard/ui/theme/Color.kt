@@ -98,6 +98,41 @@ val GlassInnerGlow = Color(0x0DFFFFFF)
 val GlassHighlight = Color(0x1AFFFFFF)
 
 // ---------------------------------------------------------------------------
+// Text hierarchy (consistent luminance steps for dark mode)
+// ---------------------------------------------------------------------------
+
+/** Primary text — 91% luminance, for headings and key values */
+val TextPrimary = Color(0xFFE8F0F8)
+/** Secondary text — 68% luminance, for body and descriptions */
+val TextSecondary = Color(0xFFA0BCC8)
+/** Tertiary text — 45% luminance, for captions and metadata */
+val TextTertiary = Color(0xFF6B8A9E)
+
+// ---------------------------------------------------------------------------
+// Accent glow and bioluminescent highlights
+// ---------------------------------------------------------------------------
+
+/** 10% OceanGreen overlay for interactive element backgrounds */
+val AccentGlow = Color(0x1A00A896)
+/** Bioluminescent cyan for special highlights and effects */
+val BioluminescentCyan = Color(0xFF00E5FF)
+
+// ---------------------------------------------------------------------------
+// Gradient presets
+// ---------------------------------------------------------------------------
+
+/** Hero gradient: ultra-deep start (matches landing --bg-primary #0a0e1a) */
+val GradientHeroStart = Color(0xFF0A0E1A)
+/** Hero gradient: deep ocean end (matches landing --bg-secondary #0d1225) */
+val GradientHeroEnd = Color(0xFF0D1225)
+/** CTA button gradient start (cyan, matches landing page --accent-cyan) */
+val GradientCTAStart = Color(0xFF00D4FF)
+/** CTA button gradient end (emerald, matches landing page --accent-emerald) */
+val GradientCTAEnd = Color(0xFF10B981)
+/** CTA glow colour (cyan glow for button shadow effect) */
+val CTAGlow = Color(0x4D00D4FF)
+
+// ---------------------------------------------------------------------------
 // Bottom navigation
 // ---------------------------------------------------------------------------
 

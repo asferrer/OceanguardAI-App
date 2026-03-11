@@ -186,6 +186,24 @@ private fun TabIconWithPill(
     indicatorAlpha: Float,
 ) {
     Box(contentAlignment = Alignment.Center) {
+        // Glow dot behind selected icon
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .graphicsLayer { alpha = indicatorAlpha * 0.4f }
+                .drawBehind {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                OceanGreen.copy(alpha = 0.35f),
+                                Color.Transparent,
+                            ),
+                        ),
+                        radius = size.width / 2f,
+                    )
+                },
+        )
+
         // Selection indicator pill
         Box(
             modifier = Modifier

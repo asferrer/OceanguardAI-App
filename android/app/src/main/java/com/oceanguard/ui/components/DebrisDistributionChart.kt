@@ -1,5 +1,8 @@
 package com.oceanguard.ai.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +22,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -230,6 +237,23 @@ private fun HorizontalBarChart(
 
     val maxCount = entries.maxOf { it.value }.coerceAtLeast(1)
 
+    // --- Staggered bar entrance animation ---
+    var animationTarget by remember { mutableStateOf(0f) }
+    LaunchedEffect(entries) { animationTarget = 1f }
+
+    // Per-bar animated fractions with staggered delays
+    val barAnimations = entries.mapIndexed { index, _ ->
+        animateFloatAsState(
+            targetValue = animationTarget,
+            animationSpec = tween(
+                durationMillis = 600,
+                delayMillis = index * 80,
+                easing = FastOutSlowInEasing,
+            ),
+            label = "bar$index",
+        )
+    }
+
     // Total canvas height: one row per entry plus spacing between them.
     val totalRows = entries.size
     val canvasHeightDp = with(density) {
@@ -249,10 +273,11 @@ private fun HorizontalBarChart(
             val material = entry.key
             val count    = entry.value
             val barColor = debrisMaterialColor(material)
+            val animFraction = barAnimations[index].value
 
             val rowTop = index * (barHeightPx + rowSpacingPx)
             val barFraction = (count.toFloat() / maxCount).coerceAtLeast(BAR_MIN_FRACTION)
-            val barWidth = availableBarWidth * barFraction
+            val barWidth = availableBarWidth * barFraction * animFraction
 
             // Draw the label on the left using nativeCanvas for text.
             drawMaterialLabel(
@@ -264,6 +289,22 @@ private fun HorizontalBarChart(
                 color      = labelColor,
             )
 
+            // Glow behind the bar (subtle colored shadow)
+            if (barWidth > 0f) {
+                drawRoundRect(
+                    color       = barColor.copy(alpha = 0.10f * animFraction),
+                    topLeft     = Offset(
+                        x = labelColWidthPx - 2.dp.toPx(),
+                        y = rowTop - 2.dp.toPx(),
+                    ),
+                    size        = Size(
+                        width = barWidth + 4.dp.toPx(),
+                        height = barHeightPx + 4.dp.toPx(),
+                    ),
+                    cornerRadius = CornerRadius(cornerRadiusPx + 2.dp.toPx()),
+                )
+            }
+
             // Draw the bar rectangle.
             drawRoundRect(
                 color       = barColor,
@@ -274,11 +315,13 @@ private fun HorizontalBarChart(
             )
 
             // Draw the track (unfilled portion) for visual context.
+            val fullBarWidth = availableBarWidth * barFraction
             drawRoundRect(
                 color        = barColor.copy(alpha = 0.15f),
                 topLeft      = Offset(x = labelColWidthPx + barWidth, y = rowTop),
                 size         = Size(
-                    width  = (availableBarWidth - barWidth).coerceAtLeast(0f),
+                    width  = (fullBarWidth - barWidth + availableBarWidth * (1f - barFraction))
+                        .coerceAtLeast(0f),
                     height = barHeightPx,
                 ),
                 cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),

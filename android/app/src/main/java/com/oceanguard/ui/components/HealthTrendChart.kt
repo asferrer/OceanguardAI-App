@@ -19,12 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -288,6 +290,29 @@ private fun TrendLineChart(
             moveTo(coords.first().x, coords.first().y)
             coords.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
         }
+
+        // Area fill under the line (gradient from line color to transparent)
+        val areaPath = Path().apply {
+            moveTo(coords.first().x, coords.first().y)
+            coords.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
+            lineTo(coords.last().x, bodyBottom)
+            lineTo(coords.first().x, bodyBottom)
+            close()
+        }
+        drawPath(
+            path = areaPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    lineColor.copy(alpha = 0.15f),
+                    lineColor.copy(alpha = 0.02f),
+                    Color.Transparent,
+                ),
+                startY = coords.minOf { it.y },
+                endY = bodyBottom,
+            ),
+            style = Fill,
+        )
+
         drawPath(
             path  = linePath,
             color = lineColor.copy(alpha = 0.85f),

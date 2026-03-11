@@ -146,7 +146,39 @@ fun HealthScoreGauge(
                     style      = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
 
-                // 2. Filled portion (animated)
+                // 2. Subtle glow behind the filled arc (two soft layers)
+                if (animatedFraction > 0f) {
+                    // Outer diffuse glow
+                    val glowOuter = strokeWidth * 0.5f
+                    drawArc(
+                        color      = arcColor.copy(alpha = 0.06f),
+                        startAngle = ARC_START_ANGLE,
+                        sweepAngle = ARC_SWEEP_MAX * animatedFraction,
+                        useCenter  = false,
+                        topLeft    = Offset(inset - glowOuter, inset - glowOuter),
+                        size       = Size(
+                            arcSize.width + glowOuter * 2,
+                            arcSize.height + glowOuter * 2,
+                        ),
+                        style      = Stroke(width = strokeWidth * 2f, cap = StrokeCap.Round),
+                    )
+                    // Inner tight glow
+                    val glowInner = strokeWidth * 0.2f
+                    drawArc(
+                        color      = arcColor.copy(alpha = 0.10f),
+                        startAngle = ARC_START_ANGLE,
+                        sweepAngle = ARC_SWEEP_MAX * animatedFraction,
+                        useCenter  = false,
+                        topLeft    = Offset(inset - glowInner, inset - glowInner),
+                        size       = Size(
+                            arcSize.width + glowInner * 2,
+                            arcSize.height + glowInner * 2,
+                        ),
+                        style      = Stroke(width = strokeWidth * 1.4f, cap = StrokeCap.Round),
+                    )
+                }
+
+                // 3. Filled portion (animated)
                 if (animatedFraction > 0f) {
                     drawArc(
                         color      = arcColor,

@@ -18,11 +18,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.oceanguard.ai.ui.theme.GlassBorder
+import com.oceanguard.ai.ui.theme.GlassHighlight
+import com.oceanguard.ai.ui.theme.GlassInnerGlow
 import com.oceanguard.ai.ui.theme.GlassSurface
 import com.oceanguard.ai.ui.theme.OceanBlue
 import com.oceanguard.ai.ui.theme.OceanBlueLight
@@ -107,7 +110,43 @@ fun GlassCard(
         border = BorderStroke(width = 1.dp, brush = borderBrush),
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .padding(20.dp)
+                .then(
+                    if (isDark) {
+                        Modifier.drawWithContent {
+                            drawContent()
+                            // Top highlight edge: simulates refracted light on glass
+                            drawLine(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        GlassHighlight,
+                                        Color.Transparent,
+                                    ),
+                                ),
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                strokeWidth = 1f,
+                            )
+                            // Corner radial glow: subtle light patch
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        GlassInnerGlow,
+                                        Color.Transparent,
+                                    ),
+                                    center = Offset(0f, 0f),
+                                    radius = size.width * 0.55f,
+                                ),
+                                radius = size.width * 0.55f,
+                                center = Offset(0f, 0f),
+                            )
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
             content = content,
         )
     }

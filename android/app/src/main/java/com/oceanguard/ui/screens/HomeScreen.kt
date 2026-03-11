@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
@@ -44,6 +50,9 @@ import com.oceanguard.ai.ui.components.HealthTrendChart
 import com.oceanguard.ai.ui.components.OceanGradientHeader
 import com.oceanguard.ai.ui.components.ShimmerCard
 import com.oceanguard.ai.ui.components.pressableScale
+import com.oceanguard.ai.ui.theme.CTAGlow
+import com.oceanguard.ai.ui.theme.GradientCTAEnd
+import com.oceanguard.ai.ui.theme.GradientCTAStart
 import com.oceanguard.ai.ui.theme.OceanGreen
 import com.oceanguard.ai.ui.theme.OceanGreenLight
 import com.oceanguard.ai.ui.theme.healthScoreColor
@@ -51,7 +60,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.runtime.rememberCoroutineScope
 import com.oceanguard.ai.data.DebrisType
@@ -214,9 +223,10 @@ fun HomeScreen(
                                 icon = Icons.Filled.CameraAlt,
                                 label = stringResource(R.string.home_btn_take_photo),
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                contentColor = Color(0xFF0A0E1A),
                                 onClick = { navController.navigate("camera") },
                                 modifier = Modifier.fillMaxWidth(),
+                                useGradient = true,
                             )
                         }
                         AnimatedActionButton(
@@ -228,7 +238,7 @@ fun HomeScreen(
                                     icon = Icons.Filled.PhotoLibrary,
                                     label = stringResource(R.string.home_btn_select_gallery),
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = GradientCTAStart,
                                     onClick = { showScanMenu = true },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -282,46 +292,54 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // ----------------------------------------------------------------
-                // MarineDex preview card
+                // MarineDex preview card (staggered entry)
                 // ----------------------------------------------------------------
-                Box(modifier = Modifier.spotlightTarget("home_marinedex", boundsMap)) {
-                    MarineDexPreviewCard(
-                        dexEntries = dexEntries,
-                        discoveredCount = discoveredCount,
-                        onClick = { navController.navigate("marinedex") },
-                    )
+                StaggeredEntry(delayMs = 100) {
+                    Box(modifier = Modifier.spotlightTarget("home_marinedex", boundsMap)) {
+                        MarineDexPreviewCard(
+                            dexEntries = dexEntries,
+                            discoveredCount = discoveredCount,
+                            onClick = { navController.navigate("marinedex") },
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // ----------------------------------------------------------------
-                // Latest achievement card
+                // Latest achievement card (staggered entry)
                 // ----------------------------------------------------------------
                 if (latestAchievement != null && latestAchievement.unlockedAt > 0) {
-                    LatestAchievementCard(
-                        achievement = latestAchievement,
-                        onClick = { navController.navigate("achievements") },
-                    )
+                    StaggeredEntry(delayMs = 200) {
+                        LatestAchievementCard(
+                            achievement = latestAchievement,
+                            onClick = { navController.navigate("achievements") },
+                        )
+                    }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 // ----------------------------------------------------------------
-                // Debris distribution chart
+                // Debris distribution chart (staggered entry)
                 // ----------------------------------------------------------------
                 if (statistics.materialBreakdown.isNotEmpty()) {
-                    DebrisDistributionChart(
-                        materialBreakdown = statistics.materialBreakdown,
-                    )
+                    StaggeredEntry(delayMs = 300) {
+                        DebrisDistributionChart(
+                            materialBreakdown = statistics.materialBreakdown,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 // ----------------------------------------------------------------
-                // Health trend chart
+                // Health trend chart (staggered entry)
                 // ----------------------------------------------------------------
                 if (allSessions.isNotEmpty()) {
-                    HealthTrendChart(
-                        sessions = allSessions,
-                    )
+                    StaggeredEntry(delayMs = 400) {
+                        HealthTrendChart(
+                            sessions = allSessions,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
@@ -424,24 +442,99 @@ private fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    useGradient: Boolean = false,
 ) {
-    Card(
+    if (useGradient) {
+        GradientActionTile(
+            icon = icon,
+            label = label,
+            contentColor = contentColor,
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+        )
+    } else {
+        Card(
+            onClick = onClick,
+            modifier = modifier
+                .pressableScale()
+                .height(88.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+                disabledContainerColor = containerColor.copy(alpha = 0.38f),
+                disabledContentColor = contentColor.copy(alpha = 0.38f),
+            ),
+            enabled = enabled,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * CTA-style action tile with a cyan→emerald gradient background and glow,
+ * matching the landing page button aesthetic.
+ */
+@Composable
+private fun GradientActionTile(
+    icon: ImageVector,
+    label: String,
+    contentColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    val gradientBrush = Brush.linearGradient(
+        colors = listOf(GradientCTAStart, GradientCTAEnd),
+        start = Offset.Zero,
+        end = Offset.Infinite,
+    )
+
+    Surface(
         onClick = onClick,
         modifier = modifier
             .pressableScale()
-            .height(88.dp),
+            .height(88.dp)
+            .drawBehind {
+                // Glow shadow behind the button (cyan tint)
+                drawRoundRect(
+                    color = CTAGlow,
+                    topLeft = Offset(4.dp.toPx(), 6.dp.toPx()),
+                    size = Size(size.width - 8.dp.toPx(), size.height - 4.dp.toPx()),
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                )
+            },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-            disabledContainerColor = containerColor.copy(alpha = 0.38f),
-            disabledContentColor = contentColor.copy(alpha = 0.38f),
-        ),
+        color = Color.Transparent,
         enabled = enabled,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(gradientBrush, RoundedCornerShape(16.dp))
                 .padding(14.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -450,6 +543,7 @@ private fun ActionTile(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
+                tint = contentColor,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -459,6 +553,7 @@ private fun ActionTile(
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                color = contentColor,
             )
         }
     }
@@ -477,12 +572,18 @@ private fun ModelStatusIndicator(modelState: ModelLoadingState) {
     val deepAnalysisName = stringResource(R.string.home_model_name_deep_analysis)
     val aiDetectionName = stringResource(R.string.home_model_name_detection)
 
+    // Glass style matching landing page: rgba(15,23,42,0.5) bg + rgba(148,163,184,0.1) border
+    val glassColor = Color(0x800F172A)
+    val glassBorderColor = Color(0x1A94A3B8)
+
     if (rtdetrReady && gemmaStandby) {
         // RT-DETR ready, VLM on standby — show ready banner + VLM info
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+            color = glassColor,
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -498,9 +599,11 @@ private fun ModelStatusIndicator(modelState: ModelLoadingState) {
     } else {
         // RT-DETR still loading
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            color = glassColor,
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -515,9 +618,11 @@ private fun ModelStatusIndicator(modelState: ModelLoadingState) {
 @Composable
 private fun ReadyBanner(text: String) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color(0x1A94A3B8), RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+        color = Color(0x800F172A),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -556,7 +661,7 @@ private fun ReadyBannerContent(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -811,7 +916,7 @@ private fun MarineDexPreviewCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Filled.MenuBook,
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
                 contentDescription = null,
                 tint = OceanGreen,
                 modifier = Modifier.size(28.dp),
@@ -870,6 +975,42 @@ private fun MarineDexPreviewCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Staggered entry animation wrapper
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun StaggeredEntry(
+    delayMs: Int,
+    content: @Composable () -> Unit,
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(delayMs.toLong())
+        isVisible = true
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 400),
+        label = "staggerAlpha",
+    )
+    val offsetY by animateFloatAsState(
+        targetValue = if (isVisible) 0f else 20f,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "staggerOffset",
+    )
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            translationY = offsetY
+        },
+    ) {
+        content()
     }
 }
 
