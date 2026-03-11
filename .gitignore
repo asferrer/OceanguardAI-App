@@ -76,5 +76,11 @@ docker/
 docker-compose*.yml
 Dockerfile*
 
+# Screenshots & temp
+screenshots/
+
+# Landing page repo (submodule or reference copy)
+OceanguardAI/
+
 # Claude
 .claude/

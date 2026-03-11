@@ -5,6 +5,52 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+/**
+ * Derives version from the latest git tag.
+ * Expected tag format: v1.0.0, v1.2.3, etc.
+ * Falls back to "0.0.0-dev" if no tags exist.
+ *
+ * - Tagged commit:     "1.0.0"
+ * - After a tag:       "1.0.0-5-gabcdef" (5 commits after tag)
+ * - No tags at all:    "0.0.0-dev"
+ */
+fun gitVersionName(): String {
+    return try {
+        val process = ProcessBuilder("git", "describe", "--tags", "--match", "v*")
+            .directory(rootProject.projectDir)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        if (process.exitValue() == 0 && output.isNotEmpty()) {
+            // "v1.0.0" -> "1.0.0", "v1.0.0-3-gabcdef" -> "1.0.0-3-gabcdef"
+            output.removePrefix("v")
+        } else {
+            "0.0.0-dev"
+        }
+    } catch (_: Exception) {
+        "0.0.0-dev"
+    }
+}
+
+/**
+ * Derives versionCode from the total git commit count.
+ * Auto-increments with every commit — no manual bumping needed.
+ */
+fun gitVersionCode(): Int {
+    return try {
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+            .directory(rootProject.projectDir)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        if (process.exitValue() == 0) output.toIntOrNull() ?: 1 else 1
+    } catch (_: Exception) {
+        1
+    }
+}
+
 android {
     namespace = "com.oceanguard.ai"
     compileSdk = 35
@@ -25,8 +71,8 @@ android {
         applicationId = "com.oceanguard.ai"
         minSdk = 26  // Android 8.0 - minimum for MediaPipe GenAI
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = gitVersionCode()
+        versionName = gitVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
