@@ -1,12 +1,16 @@
 package com.oceanguard.ai.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Explore
@@ -42,10 +46,8 @@ import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/**
- * Settings screen allowing the user to configure detection parameters,
- * language preference, and display options.
- */
+private const val DEV_MODE_TAP_TARGET = 21
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -55,8 +57,14 @@ fun SettingsScreen(
     val context = LocalContext.current
     val app = remember(context) { context.applicationContext as OceanGuardApp }
     val settings = viewModel.settingsRepository
-    val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
-        initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
+    val scope = rememberCoroutineScope()
+
+    // User-facing settings
+    val vlmEnabled by settings.vlmEnabled.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_VLM_ENABLED
+    )
+    val confirmCapture by settings.confirmCapture.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_CONFIRM_CAPTURE
     )
     val language by settings.language.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_LANGUAGE
@@ -64,13 +72,14 @@ fun SettingsScreen(
     val darkMode by settings.darkMode.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_DARK_MODE
     )
-    val vlmEnabled by settings.vlmEnabled.collectAsStateWithLifecycle(
-        initialValue = SettingsRepository.DEFAULT_VLM_ENABLED
+    val devModeEnabled by settings.devModeEnabled.collectAsStateWithLifecycle(
+        initialValue = false
     )
-    val confirmCapture by settings.confirmCapture.collectAsStateWithLifecycle(
-        initialValue = SettingsRepository.DEFAULT_CONFIRM_CAPTURE
+
+    // Developer-only settings
+    val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
-    val scope = rememberCoroutineScope()
 
     val settingsScrollState = rememberScrollState()
     val boundsMap = rememberSpotlightBounds()
@@ -78,7 +87,6 @@ fun SettingsScreen(
     val tourComplete by app.settingsRepository
         .isTourComplete(TourDefinitions.getScreenId(TourDefinitions.SETTINGS))
         .collectAsStateWithLifecycle(initialValue = true)
-
     val guidedTourActive by app.settingsRepository.guidedTourActive
         .collectAsStateWithLifecycle(initialValue = false)
     var showTransitionDialog by remember { mutableStateOf(false) }
@@ -113,188 +121,47 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // ---------------------------------------------------------------
-            // Detection Settings
+            // Detection Settings (user-facing)
             // ---------------------------------------------------------------
             SettingsSection(
                 title = stringResource(R.string.settings_section_detection),
                 icon = Icons.Filled.Tune,
                 modifier = Modifier.spotlightTarget("settings_confidence", boundsMap),
             ) {
-                // Confidence threshold slider
-                Text(
-                    text = stringResource(R.string.settings_label_confidence_threshold),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
+                // Deep Analysis toggle
+                SettingsToggleRow(
+                    title = stringResource(R.string.settings_label_deep_analysis),
+                    description = stringResource(R.string.settings_desc_deep_analysis),
+                    checked = vlmEnabled,
+                    onCheckedChange = { scope.launch { settings.setVlmEnabled(it) } },
+                    modifier = Modifier.spotlightTarget("settings_deep_analysis", boundsMap),
                 )
-                Text(
-                    text = stringResource(R.string.settings_desc_confidence_threshold),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Slider(
-                        value = confidenceThreshold,
-                        onValueChange = { newValue ->
-                            scope.launch {
-                                settings.setConfidenceThreshold(newValue)
-                            }
-                        },
-                        valueRange = 0f..1f,
-                        steps = 19,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
-                        Text(
-                            text = "%.0f%%".format(confidenceThreshold * 100),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-                // Detector precision selector
-                val detectorPrecision by settings.detectorPrecision.collectAsStateWithLifecycle(
-                    initialValue = SettingsRepository.DEFAULT_DETECTOR_PRECISION
-                )
-                var precisionExpanded by remember { mutableStateOf(false) }
-                var showRestartHint by remember { mutableStateOf(false) }
-                val precisionLabel = SettingsRepository.DETECTOR_PRECISIONS[detectorPrecision]
-                    ?: detectorPrecision
-
-                Text(
-                    text = stringResource(R.string.settings_label_detector_precision),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = stringResource(R.string.settings_desc_detector_precision),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                ExposedDropdownMenuBox(
-                    expanded = precisionExpanded,
-                    onExpandedChange = { precisionExpanded = it },
-                ) {
-                    OutlinedTextField(
-                        value = precisionLabel,
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = precisionExpanded) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                        shape = RoundedCornerShape(12.dp),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = precisionExpanded,
-                        onDismissRequest = { precisionExpanded = false },
-                    ) {
-                        SettingsRepository.DETECTOR_PRECISIONS.forEach { (key, label) ->
-                            DropdownMenuItem(
-                                text = { Text(text = label) },
-                                onClick = {
-                                    scope.launch { settings.setDetectorPrecision(key) }
-                                    precisionExpanded = false
-                                    if (key != detectorPrecision) showRestartHint = true
-                                },
-                            )
-                        }
-                    }
-                }
-
-                if (showRestartHint) {
-                    Text(
-                        text = stringResource(R.string.settings_hint_restart),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-                // VLM analysis toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .spotlightTarget("settings_deep_analysis", boundsMap),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_label_deep_analysis),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_desc_deep_analysis),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = vlmEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch { settings.setVlmEnabled(enabled) }
-                        },
-                    )
-                }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
                 // Confirm capture toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_label_confirm_capture),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_desc_confirm_capture),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = confirmCapture,
-                        onCheckedChange = { enabled ->
-                            scope.launch { settings.setConfirmCapture(enabled) }
-                        },
-                    )
-                }
+                SettingsToggleRow(
+                    title = stringResource(R.string.settings_label_confirm_capture),
+                    description = stringResource(R.string.settings_desc_confirm_capture),
+                    checked = confirmCapture,
+                    onCheckedChange = { scope.launch { settings.setConfirmCapture(it) } },
+                )
             }
 
             // ---------------------------------------------------------------
             // App Language
             // ---------------------------------------------------------------
-            AppLanguageSection(settings = settings, scope = scope)
+            Box(modifier = Modifier.spotlightTarget("settings_language", boundsMap)) {
+                AppLanguageSection(settings = settings, scope = scope)
+            }
 
             // ---------------------------------------------------------------
             // Report Language
             // ---------------------------------------------------------------
-            SettingsSection(title = stringResource(R.string.settings_section_reports), icon = Icons.Filled.Language) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_reports),
+                icon = Icons.Filled.Language,
+            ) {
                 Text(
                     text = stringResource(R.string.settings_label_report_language),
                     style = MaterialTheme.typography.titleSmall,
@@ -306,39 +173,11 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-
-                var expanded by remember { mutableStateOf(false) }
-                val languageName = SettingsRepository.SUPPORTED_LANGUAGES[language] ?: language
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
-                ) {
-                    OutlinedTextField(
-                        value = languageName,
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                        shape = RoundedCornerShape(12.dp),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                    ) {
-                        SettingsRepository.SUPPORTED_LANGUAGES.forEach { (code, name) ->
-                            DropdownMenuItem(
-                                text = { Text(name) },
-                                onClick = {
-                                    scope.launch { settings.setLanguage(code) }
-                                    expanded = false
-                                },
-                            )
-                        }
-                    }
-                }
+                LanguageDropdown(
+                    options = SettingsRepository.SUPPORTED_LANGUAGES,
+                    selected = language,
+                    onSelect = { scope.launch { settings.setLanguage(it) } },
+                )
             }
 
             // ---------------------------------------------------------------
@@ -349,91 +188,33 @@ fun SettingsScreen(
                 icon = Icons.Filled.DarkMode,
                 modifier = Modifier.spotlightTarget("settings_theme", boundsMap),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.settings_label_dark_mode),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_desc_dark_mode),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = darkMode,
-                        onCheckedChange = { enabled ->
-                            scope.launch { settings.setDarkMode(enabled) }
-                        },
-                    )
-                }
+                SettingsToggleRow(
+                    title = stringResource(R.string.settings_label_dark_mode),
+                    description = stringResource(R.string.settings_desc_dark_mode),
+                    checked = darkMode,
+                    onCheckedChange = { scope.launch { settings.setDarkMode(it) } },
+                )
             }
 
             // ---------------------------------------------------------------
             // Data Management
             // ---------------------------------------------------------------
-            SettingsSection(title = stringResource(R.string.settings_section_data), icon = Icons.Filled.DeleteForever) {
-                var showClearDialog by remember { mutableStateOf(false) }
-
-                if (showClearDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showClearDialog = false },
-                        title = { Text(stringResource(R.string.settings_dialog_clear_title)) },
-                        text = { Text(stringResource(R.string.settings_dialog_clear_message)) },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    viewModel.clearAllData()
-                                    showClearDialog = false
-                                },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error,
-                                ),
-                            ) {
-                                Text(stringResource(R.string.settings_dialog_clear_confirm))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showClearDialog = false }) {
-                                Text(stringResource(R.string.common_cancel))
-                            }
-                        },
-                    )
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_label_reset_all_data),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = stringResource(R.string.settings_desc_reset_all_data),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedButton(
-                    onClick = { showClearDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                ) {
-                    Text(stringResource(R.string.settings_btn_reset_all_data))
-                }
+            SettingsSection(
+                title = stringResource(R.string.settings_section_data),
+                icon = Icons.Filled.DeleteForever,
+                modifier = Modifier.spotlightTarget("settings_data", boundsMap),
+            ) {
+                DataManagementContent(viewModel = viewModel)
             }
 
             // ---------------------------------------------------------------
             // Guided Tours
             // ---------------------------------------------------------------
-            SettingsSection(title = stringResource(R.string.settings_section_guided_tours), icon = Icons.Filled.Explore) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_guided_tours),
+                icon = Icons.Filled.Explore,
+                modifier = Modifier.spotlightTarget("settings_tours", boundsMap),
+            ) {
                 Text(
                     text = stringResource(R.string.settings_desc_guided_tours),
                     style = MaterialTheme.typography.bodySmall,
@@ -449,56 +230,27 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Icon(
-                        Icons.Filled.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
+                    Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.settings_btn_replay_tours))
                 }
             }
 
             // ---------------------------------------------------------------
-            // App Info
+            // Developer Settings (hidden until easter egg is activated)
             // ---------------------------------------------------------------
-            SettingsSection(title = stringResource(R.string.settings_section_about), icon = Icons.Filled.Info) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = stringResource(R.string.settings_cd_logo),
-                        modifier = Modifier.size(48.dp),
-                    )
-                    Column {
-                        Text(
-                            text = "OceanGuard AI",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_about_version),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                // Intentionally kept hardcoded per task instructions — brand/tech name
-                Text(
-                    text = "Dual pipeline: RT-DETRv2 + Gemma 3n VLM",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.settings_about_powered_by),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (devModeEnabled) {
+                DeveloperSettingsSection(settings = settings, scope = scope)
             }
+
+            // ---------------------------------------------------------------
+            // About
+            // ---------------------------------------------------------------
+            AboutSection(
+                devModeEnabled = devModeEnabled,
+                onDevModeActivated = { scope.launch { settings.setDevModeEnabled(true) } },
+                onDevModeDeactivated = { scope.launch { settings.setDevModeEnabled(false) } },
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -555,6 +307,295 @@ fun SettingsScreen(
     } // end Box
 }
 
+// ---------------------------------------------------------------------------
+// Reusable toggle row
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SettingsToggleRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Data Management
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun DataManagementContent(viewModel: MainViewModel) {
+    var showClearDialog by remember { mutableStateOf(false) }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text(stringResource(R.string.settings_dialog_clear_title)) },
+            text = { Text(stringResource(R.string.settings_dialog_clear_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.clearAllData(); showClearDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text(stringResource(R.string.settings_dialog_clear_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
+    Text(stringResource(R.string.settings_label_reset_all_data), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+    Text(stringResource(R.string.settings_desc_reset_all_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(modifier = Modifier.height(4.dp))
+    OutlinedButton(
+        onClick = { showClearDialog = true },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+    ) {
+        Text(stringResource(R.string.settings_btn_reset_all_data))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Developer settings (hidden behind easter egg)
+// ---------------------------------------------------------------------------
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeveloperSettingsSection(
+    settings: SettingsRepository,
+    scope: CoroutineScope,
+) {
+    val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
+    )
+    val detectorPrecision by settings.detectorPrecision.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_DETECTOR_PRECISION
+    )
+
+    SettingsSection(
+        title = stringResource(R.string.settings_section_developer),
+        icon = Icons.Filled.Build,
+    ) {
+        // Confidence threshold slider
+        Text(
+            text = stringResource(R.string.settings_label_confidence_threshold),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = stringResource(R.string.settings_desc_confidence_threshold),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Slider(
+                value = confidenceThreshold,
+                onValueChange = { scope.launch { settings.setConfidenceThreshold(it) } },
+                valueRange = 0f..1f,
+                steps = 19,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Text(
+                    text = "%.0f%%".format(confidenceThreshold * 100),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // Detector precision selector
+        var precisionExpanded by remember { mutableStateOf(false) }
+        var showRestartHint by remember { mutableStateOf(false) }
+        val precisionLabel = SettingsRepository.DETECTOR_PRECISIONS[detectorPrecision]
+            ?: detectorPrecision
+
+        Text(
+            text = stringResource(R.string.settings_label_detector_precision),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = stringResource(R.string.settings_desc_detector_precision),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = precisionExpanded,
+            onExpandedChange = { precisionExpanded = it },
+        ) {
+            OutlinedTextField(
+                value = precisionLabel,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = precisionExpanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                shape = RoundedCornerShape(12.dp),
+            )
+            ExposedDropdownMenu(
+                expanded = precisionExpanded,
+                onDismissRequest = { precisionExpanded = false },
+            ) {
+                SettingsRepository.DETECTOR_PRECISIONS.forEach { (key, label) ->
+                    DropdownMenuItem(
+                        text = { Text(text = label) },
+                        onClick = {
+                            scope.launch { settings.setDetectorPrecision(key) }
+                            precisionExpanded = false
+                            if (key != detectorPrecision) showRestartHint = true
+                        },
+                    )
+                }
+            }
+        }
+
+        if (showRestartHint) {
+            Text(
+                text = stringResource(R.string.settings_hint_restart),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // Technical info
+        Text(
+            text = "RT-DETRv2 + Gemma 3n VLM",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.settings_about_powered_by),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// About section with easter egg
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun AboutSection(
+    devModeEnabled: Boolean,
+    onDevModeActivated: () -> Unit,
+    onDevModeDeactivated: () -> Unit,
+) {
+    val context = LocalContext.current
+    var tapCount by remember { mutableIntStateOf(0) }
+
+    SettingsSection(title = stringResource(R.string.settings_section_about), icon = Icons.Filled.Info) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = stringResource(R.string.settings_cd_logo),
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                    ) {
+                        tapCount++
+                        val remaining = DEV_MODE_TAP_TARGET - tapCount
+                        when {
+                            tapCount >= DEV_MODE_TAP_TARGET && !devModeEnabled -> {
+                                onDevModeActivated()
+                                tapCount = 0
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_dev_mode_activated),
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            }
+                            remaining in 1..5 -> {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_dev_mode_countdown, remaining),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                    },
+            )
+            Column {
+                Text(
+                    text = "OceanGuard AI",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.settings_about_version),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        Text(
+            text = stringResource(R.string.settings_about_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // Developer mode toggle (only visible when already activated)
+        if (devModeEnabled) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            OutlinedButton(
+                onClick = onDevModeDeactivated,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(stringResource(R.string.settings_dev_mode_disable))
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shared components
+// ---------------------------------------------------------------------------
+
 @Composable
 private fun SettingsSection(
     title: String,
@@ -597,6 +638,47 @@ private fun SettingsSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 content()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageDropdown(
+    options: Map<String, String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayName = options[selected] ?: selected
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = displayName,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            shape = RoundedCornerShape(12.dp),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            options.forEach { (code, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        onSelect(code)
+                        expanded = false
+                    },
+                )
             }
         }
     }

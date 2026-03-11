@@ -41,6 +41,7 @@ class SettingsRepository(private val context: Context) {
         val DEX_BACKFILL_COMPLETE = booleanPreferencesKey("dex_backfill_complete")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val GUIDED_TOUR_ACTIVE = booleanPreferencesKey("guided_tour_active")
+        val DEV_MODE_ENABLED = booleanPreferencesKey("dev_mode_enabled")
     }
 
     companion object {
@@ -298,5 +299,17 @@ class SettingsRepository(private val context: Context) {
             }
             prefs[Keys.GUIDED_TOUR_ACTIVE] = false
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Developer mode (easter egg: tap logo 21 times)
+    // -----------------------------------------------------------------------
+
+    val devModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.DEV_MODE_ENABLED] ?: false
+    }
+
+    suspend fun setDevModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.DEV_MODE_ENABLED] = enabled }
     }
 }
