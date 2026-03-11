@@ -13,8 +13,8 @@ import androidx.annotation.StringRes
  */
 data class SpotlightStep(
     val targetId: String,
-    @StringRes val titleRes: Int,
-    @StringRes val descriptionRes: Int,
+    @param:StringRes val titleRes: Int,
+    @param:StringRes val descriptionRes: Int,
     val shape: SpotlightShape = SpotlightShape.ROUNDED_RECT,
 )
 

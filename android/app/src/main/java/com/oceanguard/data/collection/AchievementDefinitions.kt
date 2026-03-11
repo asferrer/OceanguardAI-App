@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Rocket
@@ -35,14 +35,14 @@ import com.oceanguard.ai.R
  */
 data class AchievementDef(
     val id: String,
-    @StringRes val nameRes: Int,
-    @StringRes val descriptionRes: Int,
+    @param:StringRes val nameRes: Int,
+    @param:StringRes val descriptionRes: Int,
     val target: Int,
     val icon: ImageVector,
     val category: AchievementCategory,
 )
 
-enum class AchievementCategory(@StringRes val labelRes: Int) {
+enum class AchievementCategory(@param:StringRes val labelRes: Int) {
     FIRST_STEPS(R.string.achievement_category_first_steps),
     EXPLORER(R.string.achievement_category_explorer),
     COLLECTOR(R.string.achievement_category_collector),
@@ -59,7 +59,7 @@ val ALL_ACHIEVEMENTS: List<AchievementDef> = listOf(
     AchievementDef("first_live", R.string.achievement_name_first_live, R.string.achievement_desc_first_live, 1, Icons.Filled.Videocam, AchievementCategory.FIRST_STEPS),
     AchievementDef("first_report", R.string.achievement_name_first_report, R.string.achievement_desc_first_report, 1, Icons.Filled.Description, AchievementCategory.FIRST_STEPS),
     AchievementDef("first_batch", R.string.achievement_name_first_batch, R.string.achievement_desc_first_batch, 1, Icons.Filled.BurstMode, AchievementCategory.FIRST_STEPS),
-    AchievementDef("first_dex_entry", R.string.achievement_name_first_dex_entry, R.string.achievement_desc_first_dex_entry, 1, Icons.Filled.MenuBook, AchievementCategory.FIRST_STEPS),
+    AchievementDef("first_dex_entry", R.string.achievement_name_first_dex_entry, R.string.achievement_desc_first_dex_entry, 1, Icons.AutoMirrored.Filled.MenuBook, AchievementCategory.FIRST_STEPS),
     AchievementDef("tutorial_complete", R.string.achievement_name_tutorial_complete, R.string.achievement_desc_tutorial_complete, 1, Icons.Filled.School, AchievementCategory.FIRST_STEPS),
 
     // --- Explorer (5) ---
