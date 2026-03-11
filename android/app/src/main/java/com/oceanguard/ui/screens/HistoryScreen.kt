@@ -46,6 +46,7 @@ import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.data.ImageQuality
 import com.oceanguard.ai.data.RiskLevel
+import com.oceanguard.ai.data.VideoAnalysis
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.data.SessionDatesHelper
 import com.oceanguard.ai.ui.components.DataDotDatePickerDialog
@@ -101,6 +102,10 @@ fun HistoryScreen(
     },
 ) {
     val sessions by viewModel.allSessions.collectAsStateWithLifecycle(initialValue = emptyList())
+    val videoAnalyses by viewModel.allVideoAnalyses.collectAsStateWithLifecycle(initialValue = emptyList())
+
+    // Filter: Images vs Videos
+    var showVideos by remember { mutableStateOf(false) }
 
     // Selection state
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -241,24 +246,59 @@ fun HistoryScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
 
-        if (isFirstLoad && sessions.isEmpty()) {
-            ShimmerLoadingScreen(
-                modifier = Modifier.padding(paddingValues),
-                itemCount = 5,
-            )
-        } else {
-            SessionList(
-                sessions = sessions,
-                navController = navController,
-                viewModel = viewModel,
-                onNavigateToLocationPicker = onNavigateToLocationPicker,
-                boundsMap = boundsMap,
-                modifier = Modifier.padding(paddingValues),
-                selectedIds = selectedIds,
-                isSelectionMode = isSelectionMode,
-                onSelectionChanged = { selectedIds = it },
-                filterResetKey = filterResetKey,
-            )
+        Column(modifier = Modifier.padding(paddingValues)) {
+            // Filter chips: Images | Videos
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .spotlightTarget("history_media_filter", boundsMap),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = !showVideos,
+                    onClick = { showVideos = false },
+                    label = { Text("Images (${sessions.size})") },
+                    leadingIcon = if (!showVideos) {
+                        { Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null,
+                )
+                FilterChip(
+                    selected = showVideos,
+                    onClick = { showVideos = true },
+                    label = { Text("Videos (${videoAnalyses.size})") },
+                    leadingIcon = if (showVideos) {
+                        { Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null,
+                )
+            }
+
+            if (showVideos) {
+                VideoAnalysisList(
+                    videoAnalyses = videoAnalyses,
+                    navController = navController,
+                )
+            } else {
+                if (isFirstLoad && sessions.isEmpty()) {
+                    ShimmerLoadingScreen(
+                        modifier = Modifier,
+                        itemCount = 5,
+                    )
+                } else {
+                    SessionList(
+                        sessions = sessions,
+                        navController = navController,
+                        viewModel = viewModel,
+                        onNavigateToLocationPicker = onNavigateToLocationPicker,
+                        boundsMap = boundsMap,
+                        modifier = Modifier,
+                        selectedIds = selectedIds,
+                        isSelectionMode = isSelectionMode,
+                        onSelectionChanged = { selectedIds = it },
+                        filterResetKey = filterResetKey,
+                    )
+                }
+            }
         }
     }
 
@@ -421,7 +461,10 @@ private fun SessionList(
                 dateRangeEnd = dateRangeEnd,
                 onDateRangeCleared = { dateRangeStart = null; dateRangeEnd = null },
                 onDateRangeClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .spotlightTarget("history_filters", boundsMap),
             )
         }
 
@@ -915,5 +958,126 @@ private fun FilterChipRow(
                 { Icon(Icons.Filled.Clear, contentDescription = null, Modifier.size(16.dp)) }
             } else null,
         )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Video analysis list
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun VideoAnalysisList(
+    videoAnalyses: List<VideoAnalysis>,
+    navController: NavController,
+) {
+    if (videoAnalyses.isEmpty()) {
+        LottieEmptyState(
+            title = stringResource(R.string.history_empty_title),
+            message = stringResource(R.string.history_empty_message),
+            modifier = Modifier.fillMaxSize(),
+        )
+        return
+    }
+
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()) }
+
+    LazyColumn(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(videoAnalyses, key = { it.id }) { analysis ->
+            VideoAnalysisCard(
+                analysis = analysis,
+                dateFormatter = dateFormatter,
+                onClick = { navController.navigate("video_detail/${analysis.id}") },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VideoAnalysisCard(
+    analysis: VideoAnalysis,
+    dateFormatter: SimpleDateFormat,
+    onClick: () -> Unit,
+) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Thumbnail
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (analysis.thumbnailUri != null) {
+                    AsyncImage(
+                        model = analysis.thumbnailUri,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                // Play overlay icon
+                Icon(
+                    imageVector = Icons.Filled.History,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White.copy(alpha = 0.9f),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = dateFormatter.format(analysis.timestamp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = "${analysis.uniqueDebrisCount} unique debris",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "${analysis.durationMs / 1000}s video, ${analysis.processedFrameCount} frames",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Health score badge
+            val riskLevel = analysis.getRiskLevel()
+            val badgeColor = when (riskLevel) {
+                RiskLevel.LOW -> Color(0xFF4CAF50)
+                RiskLevel.MODERATE -> Color(0xFFFFC107)
+                RiskLevel.HIGH -> Color(0xFFFF9800)
+                RiskLevel.CRITICAL -> Color(0xFFF44336)
+            }
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = badgeColor.copy(alpha = 0.15f),
+            ) {
+                Text(
+                    text = "${analysis.healthScore}",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeColor,
+                )
+            }
+        }
     }
 }

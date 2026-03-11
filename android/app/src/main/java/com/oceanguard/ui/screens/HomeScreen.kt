@@ -15,8 +15,6 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -129,7 +127,7 @@ fun HomeScreen(
         if (!tourComplete) tourController.start()
     }
 
-    // Photo picker launcher
+    // Gallery picker — single image for quick scan
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
@@ -139,25 +137,26 @@ fun HomeScreen(
         }
     }
 
-    // Batch picker launcher (runs in background service).
-    val batchLauncher = rememberLauncherForActivityResult(
+    // Multi-media picker — gallery, accepts images and videos (batch).
+    val mediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            viewModel.setBatchUris(uris)
-            navController.navigate("batch")
+            viewModel.analyzeMedia(homeContext, uris, navController)
         }
     }
 
-    // File picker launcher — allows browsing files/documents for images.
+    // File picker — file browser, accepts images and videos (batch).
     val filesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            viewModel.setBatchUris(uris)
-            navController.navigate("batch")
+            viewModel.analyzeMedia(homeContext, uris, navController)
         }
     }
+
+    // Dropdown state for the scan source picker
+    var showScanMenu by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -201,76 +200,69 @@ fun HomeScreen(
                 // ----------------------------------------------------------------
                 // Action grid 2×2 with spring entry animations
                 // ----------------------------------------------------------------
-                var showBatchMenu by remember { mutableStateOf(false) }
 
                 Box(modifier = Modifier.spotlightTarget("home_scan_button", boundsMap)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        AnimatedActionButton(
+                            delay = 0,
+                            modifier = Modifier.weight(1f),
                         ) {
-                            AnimatedActionButton(delay = 0, content = {
-                                ActionTile(
-                                    icon = Icons.Filled.CameraAlt,
-                                    label = stringResource(R.string.home_btn_take_photo),
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    onClick = { navController.navigate("camera") },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            })
-                            AnimatedActionButton(delay = 50, content = {
-                                ActionTile(
-                                    icon = Icons.Filled.Photo,
-                                    label = stringResource(R.string.home_btn_select_gallery),
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.primary,
-                                    onClick = {
-                                        galleryLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            })
+                            ActionTile(
+                                icon = Icons.Filled.CameraAlt,
+                                label = stringResource(R.string.home_btn_take_photo),
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                onClick = { navController.navigate("camera") },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
-
-                        // Batch Analysis — full-width with source picker
-                        AnimatedActionButton(delay = 100, content = {
+                        AnimatedActionButton(
+                            delay = 50,
+                            modifier = Modifier.weight(1f),
+                        ) {
                             Box {
                                 ActionTile(
                                     icon = Icons.Filled.PhotoLibrary,
-                                    label = stringResource(R.string.home_btn_batch_analysis),
+                                    label = stringResource(R.string.home_btn_select_gallery),
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.tertiary,
-                                    onClick = { showBatchMenu = true },
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                    onClick = { showScanMenu = true },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 DropdownMenu(
-                                    expanded = showBatchMenu,
-                                    onDismissRequest = { showBatchMenu = false },
+                                    expanded = showScanMenu,
+                                    onDismissRequest = { showScanMenu = false },
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.home_btn_select_gallery)) },
-                                        leadingIcon = { Icon(Icons.Filled.Photo, contentDescription = null) },
+                                        text = { Text(stringResource(R.string.home_btn_gallery_multi)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.Photo, contentDescription = null)
+                                        },
                                         onClick = {
-                                            showBatchMenu = false
-                                            batchLauncher.launch(
-                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            showScanMenu = false
+                                            mediaLauncher.launch(
+                                                PickVisualMediaRequest(
+                                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                                                )
                                             )
                                         },
                                     )
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.home_btn_select_files)) },
-                                        leadingIcon = { Icon(Icons.Filled.FolderOpen, contentDescription = null) },
+                                        text = { Text(stringResource(R.string.home_btn_files_multi)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.FolderOpen, contentDescription = null)
+                                        },
                                         onClick = {
-                                            showBatchMenu = false
-                                            filesLauncher.launch(arrayOf("image/*"))
+                                            showScanMenu = false
+                                            filesLauncher.launch(arrayOf("image/*", "video/*"))
                                         },
                                     )
                                 }
                             }
-                        })
+                        }
                     }
                 }
 
@@ -385,6 +377,7 @@ fun HomeScreen(
 @Composable
 private fun AnimatedActionButton(
     delay: Int,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     var isVisible by remember { mutableStateOf(false) }
@@ -408,7 +401,7 @@ private fun AnimatedActionButton(
     )
 
     Box(
-        modifier = Modifier.graphicsLayer {
+        modifier = modifier.graphicsLayer {
             scaleX = scale
             scaleY = scale
             this.alpha = alpha
