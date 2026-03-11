@@ -166,10 +166,17 @@
     <string name="settings_desc_guided_tours">Interaktive Anleitungen, die die Funktionen jedes Bildschirms erklären.</string>
     <string name="settings_btn_replay_tours">Geführte Touren wiederholen</string>
 
+    <!-- Entwickler-Abschnitt (Easter Egg: Logo 21 Mal tippen) -->
+    <string name="settings_section_developer">Entwickler</string>
+    <string name="settings_dev_mode_activated">Entwicklermodus aktiviert!</string>
+    <string name="settings_dev_mode_countdown">Noch %1$d Mal tippen…</string>
+    <string name="settings_dev_mode_disable">Entwicklermodus deaktivieren</string>
+
     <!-- Über-Abschnitt -->
     <string name="settings_section_about">Über</string>
     <string name="settings_cd_logo">OceanGuard Logo</string>
     <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_description">Offline-Erkennung von Meeresmüll mit KI. Unsere Ozeane schützen, ein Scan nach dem anderen.</string>
     <string name="settings_about_powered_by">Unterstützt von MediaPipe &amp; TensorFlow Lite</string>
     <!-- HINWEIS: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" wird gemäß Aufgabenanweisungen
          absichtlich in SettingsScreen.kt fest kodiert. -->
@@ -324,13 +331,13 @@
 
     <!-- Startseiten-Tour -->
     <string name="tour_home_scan_title">Scannen starten</string>
-    <string name="tour_home_scan_desc">Tippen Sie hier, um ein Foto aufzunehmen oder aus der Galerie auszuwählen, um Meeresmüll zu erkennen.</string>
+    <string name="tour_home_scan_desc">Verwenden Sie die Kamera zum Erfassen, oder tippen Sie auf « Aus Galerie scannen » um aus Galerie oder Dateien zu wählen. Unterstützt Bilder und Videos — die App erkennt den Typ und verarbeitet jede Datei automatisch.</string>
     <string name="tour_home_model_status_title">KI-Status</string>
-    <string name="tour_home_model_status_desc">Zeigt an, ob das Erkennungsmodul geladen und bereit ist.</string>
+    <string name="tour_home_model_status_desc">Zeigt an, ob der Erkennungsmotor und das Tiefenanalyse-Modell geladen und bereit sind.</string>
     <string name="tour_home_stats_title">Ihre Wirkung</string>
-    <string name="tour_home_stats_desc">Verfolgen Sie Ihre Analysen, gefundenen Müll und die durchschnittliche Meeresgesundheit.</string>
+    <string name="tour_home_stats_desc">Verfolgen Sie Ihre Analysen, gefundene Abfälle und den durchschnittlichen Ozean-Gesundheitswert.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Ihre Sammlung entdeckter Mülltypen — sammeln Sie sie alle!</string>
+    <string name="tour_home_marinedex_desc">Ihre Sammlung entdeckter Abfalltypen — entdecken Sie alle 11! Tippen Sie für den vollständigen Katalog.</string>
 
     <!-- Kamera-Tour -->
     <string name="tour_camera_shutter_title">Aufnahme</string>
@@ -363,10 +370,14 @@
     <string name="tour_batch_summary_desc">Nachdem alle Bilder verarbeitet wurden, erscheint eine Zusammenfassungskarte mit aggregierten Statistiken.</string>
 
     <!-- Verlaufs-Tour -->
-    <string name="tour_history_search_title">Suchen &amp; Filtern</string>
-    <string name="tour_history_search_desc">Analysen nach Datum, Standort oder Mülltyp suchen.</string>
+    <string name="tour_history_search_title">Suche</string>
+    <string name="tour_history_search_desc">Suchen Sie nach Abfalltyp, Material oder Risikostufe in allen Ihren Analysen.</string>
+    <string name="tour_history_media_filter_title">Bilder &amp; Videos</string>
+    <string name="tour_history_media_filter_desc">Wechseln Sie zwischen Bild- und Videoanalysen mit diesen Filtertabs.</string>
+    <string name="tour_history_filters_title">Erweiterte Filter</string>
+    <string name="tour_history_filters_desc">Filtern Sie nach Abfalltyp, Ort oder Datumsbereich. Kombinieren Sie Filter, um genau das zu finden, was Sie suchen.</string>
     <string name="tour_history_card_title">Analysekarte</string>
-    <string name="tour_history_card_desc">Tippen zum Anzeigen der vollständigen Details. Nach links wischen zum Löschen.</string>
+    <string name="tour_history_card_desc">Tippen für Details. Nach links wischen zum Löschen. Lange drücken für Mehrfachauswahl.</string>
 
     <!-- Sitzungsdetail-Tour -->
     <string name="tour_session_detail_image_title">Annotiertes Bild</string>
@@ -378,25 +389,37 @@
 
     <!-- Karten-Tour -->
     <string name="tour_map_view_title">Erkennungskarte</string>
-    <string name="tour_map_view_desc">Alle Ihre Analysen auf der Karte eingetragen. Cluster gruppieren nahe Analysen.</string>
+    <string name="tour_map_view_desc">Alle Ihre Analysen auf der Karte. Cluster gruppieren nahe Erkennungen — tippen Sie auf einen Cluster für Zonendetails und Trends.</string>
     <string name="tour_map_heatmap_title">Heatmap</string>
-    <string name="tour_map_heatmap_desc">Heatmap-Ansicht umschalten, um Mülldichtemuster zu sehen.</string>
+    <string name="tour_map_heatmap_desc">Wechseln Sie zwischen Heatmap und Pin-Ansicht, um Abfalldichte-Muster zu sehen.</string>
     <string name="tour_map_style_title">Kartenstil</string>
-    <string name="tour_map_style_desc">Zwischen hellem, dunklem und topografischem Kartenstil wechseln.</string>
+    <string name="tour_map_style_desc">Wechseln Sie zwischen Positron (hell), Dunkel und Liberty (Gelände).</string>
+    <string name="tour_map_filters_title">Kartenfilter</string>
+    <string name="tour_map_filters_desc">Filtern Sie Kartenmarkierungen nach Abfalltyp oder Datumsbereich, um sich auf bestimmte Daten zu konzentrieren.</string>
+    <string name="tour_map_fit_all_title">Alles Anzeigen</string>
+    <string name="tour_map_fit_all_desc">Zoomen Sie die Karte, um alle Erkennungsmarkierungen auf einmal anzuzeigen.</string>
 
     <!-- Berichts-Tour -->
     <string name="tour_reports_generate_title">Bericht erstellen</string>
-    <string name="tour_reports_generate_desc">KI-Bericht im Hintergrund erstellen. Sie können den Bildschirm verlassen — der Fortschritt erscheint in den Benachrichtigungen.</string>
-    <string name="tour_reports_language_title">Sprache</string>
-    <string name="tour_reports_language_desc">Sprache für den Bericht auswählen. Öffnen Sie einen gespeicherten Bericht zum Teilen oder Exportieren.</string>
+    <string name="tour_reports_generate_desc">Erstellen Sie einen KI-Umweltbericht. Läuft im Hintergrund — Fortschritt erscheint in Benachrichtigungen. Öffnen Sie gespeicherte Berichte zum Teilen oder PDF-Export.</string>
+    <string name="tour_reports_language_title">Datum &amp; Sprache</string>
+    <string name="tour_reports_language_desc">Filtern Sie nach Datumsbereich und wählen Sie die Berichtssprache. Unterstützt 6 Sprachen.</string>
+    <string name="tour_reports_zone_title">Zonenauswahl</string>
+    <string name="tour_reports_zone_desc">Wählen Sie einen Beobachtungsort für einen zonenspezifischen Umweltbericht. Zonen werden automatisch aus GPS-Daten erkannt.</string>
 
     <!-- Einstellungs-Tour -->
-    <string name="tour_settings_confidence_title">Erkennungsempfindlichkeit</string>
-    <string name="tour_settings_confidence_desc">Konfidenz-Schwellenwert für die Müll-Erkennung anpassen.</string>
+    <string name="tour_settings_confidence_title">Erkennungseinstellungen</string>
+    <string name="tour_settings_confidence_desc">Passen Sie den Konfidenzwert an, wählen Sie die Modellpräzision (FP16/INT8) und aktivieren Sie die Aufnahmebestätigung.</string>
     <string name="tour_settings_deep_analysis_title">Tiefenanalyse</string>
-    <string name="tour_settings_deep_analysis_desc">KI-Tiefenanalyse für reichhaltigere Umwelteinblicke ein-/ausschalten.</string>
+    <string name="tour_settings_deep_analysis_desc">Aktivieren Sie die VLM-Tiefenanalyse für detailliertere Umweltinformationen und KI-generierte Berichte.</string>
     <string name="tour_settings_theme_title">Dunkelmodus</string>
-    <string name="tour_settings_theme_desc">Zwischen dunklem und hellem Design wechseln.</string>
+    <string name="tour_settings_theme_desc">Wechseln Sie zwischen dunklem und hellem Design für bessere Unterwasser-Sichtbarkeit.</string>
+    <string name="tour_settings_language_title">Sprachen</string>
+    <string name="tour_settings_language_desc">Stellen Sie die App-Sprache und die Standardsprache für KI-generierte Berichte ein.</string>
+    <string name="tour_settings_data_title">Datenverwaltung</string>
+    <string name="tour_settings_data_desc">Setzen Sie alle Daten zurück — entfernt alle Analysen, MarineDex-Einträge und Erfolge.</string>
+    <string name="tour_settings_tours_title">Geführte Touren</string>
+    <string name="tour_settings_tours_desc">Spielen Sie die geführten Touren jederzeit erneut ab, um alle App-Funktionen zu erkunden.</string>
 
     <!-- MarineDex-Tour -->
     <string name="tour_marinedex_progress_title">Sammelfortschritt</string>
@@ -406,11 +429,13 @@
 
     <!-- MarineDex-Detail-Tour -->
     <string name="tour_marinedex_detail_sprite_title">Müll-Sprite</string>
-    <string name="tour_marinedex_detail_sprite_desc">Die Pixelkunst-Darstellung dieses Mülltyps.</string>
+    <string name="tour_marinedex_detail_sprite_desc">Das Pixel-Art-Sprite dieses Abfalltyps. Tippen Sie auf das Herz, um es zu Favoriten hinzuzufügen.</string>
     <string name="tour_marinedex_detail_impact_title">Umweltauswirkung</string>
-    <string name="tour_marinedex_detail_impact_desc">Abbauzeit, Risikostufe und ökologische Auswirkungsdaten.</string>
+    <string name="tour_marinedex_detail_impact_desc">Abbauzeit, Risikostufe, Hauptrisiko und geschätztes jährliches Ozeanvolumen für diesen Abfalltyp.</string>
     <string name="tour_marinedex_detail_tabs_title">Galerie &amp; Karte</string>
-    <string name="tour_marinedex_detail_tabs_desc">Tabs wechseln, um Ihre aufgenommenen Bilder und Erkennungsstandorte zu sehen.</string>
+    <string name="tour_marinedex_detail_tabs_desc">Wechseln Sie die Tabs, um aufgenommene Bilder dieses Typs und seine Erkennungsorte auf der Karte zu sehen.</string>
+    <string name="tour_marinedex_detail_stats_title">Erkennungsstatistiken</string>
+    <string name="tour_marinedex_detail_stats_desc">Verfolgen Sie, wie oft dieser Typ erkannt wurde, sowie wann er zuerst und zuletzt gesehen wurde.</string>
 
     <!-- Errungenschaften-Tour -->
     <string name="tour_achievements_progress_title">Errungenschaftsfortschritt</string>

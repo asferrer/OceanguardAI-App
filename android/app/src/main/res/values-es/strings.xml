@@ -236,4 +236,38 @@
     <string name="error_model_not_loaded">Modelo de IA no cargado. Reinicia la aplicación.</string>
     <string name="error_image_processing">No se pudo procesar la imagen</string>
     <string name="error_detection_failed">Error en la detección. Inténtalo de nuevo.</string>
+
+    <!-- Análisis de vídeo -->
+    <string name="video_analyze">Analizar vídeo</string>
+    <string name="video_results_title">Análisis de vídeo</string>
+    <string name="video_processing_frame">Fotograma %1$d / %2$d</string>
+    <string name="video_processing_remaining">~%1$dm %2$ds restantes</string>
+    <string name="video_processing_elapsed">Transcurrido: %1$dm %2$ds</string>
+    <string name="video_cancel">Cancelar</string>
+    <string name="video_complete_title">Análisis completado</string>
+    <string name="video_unique_debris">%1$d residuos únicos</string>
+    <string name="video_share">Compartir vídeo</string>
+    <string name="video_detail_title">Análisis de vídeo</string>
+    <string name="video_detection_results">Resultados de detección</string>
+    <string name="video_debris_breakdown">Desglose de residuos</string>
+    <string name="video_processing_info">Info de procesamiento</string>
+    <string name="video_total_time">Tiempo total</string>
+    <string name="video_frames_processed">Fotogramas procesados</string>
+    <string name="video_duration">Duración del vídeo</string>
+    <string name="video_avg_inference">Tiempo medio/fotograma</string>
+    <string name="video_health_score">Puntuación de salud</string>
+    <string name="video_unique_detected">residuos únicos detectados</string>
+    <string name="video_delete_confirm_title">¿Eliminar análisis de vídeo?</string>
+    <string name="video_delete_confirm_message">Esto eliminará permanentemente este análisis de vídeo y su vídeo anotado.</string>
+    <string name="video_live_preview_cd">Vista previa de inferencia en vivo</string>
+    <string name="video_waiting_first_frame">Esperando primer frame…</string>
+    <string name="video_preparing">Preparando análisis de vídeo…</string>
+    <string name="video_elapsed">Transcurrido: %1$s</string>
+    <string name="video_queue_pending">%1$d trabajos más en cola</string>
+    <string name="history_filter_images">Imágenes (%1$d)</string>
+    <string name="history_filter_videos">Vídeos (%1$d)</string>
+
+    <!-- Selectores multimedia múltiple en la pantalla de inicio -->
+    <string name="home_btn_gallery_multi">Galería</string>
+    <string name="home_btn_files_multi">Archivos</string>
 </resources>

@@ -166,13 +166,18 @@
     <string name="settings_desc_guided_tours">Interactive guides that explain each screen\'s features.</string>
     <string name="settings_btn_replay_tours">Replay Guided Tours</string>
 
+    <!-- Developer section (easter egg: tap logo 21 times) -->
+    <string name="settings_section_developer">Developer</string>
+    <string name="settings_dev_mode_activated">Developer mode activated!</string>
+    <string name="settings_dev_mode_countdown">%1$d taps to go…</string>
+    <string name="settings_dev_mode_disable">Disable Developer Mode</string>
+
     <!-- About section -->
     <string name="settings_section_about">About</string>
     <string name="settings_cd_logo">OceanGuard Logo</string>
     <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_description">Offline marine debris detection powered by AI. Protecting our oceans, one scan at a time.</string>
     <string name="settings_about_powered_by">Powered by MediaPipe &amp; TensorFlow Lite</string>
-    <!-- NOTE: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" is intentionally kept
-         hardcoded in SettingsScreen.kt per task instructions. -->
 
     <!-- ================================================================== -->
     <!-- MarineDex Screen                                                     -->
@@ -324,13 +329,13 @@
 
     <!-- Home tour -->
     <string name="tour_home_scan_title">Start Scanning</string>
-    <string name="tour_home_scan_desc">Tap here to take a photo or select from gallery to detect marine debris.</string>
+    <string name="tour_home_scan_desc">Use the camera to capture, or tap \"Scan from Gallery\" to choose from Gallery or Files. Supports images and videos — the app detects the type and routes each file automatically.</string>
     <string name="tour_home_model_status_title">AI Status</string>
-    <string name="tour_home_model_status_desc">Shows whether the detection engine is loaded and ready.</string>
+    <string name="tour_home_model_status_desc">Shows whether the detection engine and deep analysis model are loaded and ready.</string>
     <string name="tour_home_stats_title">Your Impact</string>
-    <string name="tour_home_stats_desc">Track your analyses, debris found, and average ocean health.</string>
+    <string name="tour_home_stats_desc">Track your total analyses, debris found, and average ocean health score over time.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Your collection of discovered debris types — catch them all!</string>
+    <string name="tour_home_marinedex_desc">Your collection of discovered debris types — catch all 11! Tap to explore the full catalog.</string>
 
     <!-- Camera tour -->
     <string name="tour_camera_shutter_title">Capture</string>
@@ -363,10 +368,14 @@
     <string name="tour_batch_summary_desc">After all images are processed, a summary card appears with aggregate statistics.</string>
 
     <!-- History tour -->
-    <string name="tour_history_search_title">Search &amp; Filter</string>
-    <string name="tour_history_search_desc">Search analyses by date, location, or debris type.</string>
+    <string name="tour_history_media_filter_title">Images &amp; Videos</string>
+    <string name="tour_history_media_filter_desc">Switch between image analyses and video analyses using these filter tabs.</string>
+    <string name="tour_history_search_title">Search</string>
+    <string name="tour_history_search_desc">Type to search by debris type, material, or risk level across all your analyses.</string>
+    <string name="tour_history_filters_title">Advanced Filters</string>
+    <string name="tour_history_filters_desc">Filter by debris type, location, or date range. Combine filters to find exactly what you need.</string>
     <string name="tour_history_card_title">Analysis Card</string>
-    <string name="tour_history_card_desc">Tap to view full details. Swipe left to delete.</string>
+    <string name="tour_history_card_desc">Tap to view full details. Swipe left to delete. Long-press to enter multi-selection mode for bulk actions.</string>
 
     <!-- Session Detail tour -->
     <string name="tour_session_detail_image_title">Annotated Image</string>
@@ -377,26 +386,38 @@
     <string name="tour_session_detail_location_desc">GPS coordinates where this image was captured. Tap edit to correct.</string>
 
     <!-- Map tour -->
+    <string name="tour_map_filters_title">Map Filters</string>
+    <string name="tour_map_filters_desc">Filter map markers by debris type or date range to focus on specific data.</string>
     <string name="tour_map_view_title">Detection Map</string>
-    <string name="tour_map_view_desc">All your analyses plotted on the map. Clusters group nearby detections.</string>
+    <string name="tour_map_view_desc">All your analyses plotted on the map. Clusters group nearby detections — tap a cluster to see zone details and trends.</string>
     <string name="tour_map_heatmap_title">Heatmap</string>
-    <string name="tour_map_heatmap_desc">Toggle heatmap view to see debris density patterns.</string>
+    <string name="tour_map_heatmap_desc">Toggle between heatmap and pin views to see debris density patterns.</string>
+    <string name="tour_map_fit_all_title">Fit All</string>
+    <string name="tour_map_fit_all_desc">Zoom the map to fit all your detection markers in view at once.</string>
     <string name="tour_map_style_title">Map Style</string>
-    <string name="tour_map_style_desc">Switch between light, dark, and terrain map styles.</string>
+    <string name="tour_map_style_desc">Cycle between Positron (light), Dark, and Liberty (terrain) map styles.</string>
 
     <!-- Reports tour -->
+    <string name="tour_reports_zone_title">Zone Selector</string>
+    <string name="tour_reports_zone_desc">Select a survey location to generate a zone-specific environmental report. Zones are auto-detected from GPS data.</string>
+    <string name="tour_reports_language_title">Date &amp; Language</string>
+    <string name="tour_reports_language_desc">Filter by date range and choose the language for the generated report. Supports 6 languages.</string>
     <string name="tour_reports_generate_title">Generate Report</string>
-    <string name="tour_reports_generate_desc">Generate an AI report in the background. You can leave the screen — progress appears in notifications.</string>
-    <string name="tour_reports_language_title">Language</string>
-    <string name="tour_reports_language_desc">Choose the language for the generated report. Open a saved report to share or export it.</string>
+    <string name="tour_reports_generate_desc">Generate an AI environmental report. Runs in the background — progress appears in notifications. Open saved reports to share or export as PDF.</string>
 
     <!-- Settings tour -->
-    <string name="tour_settings_confidence_title">Detection Sensitivity</string>
-    <string name="tour_settings_confidence_desc">Adjust the confidence threshold for debris detection.</string>
+    <string name="tour_settings_confidence_title">Detection Settings</string>
+    <string name="tour_settings_confidence_desc">Adjust the confidence threshold, choose model precision (FP16/INT8), and toggle capture confirmation.</string>
     <string name="tour_settings_deep_analysis_title">Deep Analysis</string>
-    <string name="tour_settings_deep_analysis_desc">Toggle AI deep analysis for richer environmental insights.</string>
+    <string name="tour_settings_deep_analysis_desc">Enable the VLM deep analysis engine for richer environmental insights and AI-generated reports.</string>
+    <string name="tour_settings_language_title">Languages</string>
+    <string name="tour_settings_language_desc">Set the app interface language and the default language for AI-generated reports.</string>
     <string name="tour_settings_theme_title">Dark Mode</string>
-    <string name="tour_settings_theme_desc">Switch between dark and light themes.</string>
+    <string name="tour_settings_theme_desc">Switch between dark and light themes for better underwater visibility.</string>
+    <string name="tour_settings_data_title">Data Management</string>
+    <string name="tour_settings_data_desc">Reset all data to start fresh — removes all analyses, MarineDex entries, and achievements.</string>
+    <string name="tour_settings_tours_title">Guided Tours</string>
+    <string name="tour_settings_tours_desc">Replay the guided tours at any time to revisit all app features.</string>
 
     <!-- MarineDex tour -->
     <string name="tour_marinedex_progress_title">Collection Progress</string>
@@ -406,11 +427,13 @@
 
     <!-- MarineDex Detail tour -->
     <string name="tour_marinedex_detail_sprite_title">Debris Sprite</string>
-    <string name="tour_marinedex_detail_sprite_desc">The pixel art representation of this debris type.</string>
+    <string name="tour_marinedex_detail_sprite_desc">The pixel art sprite for this debris type. Tap the heart to add it to your favorites.</string>
+    <string name="tour_marinedex_detail_stats_title">Detection Stats</string>
+    <string name="tour_marinedex_detail_stats_desc">Track how many times this type was detected, plus when it was first and last seen.</string>
     <string name="tour_marinedex_detail_impact_title">Environmental Impact</string>
-    <string name="tour_marinedex_detail_impact_desc">Degradation time, risk level, and ecological impact data.</string>
+    <string name="tour_marinedex_detail_impact_desc">Degradation time, risk level score, primary risk, and estimated annual ocean volume for this debris type.</string>
     <string name="tour_marinedex_detail_tabs_title">Gallery &amp; Map</string>
-    <string name="tour_marinedex_detail_tabs_desc">Switch tabs to see your captured images and detection locations.</string>
+    <string name="tour_marinedex_detail_tabs_desc">Switch tabs to browse captured images of this type and see its detection locations on the map.</string>
 
     <!-- Achievements tour -->
     <string name="tour_achievements_progress_title">Achievement Progress</string>

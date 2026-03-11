@@ -236,4 +236,38 @@
     <string name="error_model_not_loaded">KI-Modell nicht geladen. Bitte starten Sie die App neu.</string>
     <string name="error_image_processing">Bildverarbeitung fehlgeschlagen</string>
     <string name="error_detection_failed">Erkennung fehlgeschlagen. Bitte versuchen Sie es erneut.</string>
+
+    <!-- Videoanalyse -->
+    <string name="video_analyze">Video analysieren</string>
+    <string name="video_results_title">Videoanalyse</string>
+    <string name="video_processing_frame">Frame %1$d / %2$d</string>
+    <string name="video_processing_remaining">~%1$dm %2$ds verbleibend</string>
+    <string name="video_processing_elapsed">Vergangen: %1$dm %2$ds</string>
+    <string name="video_cancel">Abbrechen</string>
+    <string name="video_complete_title">Analyse abgeschlossen</string>
+    <string name="video_unique_debris">%1$d einzigartiger Müll</string>
+    <string name="video_share">Video teilen</string>
+    <string name="video_detail_title">Videoanalyse</string>
+    <string name="video_detection_results">Erkennungsergebnisse</string>
+    <string name="video_debris_breakdown">Mülaufschlüsselung</string>
+    <string name="video_processing_info">Verarbeitungsinfo</string>
+    <string name="video_total_time">Gesamtzeit</string>
+    <string name="video_frames_processed">Verarbeitete Frames</string>
+    <string name="video_duration">Videolänge</string>
+    <string name="video_avg_inference">Durchschn. Zeit/Frame</string>
+    <string name="video_health_score">Gesundheitswert</string>
+    <string name="video_unique_detected">einzigartiger Müll erkannt</string>
+    <string name="video_delete_confirm_title">Videoanalyse löschen?</string>
+    <string name="video_delete_confirm_message">Dadurch wird diese Videoanalyse und ihr kommentiertes Video dauerhaft gelöscht.</string>
+    <string name="video_live_preview_cd">Live-Inferenz-Vorschau</string>
+    <string name="video_waiting_first_frame">Warte auf ersten Frame…</string>
+    <string name="video_preparing">Videoanalyse wird vorbereitet…</string>
+    <string name="video_elapsed">Vergangen: %1$s</string>
+    <string name="video_queue_pending">%1$d weitere Aufträge in Warteschlange</string>
+    <string name="history_filter_images">Bilder (%1$d)</string>
+    <string name="history_filter_videos">Videos (%1$d)</string>
+
+    <!-- Mehrfach-Medienpicker auf dem Startbildschirm -->
+    <string name="home_btn_gallery_multi">Galerie</string>
+    <string name="home_btn_files_multi">Dateien</string>
 </resources>

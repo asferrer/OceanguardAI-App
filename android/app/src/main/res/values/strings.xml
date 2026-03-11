@@ -236,4 +236,38 @@
     <string name="error_model_not_loaded">AI model not loaded. Please restart the app.</string>
     <string name="error_image_processing">Failed to process image</string>
     <string name="error_detection_failed">Detection failed. Please try again.</string>
+
+    <!-- Video Analysis -->
+    <string name="video_analyze">Analyze Video</string>
+    <string name="video_results_title">Video Analysis</string>
+    <string name="video_processing_frame">Frame %1$d / %2$d</string>
+    <string name="video_processing_remaining">~%1$dm %2$ds remaining</string>
+    <string name="video_processing_elapsed">Elapsed: %1$dm %2$ds</string>
+    <string name="video_cancel">Cancel</string>
+    <string name="video_complete_title">Analysis Complete</string>
+    <string name="video_unique_debris">%1$d unique debris</string>
+    <string name="video_share">Share Video</string>
+    <string name="video_detail_title">Video Analysis</string>
+    <string name="video_detection_results">Detection Results</string>
+    <string name="video_debris_breakdown">Debris Breakdown</string>
+    <string name="video_processing_info">Processing Info</string>
+    <string name="video_total_time">Total time</string>
+    <string name="video_frames_processed">Frames processed</string>
+    <string name="video_duration">Video duration</string>
+    <string name="video_avg_inference">Avg. time/frame</string>
+    <string name="video_health_score">Health Score</string>
+    <string name="video_unique_detected">unique debris detected</string>
+    <string name="video_delete_confirm_title">Delete Video Analysis?</string>
+    <string name="video_delete_confirm_message">This will permanently delete this video analysis and its annotated video.</string>
+    <string name="video_live_preview_cd">Live inference preview</string>
+    <string name="video_waiting_first_frame">Waiting for first frame…</string>
+    <string name="video_preparing">Preparing video analysis…</string>
+    <string name="video_elapsed">Elapsed: %1$s</string>
+    <string name="video_queue_pending">%1$d more jobs queued</string>
+    <string name="history_filter_images">Images (%1$d)</string>
+    <string name="history_filter_videos">Videos (%1$d)</string>
+
+    <!-- Home screen multi-media pickers -->
+    <string name="home_btn_gallery_multi">Gallery</string>
+    <string name="home_btn_files_multi">Files</string>
 </resources>

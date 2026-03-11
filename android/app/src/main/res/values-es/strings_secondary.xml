@@ -166,10 +166,17 @@
     <string name="settings_desc_guided_tours">Guías interactivas que explican las funciones de cada pantalla.</string>
     <string name="settings_btn_replay_tours">Repetir visitas guiadas</string>
 
+    <!-- Sección de desarrollador (huevo de Pascua: toca el logo 21 veces) -->
+    <string name="settings_section_developer">Desarrollador</string>
+    <string name="settings_dev_mode_activated">Modo desarrollador activado!</string>
+    <string name="settings_dev_mode_countdown">%1$d toques más…</string>
+    <string name="settings_dev_mode_disable">Desactivar modo desarrollador</string>
+
     <!-- Sección Acerca de -->
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_cd_logo">Logo de OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_description">Detección offline de residuos marinos con IA. Protegiendo nuestros océanos, un escaneo a la vez.</string>
     <string name="settings_about_powered_by">Desarrollado con MediaPipe &amp; TensorFlow Lite</string>
     <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" se mantiene intencionalmente
          en el código de SettingsScreen.kt según las instrucciones de la tarea. -->
@@ -323,14 +330,14 @@
     <!-- ================================================================== -->
 
     <!-- Tour de inicio -->
-    <string name="tour_home_scan_title">Empieza a escanear</string>
-    <string name="tour_home_scan_desc">Toca aquí para tomar una foto o seleccionar de la galería y detectar residuos marinos.</string>
+    <string name="tour_home_scan_title">Iniciar Escaneo</string>
+    <string name="tour_home_scan_desc">Usa la cámara para capturar, o pulsa \"Escanear desde Galería\" para elegir desde la Galería o Archivos. Admite imágenes y vídeos — la app detecta el tipo y procesa cada archivo automáticamente.</string>
     <string name="tour_home_model_status_title">Estado de la IA</string>
-    <string name="tour_home_model_status_desc">Indica si el motor de detección está cargado y listo.</string>
-    <string name="tour_home_stats_title">Tu impacto</string>
-    <string name="tour_home_stats_desc">Sigue tus análisis, residuos encontrados y salud media del océano.</string>
+    <string name="tour_home_model_status_desc">Muestra si el motor de detección y el modelo de análisis profundo están cargados y listos.</string>
+    <string name="tour_home_stats_title">Tu Impacto</string>
+    <string name="tour_home_stats_desc">Sigue tus análisis totales, residuos encontrados y puntuación media de salud oceánica.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Tu colección de tipos de residuos descubiertos — ¡atrapa todos!</string>
+    <string name="tour_home_marinedex_desc">Tu colección de tipos de residuos descubiertos — ¡descúbrelos todos! Pulsa para explorar el catálogo completo.</string>
 
     <!-- Tour de cámara -->
     <string name="tour_camera_shutter_title">Capturar</string>
@@ -363,10 +370,14 @@
     <string name="tour_batch_summary_desc">Una vez procesadas todas las imágenes, aparece una tarjeta de resumen con estadísticas agregadas.</string>
 
     <!-- Tour de historial -->
-    <string name="tour_history_search_title">Buscar &amp; filtrar</string>
-    <string name="tour_history_search_desc">Busca análisis por fecha, ubicación o tipo de residuo.</string>
-    <string name="tour_history_card_title">Tarjeta de análisis</string>
-    <string name="tour_history_card_desc">Toca para ver los detalles completos. Desliza a la izquierda para eliminar.</string>
+    <string name="tour_history_media_filter_title">Imágenes y Vídeos</string>
+    <string name="tour_history_media_filter_desc">Alterna entre análisis de imágenes y vídeos usando estos filtros.</string>
+    <string name="tour_history_search_title">Buscar</string>
+    <string name="tour_history_search_desc">Escribe para buscar por tipo de residuo, material o nivel de riesgo en todos tus análisis.</string>
+    <string name="tour_history_filters_title">Filtros Avanzados</string>
+    <string name="tour_history_filters_desc">Filtra por tipo de residuo, ubicación o rango de fechas. Combina filtros para encontrar exactamente lo que necesitas.</string>
+    <string name="tour_history_card_title">Tarjeta de Análisis</string>
+    <string name="tour_history_card_desc">Pulsa para ver los detalles. Desliza a la izquierda para eliminar. Mantén pulsado para selección múltiple.</string>
 
     <!-- Tour de detalle de sesión -->
     <string name="tour_session_detail_image_title">Imagen anotada</string>
@@ -377,26 +388,38 @@
     <string name="tour_session_detail_location_desc">Coordenadas GPS donde se capturó esta imagen. Toca editar para corregirlas.</string>
 
     <!-- Tour de mapa -->
-    <string name="tour_map_view_title">Mapa de detecciones</string>
-    <string name="tour_map_view_desc">Todos tus análisis representados en el mapa. Los agrupamientos juntan análisis cercanos.</string>
-    <string name="tour_map_heatmap_title">Mapa de calor</string>
-    <string name="tour_map_heatmap_desc">Activa el mapa de calor para ver los patrones de densidad de residuos.</string>
-    <string name="tour_map_style_title">Estilo del mapa</string>
-    <string name="tour_map_style_desc">Cambia entre estilos de mapa claro, oscuro y de terreno.</string>
+    <string name="tour_map_filters_title">Filtros del Mapa</string>
+    <string name="tour_map_filters_desc">Filtra los marcadores por tipo de residuo o rango de fechas para centrarte en datos específicos.</string>
+    <string name="tour_map_view_title">Mapa de Detecciones</string>
+    <string name="tour_map_view_desc">Todos tus análisis en el mapa. Los clústeres agrupan detecciones cercanas — pulsa uno para ver detalles de zona y tendencias.</string>
+    <string name="tour_map_heatmap_title">Mapa de Calor</string>
+    <string name="tour_map_heatmap_desc">Alterna entre mapa de calor y pines para ver patrones de densidad de residuos.</string>
+    <string name="tour_map_fit_all_title">Ajustar Vista</string>
+    <string name="tour_map_fit_all_desc">Ajusta el zoom para ver todos tus marcadores de detección a la vez.</string>
+    <string name="tour_map_style_title">Estilo del Mapa</string>
+    <string name="tour_map_style_desc">Alterna entre los estilos Positron (claro), Oscuro y Liberty (terreno).</string>
 
     <!-- Tour de informes -->
-    <string name="tour_reports_generate_title">Generar informe</string>
-    <string name="tour_reports_generate_desc">Genera un informe con IA en segundo plano. Puedes salir de la pantalla: el progreso aparece en las notificaciones.</string>
-    <string name="tour_reports_language_title">Idioma</string>
-    <string name="tour_reports_language_desc">Elige el idioma del informe. Abre un informe guardado para compartirlo o exportarlo.</string>
+    <string name="tour_reports_zone_title">Selector de Zona</string>
+    <string name="tour_reports_zone_desc">Selecciona una ubicación para generar un informe ambiental por zona. Las zonas se detectan automáticamente desde los datos GPS.</string>
+    <string name="tour_reports_language_title">Fecha e Idioma</string>
+    <string name="tour_reports_language_desc">Filtra por rango de fechas y elige el idioma del informe generado. Compatible con 6 idiomas.</string>
+    <string name="tour_reports_generate_title">Generar Informe</string>
+    <string name="tour_reports_generate_desc">Genera un informe ambiental con IA. Se ejecuta en segundo plano — el progreso aparece en notificaciones. Abre los informes guardados para compartir o exportar como PDF.</string>
 
     <!-- Tour de configuración -->
-    <string name="tour_settings_confidence_title">Sensibilidad de detección</string>
-    <string name="tour_settings_confidence_desc">Ajusta el umbral de confianza para la detección de residuos.</string>
-    <string name="tour_settings_deep_analysis_title">Análisis profundo</string>
-    <string name="tour_settings_deep_analysis_desc">Activa o desactiva el análisis profundo de IA para obtener información ambiental más detallada.</string>
-    <string name="tour_settings_theme_title">Modo oscuro</string>
-    <string name="tour_settings_theme_desc">Alterna entre temas oscuro y claro.</string>
+    <string name="tour_settings_confidence_title">Configuración de Detección</string>
+    <string name="tour_settings_confidence_desc">Ajusta el umbral de confianza, elige la precisión del modelo (FP16/INT8) y activa la confirmación de captura.</string>
+    <string name="tour_settings_deep_analysis_title">Análisis Profundo</string>
+    <string name="tour_settings_deep_analysis_desc">Activa el motor de análisis profundo VLM para obtener información ambiental más detallada e informes generados por IA.</string>
+    <string name="tour_settings_language_title">Idiomas</string>
+    <string name="tour_settings_language_desc">Configura el idioma de la interfaz y el idioma predeterminado para los informes generados por IA.</string>
+    <string name="tour_settings_theme_title">Modo Oscuro</string>
+    <string name="tour_settings_theme_desc">Alterna entre tema oscuro y claro para mejor visibilidad submarina.</string>
+    <string name="tour_settings_data_title">Gestión de Datos</string>
+    <string name="tour_settings_data_desc">Reinicia todos los datos para empezar de cero — elimina análisis, entradas de MarineDex y logros.</string>
+    <string name="tour_settings_tours_title">Tours Guiados</string>
+    <string name="tour_settings_tours_desc">Repite los tours guiados en cualquier momento para revisar las funcionalidades de la app.</string>
 
     <!-- Tour de MarineDex -->
     <string name="tour_marinedex_progress_title">Progreso de la colección</string>
@@ -405,12 +428,14 @@
     <string name="tour_marinedex_grid_desc">Toca un tipo descubierto para ver detalles, galería y mapa. Los tipos bloqueados aparecen como siluetas.</string>
 
     <!-- Tour de detalle de MarineDex -->
-    <string name="tour_marinedex_detail_sprite_title">Sprite del residuo</string>
-    <string name="tour_marinedex_detail_sprite_desc">La representación en pixel art de este tipo de residuo.</string>
-    <string name="tour_marinedex_detail_impact_title">Impacto ambiental</string>
-    <string name="tour_marinedex_detail_impact_desc">Tiempo de degradación, nivel de riesgo y datos de impacto ecológico.</string>
-    <string name="tour_marinedex_detail_tabs_title">Galería &amp; mapa</string>
-    <string name="tour_marinedex_detail_tabs_desc">Cambia de pestaña para ver tus imágenes capturadas y las ubicaciones de detección.</string>
+    <string name="tour_marinedex_detail_sprite_title">Sprite del Residuo</string>
+    <string name="tour_marinedex_detail_sprite_desc">El sprite pixel art de este tipo de residuo. Pulsa el corazón para añadirlo a favoritos.</string>
+    <string name="tour_marinedex_detail_stats_title">Estadísticas de Detección</string>
+    <string name="tour_marinedex_detail_stats_desc">Mira cuántas veces se detectó este tipo, y cuándo se vio por primera y última vez.</string>
+    <string name="tour_marinedex_detail_impact_title">Impacto Ambiental</string>
+    <string name="tour_marinedex_detail_impact_desc">Tiempo de degradación, nivel de riesgo, riesgo principal y volumen anual estimado en el océano para este tipo de residuo.</string>
+    <string name="tour_marinedex_detail_tabs_title">Galería &amp; Mapa</string>
+    <string name="tour_marinedex_detail_tabs_desc">Cambia de pestaña para ver imágenes capturadas de este tipo y sus ubicaciones de detección en el mapa.</string>
 
     <!-- Tour de logros -->
     <string name="tour_achievements_progress_title">Progreso de logros</string>

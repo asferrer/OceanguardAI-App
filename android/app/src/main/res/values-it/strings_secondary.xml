@@ -166,10 +166,17 @@
     <string name="settings_desc_guided_tours">Guide interattive che illustrano le funzionalità di ciascuna schermata.</string>
     <string name="settings_btn_replay_tours">Ripeti Tour Guidati</string>
 
+    <!-- Sezione Sviluppatore (easter egg: tocca il logo 21 volte) -->
+    <string name="settings_section_developer">Sviluppatore</string>
+    <string name="settings_dev_mode_activated">Modalità sviluppatore attivata!</string>
+    <string name="settings_dev_mode_countdown">Ancora %1$d tocchi…</string>
+    <string name="settings_dev_mode_disable">Disattiva modalità sviluppatore</string>
+
     <!-- Sezione Info -->
     <string name="settings_section_about">Informazioni</string>
     <string name="settings_cd_logo">Logo OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_description">Rilevamento offline dei rifiuti marini con IA. Proteggere i nostri oceani, una scansione alla volta.</string>
     <string name="settings_about_powered_by">Basato su MediaPipe &amp; TensorFlow Lite</string>
     <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" è mantenuto intenzionalmente
          hardcoded in SettingsScreen.kt come da istruzioni del progetto. -->
@@ -324,13 +331,13 @@
 
     <!-- Tour Home -->
     <string name="tour_home_scan_title">Inizia la Scansione</string>
-    <string name="tour_home_scan_desc">Tocca qui per scattare una foto o selezionarne una dalla galleria per rilevare i rifiuti marini.</string>
+    <string name="tour_home_scan_desc">Usa la fotocamera per catturare, o tocca "Scansiona dalla Galleria" per scegliere dalla Galleria o dai File. Supporta immagini e video — l\'app rileva il tipo e elabora ogni file automaticamente.</string>
     <string name="tour_home_model_status_title">Stato AI</string>
-    <string name="tour_home_model_status_desc">Mostra se il motore di rilevamento è caricato e pronto.</string>
+    <string name="tour_home_model_status_desc">Mostra se il motore di rilevamento e il modello di analisi profonda sono caricati e pronti.</string>
     <string name="tour_home_stats_title">Il Tuo Impatto</string>
-    <string name="tour_home_stats_desc">Tieni traccia delle tue analisi, dei rifiuti trovati e della salute media dell\'oceano.</string>
+    <string name="tour_home_stats_desc">Monitora le tue analisi totali, i rifiuti trovati e il punteggio medio di salute oceanica.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">La tua collezione di tipi di rifiuti scoperti — catturali tutti!</string>
+    <string name="tour_home_marinedex_desc">La tua collezione di tipi di rifiuti scoperti — scoprili tutti e 11! Tocca per esplorare il catalogo.</string>
 
     <!-- Tour Fotocamera -->
     <string name="tour_camera_shutter_title">Acquisisci</string>
@@ -363,10 +370,14 @@
     <string name="tour_batch_summary_desc">Dopo che tutte le immagini sono elaborate, appare una scheda riepilogativa con le statistiche aggregate.</string>
 
     <!-- Tour Cronologia -->
-    <string name="tour_history_search_title">Cerca &amp; Filtra</string>
-    <string name="tour_history_search_desc">Cerca analisi per data, posizione o tipo di rifiuto.</string>
+    <string name="tour_history_search_title">Ricerca</string>
+    <string name="tour_history_search_desc">Digita per cercare per tipo di rifiuto, materiale o livello di rischio in tutte le tue analisi.</string>
+    <string name="tour_history_media_filter_title">Immagini e Video</string>
+    <string name="tour_history_media_filter_desc">Passa tra le analisi di immagini e video usando questi filtri.</string>
+    <string name="tour_history_filters_title">Filtri Avanzati</string>
+    <string name="tour_history_filters_desc">Filtra per tipo di rifiuto, luogo o intervallo di date. Combina i filtri per trovare esattamente ciò che cerchi.</string>
     <string name="tour_history_card_title">Scheda Analisi</string>
-    <string name="tour_history_card_desc">Tocca per visualizzare i dettagli completi. Scorri a sinistra per eliminare.</string>
+    <string name="tour_history_card_desc">Tocca per i dettagli. Scorri a sinistra per eliminare. Tieni premuto per la selezione multipla.</string>
 
     <!-- Tour Dettaglio Sessione -->
     <string name="tour_session_detail_image_title">Immagine Annotata</string>
@@ -378,25 +389,37 @@
 
     <!-- Tour Mappa -->
     <string name="tour_map_view_title">Mappa Rilevamenti</string>
-    <string name="tour_map_view_desc">Tutte le tue analisi tracciate sulla mappa. I cluster raggruppano le analisi vicine.</string>
+    <string name="tour_map_view_desc">Tutte le tue analisi sulla mappa. I cluster raggruppano rilevamenti vicini — tocca un cluster per dettagli e tendenze della zona.</string>
     <string name="tour_map_heatmap_title">Mappa di Calore</string>
-    <string name="tour_map_heatmap_desc">Attiva la vista a mappa di calore per vedere i pattern di densità dei rifiuti.</string>
+    <string name="tour_map_heatmap_desc">Alterna tra mappa di calore e pin per vedere i pattern di densità dei rifiuti.</string>
     <string name="tour_map_style_title">Stile Mappa</string>
-    <string name="tour_map_style_desc">Passa tra stili di mappa chiaro, scuro e terreno.</string>
+    <string name="tour_map_style_desc">Alterna tra gli stili Positron (chiaro), Scuro e Liberty (terreno).</string>
+    <string name="tour_map_filters_title">Filtri Mappa</string>
+    <string name="tour_map_filters_desc">Filtra i marcatori per tipo di rifiuto o intervallo di date per concentrarti su dati specifici.</string>
+    <string name="tour_map_fit_all_title">Mostra Tutto</string>
+    <string name="tour_map_fit_all_desc">Zooma la mappa per mostrare tutti i tuoi marcatori di rilevamento contemporaneamente.</string>
 
     <!-- Tour Report -->
     <string name="tour_reports_generate_title">Genera Report</string>
-    <string name="tour_reports_generate_desc">Genera un report IA in background. Puoi lasciare la schermata — il progresso appare nelle notifiche.</string>
-    <string name="tour_reports_language_title">Lingua</string>
-    <string name="tour_reports_language_desc">Scegli la lingua del report. Apri un report salvato per condividerlo o esportarlo.</string>
+    <string name="tour_reports_generate_desc">Genera un rapporto ambientale IA. Si esegue in background — il progresso appare nelle notifiche. Apri i rapporti salvati per condividere o esportare in PDF.</string>
+    <string name="tour_reports_language_title">Data e Lingua</string>
+    <string name="tour_reports_language_desc">Filtra per intervallo di date e scegli la lingua del rapporto. Supporta 6 lingue.</string>
+    <string name="tour_reports_zone_title">Selettore di Zona</string>
+    <string name="tour_reports_zone_desc">Seleziona un luogo di osservazione per generare un rapporto ambientale per zona. Le zone vengono rilevate automaticamente dai dati GPS.</string>
 
     <!-- Tour Impostazioni -->
-    <string name="tour_settings_confidence_title">Sensibilità Rilevamento</string>
-    <string name="tour_settings_confidence_desc">Regola la soglia di confidenza per il rilevamento dei rifiuti.</string>
+    <string name="tour_settings_confidence_title">Impostazioni di Rilevamento</string>
+    <string name="tour_settings_confidence_desc">Regola la soglia di confidenza, scegli la precisione del modello (FP16/INT8) e attiva la conferma di cattura.</string>
     <string name="tour_settings_deep_analysis_title">Analisi Approfondita</string>
-    <string name="tour_settings_deep_analysis_desc">Attiva o disattiva l\'analisi approfondita AI per informazioni ambientali più ricche.</string>
+    <string name="tour_settings_deep_analysis_desc">Attiva il motore VLM per analisi ambientali più dettagliate e rapporti generati dall\'IA.</string>
     <string name="tour_settings_theme_title">Modalità Scura</string>
-    <string name="tour_settings_theme_desc">Passa tra tema scuro e chiaro.</string>
+    <string name="tour_settings_theme_desc">Alterna tra tema scuro e chiaro per una migliore visibilità subacquea.</string>
+    <string name="tour_settings_language_title">Lingue</string>
+    <string name="tour_settings_language_desc">Imposta la lingua dell\'interfaccia e la lingua predefinita per i rapporti generati dall\'IA.</string>
+    <string name="tour_settings_data_title">Gestione Dati</string>
+    <string name="tour_settings_data_desc">Reimposta tutti i dati per ricominciare — rimuove analisi, voci MarineDex e traguardi.</string>
+    <string name="tour_settings_tours_title">Tour Guidati</string>
+    <string name="tour_settings_tours_desc">Rivedi i tour guidati in qualsiasi momento per esplorare tutte le funzionalità dell\'app.</string>
 
     <!-- Tour MarineDex -->
     <string name="tour_marinedex_progress_title">Progresso Collezione</string>
@@ -406,11 +429,13 @@
 
     <!-- Tour Dettaglio MarineDex -->
     <string name="tour_marinedex_detail_sprite_title">Sprite Rifiuto</string>
-    <string name="tour_marinedex_detail_sprite_desc">La rappresentazione in pixel art di questo tipo di rifiuto.</string>
+    <string name="tour_marinedex_detail_sprite_desc">Lo sprite pixel art di questo tipo di rifiuto. Tocca il cuore per aggiungerlo ai preferiti.</string>
     <string name="tour_marinedex_detail_impact_title">Impatto Ambientale</string>
-    <string name="tour_marinedex_detail_impact_desc">Tempo di degradazione, livello di rischio e dati sull\'impatto ecologico.</string>
+    <string name="tour_marinedex_detail_impact_desc">Tempo di degradazione, livello di rischio, rischio principale e volume annuale stimato nell\'oceano.</string>
     <string name="tour_marinedex_detail_tabs_title">Galleria &amp; Mappa</string>
-    <string name="tour_marinedex_detail_tabs_desc">Cambia scheda per vedere le immagini acquisite e le posizioni di rilevamento.</string>
+    <string name="tour_marinedex_detail_tabs_desc">Cambia scheda per vedere le immagini catturate di questo tipo e le sue posizioni di rilevamento sulla mappa.</string>
+    <string name="tour_marinedex_detail_stats_title">Statistiche di Rilevamento</string>
+    <string name="tour_marinedex_detail_stats_desc">Monitora quante volte questo tipo è stato rilevato, e quando è stato visto la prima e l\'ultima volta.</string>
 
     <!-- Tour Traguardi -->
     <string name="tour_achievements_progress_title">Progresso Traguardi</string>

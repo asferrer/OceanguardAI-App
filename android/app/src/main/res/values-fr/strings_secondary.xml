@@ -166,10 +166,17 @@
     <string name="settings_desc_guided_tours">Guides interactifs expliquant les fonctionnalités de chaque écran.</string>
     <string name="settings_btn_replay_tours">Relancer les visites guidées</string>
 
+    <!-- Section Développeur (easter egg : appuyer 21 fois sur le logo) -->
+    <string name="settings_section_developer">Développeur</string>
+    <string name="settings_dev_mode_activated">Mode développeur activé !</string>
+    <string name="settings_dev_mode_countdown">Encore %1$d appuis…</string>
+    <string name="settings_dev_mode_disable">Désactiver le mode développeur</string>
+
     <!-- Section À propos -->
     <string name="settings_section_about">À propos</string>
     <string name="settings_cd_logo">Logo OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
+    <string name="settings_about_description">Détection hors ligne des déchets marins par IA. Protéger nos océans, un scan à la fois.</string>
     <string name="settings_about_powered_by">Propulsé par MediaPipe &amp; TensorFlow Lite</string>
     <!-- REMARQUE : "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" est intentionnellement codé en dur
          dans SettingsScreen.kt conformément aux instructions de la tâche. -->
@@ -324,13 +331,13 @@
 
     <!-- Visite de l\'accueil -->
     <string name="tour_home_scan_title">Commencer le scan</string>
-    <string name="tour_home_scan_desc">Appuyez ici pour prendre une photo ou sélectionner depuis la galerie afin de détecter des déchets marins.</string>
+    <string name="tour_home_scan_desc">Utilisez la caméra pour capturer, ou appuyez sur « Scanner depuis la Galerie » pour choisir depuis la Galerie ou les Fichiers. Compatible avec images et vidéos — l\'app détecte le type et traite chaque fichier automatiquement.</string>
     <string name="tour_home_model_status_title">Statut de l\'IA</string>
-    <string name="tour_home_model_status_desc">Indique si le moteur de détection est chargé et prêt.</string>
+    <string name="tour_home_model_status_desc">Indique si le moteur de détection et le modèle d\'analyse profonde sont chargés et prêts.</string>
     <string name="tour_home_stats_title">Votre impact</string>
-    <string name="tour_home_stats_desc">Suivez vos images analysées, les débris trouvés et la santé moyenne de l\'océan.</string>
+    <string name="tour_home_stats_desc">Suivez vos analyses totales, débris trouvés et score moyen de santé océanique.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Votre collection de types de débris découverts — attrapez-les tous !</string>
+    <string name="tour_home_marinedex_desc">Votre collection de types de débris découverts — attrapez les 11 ! Appuyez pour explorer le catalogue.</string>
 
     <!-- Visite de la caméra -->
     <string name="tour_camera_shutter_title">Capturer</string>
@@ -363,10 +370,14 @@
     <string name="tour_batch_summary_desc">Une fois toutes les images traitées, une carte récapitulative apparaît avec des statistiques agrégées.</string>
 
     <!-- Visite de l\'historique -->
-    <string name="tour_history_search_title">Rechercher &amp; Filtrer</string>
-    <string name="tour_history_search_desc">Recherchez des analyses par date, emplacement ou type de débris.</string>
+    <string name="tour_history_search_title">Recherche</string>
+    <string name="tour_history_search_desc">Tapez pour rechercher par type de déchet, matériau ou niveau de risque dans toutes vos analyses.</string>
+    <string name="tour_history_media_filter_title">Images et Vidéos</string>
+    <string name="tour_history_media_filter_desc">Basculez entre les analyses d\'images et de vidéos à l\'aide de ces filtres.</string>
+    <string name="tour_history_filters_title">Filtres Avancés</string>
+    <string name="tour_history_filters_desc">Filtrez par type de déchet, lieu ou plage de dates. Combinez les filtres pour trouver exactement ce dont vous avez besoin.</string>
     <string name="tour_history_card_title">Carte d\'analyse</string>
-    <string name="tour_history_card_desc">Appuyez pour voir les détails complets. Glissez vers la gauche pour supprimer.</string>
+    <string name="tour_history_card_desc">Appuyez pour voir les détails. Balayez à gauche pour supprimer. Appui long pour la sélection multiple.</string>
 
     <!-- Visite du détail de session -->
     <string name="tour_session_detail_image_title">Image annotée</string>
@@ -378,25 +389,37 @@
 
     <!-- Visite de la carte -->
     <string name="tour_map_view_title">Carte de détection</string>
-    <string name="tour_map_view_desc">Toutes vos analyses représentées sur la carte. Les clusters regroupent les analyses proches.</string>
+    <string name="tour_map_view_desc">Toutes vos analyses sur la carte. Les clusters regroupent les détections proches — appuyez sur un cluster pour voir les détails et tendances de zone.</string>
     <string name="tour_map_heatmap_title">Carte de chaleur</string>
-    <string name="tour_map_heatmap_desc">Activez la vue carte de chaleur pour voir les schémas de densité de débris.</string>
+    <string name="tour_map_heatmap_desc">Basculez entre carte thermique et épingles pour voir les motifs de densité des débris.</string>
     <string name="tour_map_style_title">Style de carte</string>
-    <string name="tour_map_style_desc">Basculez entre les styles de carte clair, sombre et terrain.</string>
+    <string name="tour_map_style_desc">Alternez entre les styles Positron (clair), Sombre et Liberty (terrain).</string>
+    <string name="tour_map_filters_title">Filtres de Carte</string>
+    <string name="tour_map_filters_desc">Filtrez les marqueurs par type de déchet ou plage de dates pour vous concentrer sur des données spécifiques.</string>
+    <string name="tour_map_fit_all_title">Tout Afficher</string>
+    <string name="tour_map_fit_all_desc">Ajustez le zoom pour voir tous vos marqueurs de détection en même temps.</string>
 
     <!-- Visite des rapports -->
     <string name="tour_reports_generate_title">Générer un rapport</string>
-    <string name="tour_reports_generate_desc">Génère un rapport IA en arrière-plan. Vous pouvez quitter l\'écran — la progression s\'affiche dans les notifications.</string>
-    <string name="tour_reports_language_title">Langue</string>
-    <string name="tour_reports_language_desc">Choisissez la langue du rapport. Ouvrez un rapport sauvegardé pour le partager ou l\'exporter.</string>
+    <string name="tour_reports_generate_desc">Générez un rapport environnemental IA. S\'exécute en arrière-plan — la progression apparaît dans les notifications. Ouvrez les rapports sauvegardés pour partager ou exporter en PDF.</string>
+    <string name="tour_reports_language_title">Date et Langue</string>
+    <string name="tour_reports_language_desc">Filtrez par plage de dates et choisissez la langue du rapport. Compatible avec 6 langues.</string>
+    <string name="tour_reports_zone_title">Sélecteur de Zone</string>
+    <string name="tour_reports_zone_desc">Sélectionnez un lieu d\'observation pour générer un rapport environnemental par zone. Les zones sont détectées automatiquement à partir des données GPS.</string>
 
     <!-- Visite des paramètres -->
-    <string name="tour_settings_confidence_title">Sensibilité de détection</string>
-    <string name="tour_settings_confidence_desc">Ajustez le seuil de confiance pour la détection des débris.</string>
+    <string name="tour_settings_confidence_title">Paramètres de Détection</string>
+    <string name="tour_settings_confidence_desc">Ajustez le seuil de confiance, choisissez la précision du modèle (FP16/INT8) et activez la confirmation de capture.</string>
     <string name="tour_settings_deep_analysis_title">Analyse approfondie</string>
-    <string name="tour_settings_deep_analysis_desc">Activez ou désactivez l\'analyse approfondie par IA pour des informations environnementales plus riches.</string>
+    <string name="tour_settings_deep_analysis_desc">Activez le moteur VLM pour des analyses environnementales plus riches et des rapports générés par l\'IA.</string>
     <string name="tour_settings_theme_title">Mode sombre</string>
-    <string name="tour_settings_theme_desc">Basculez entre les thèmes sombre et clair.</string>
+    <string name="tour_settings_theme_desc">Basculez entre thème sombre et clair pour une meilleure visibilité sous-marine.</string>
+    <string name="tour_settings_language_title">Langues</string>
+    <string name="tour_settings_language_desc">Définissez la langue de l\'interface et la langue par défaut des rapports générés par l\'IA.</string>
+    <string name="tour_settings_data_title">Gestion des Données</string>
+    <string name="tour_settings_data_desc">Réinitialisez toutes les données pour repartir à zéro — supprime analyses, entrées MarineDex et succès.</string>
+    <string name="tour_settings_tours_title">Visites Guidées</string>
+    <string name="tour_settings_tours_desc">Rejouez les visites guidées à tout moment pour revoir toutes les fonctionnalités.</string>
 
     <!-- Visite du MarineDex -->
     <string name="tour_marinedex_progress_title">Progression de la collection</string>
@@ -406,11 +429,13 @@
 
     <!-- Visite du détail MarineDex -->
     <string name="tour_marinedex_detail_sprite_title">Sprite de débris</string>
-    <string name="tour_marinedex_detail_sprite_desc">La représentation en pixel art de ce type de débris.</string>
+    <string name="tour_marinedex_detail_sprite_desc">Le sprite pixel art de ce type de déchet. Appuyez sur le cœur pour l\'ajouter aux favoris.</string>
+    <string name="tour_marinedex_detail_stats_title">Statistiques de Détection</string>
+    <string name="tour_marinedex_detail_stats_desc">Suivez combien de fois ce type a été détecté, et quand il a été vu pour la première et dernière fois.</string>
     <string name="tour_marinedex_detail_impact_title">Impact environnemental</string>
-    <string name="tour_marinedex_detail_impact_desc">Temps de dégradation, niveau de risque et données d\'impact écologique.</string>
+    <string name="tour_marinedex_detail_impact_desc">Temps de dégradation, score de risque, risque principal et volume annuel estimé dans l\'océan.</string>
     <string name="tour_marinedex_detail_tabs_title">Galerie &amp; Carte</string>
-    <string name="tour_marinedex_detail_tabs_desc">Changez d\'onglet pour voir vos images capturées et les emplacements de détection.</string>
+    <string name="tour_marinedex_detail_tabs_desc">Changez d\'onglet pour voir les images capturées de ce type et ses localisations sur la carte.</string>
 
     <!-- Visite des succès -->
     <string name="tour_achievements_progress_title">Progression des succès</string>
