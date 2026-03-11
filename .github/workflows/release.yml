@@ -37,8 +37,10 @@ jobs:
       - name: Rename APK with version
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          mv android/app/build/outputs/apk/release/app-release.apk \
+          cp android/app/build/outputs/apk/release/app-release.apk \
              android/app/build/outputs/apk/release/OceanGuard-AI-${VERSION}.apk
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             android/app/build/outputs/apk/release/OceanGuard-AI-latest.apk
 
       - name: Publish release to public repo
         uses: softprops/action-gh-release@v2
