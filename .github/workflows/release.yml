@@ -30,7 +30,9 @@ jobs:
           OCEANGUARD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           OCEANGUARD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           OCEANGUARD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
 
       - name: Rename APK with version
         run: |
