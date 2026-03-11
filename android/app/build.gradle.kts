@@ -9,6 +9,18 @@ android {
     namespace = "com.oceanguard.ai"
     compileSdk = 35
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("OCEANGUARD_KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("OCEANGUARD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("OCEANGUARD_KEY_ALIAS")
+                keyPassword = System.getenv("OCEANGUARD_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.oceanguard.ai"
         minSdk = 26  // Android 8.0 - minimum for MediaPipe GenAI
@@ -32,6 +44,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -44,6 +44,10 @@ __pycache__/
 venv/
 env/
 
+# Signing keys
+*.jks
+*.keystore
+
 # Environment & credentials
 .env
 *.token
