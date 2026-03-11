@@ -269,3 +269,42 @@ data class DetectionStatistics(
     val hotspots: List<Location>,
     val dateRange: Pair<Date, Date>?
 )
+
+/**
+ * Video analysis result stored in database.
+ * Contains aggregate metrics from frame-by-frame detection with tracking.
+ */
+@Entity(tableName = "video_analyses")
+@TypeConverters(LocationConverter::class)
+data class VideoAnalysis(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+
+    val sourceVideoUri: String,
+    val outputVideoUri: String? = null,
+    val thumbnailUri: String? = null,
+
+    val durationMs: Long,
+    val totalFrameCount: Int,
+    val processedFrameCount: Int,
+
+    val uniqueDebrisCount: Int,
+    val classCounts: String,              // JSON: {"Bottle":3,"Can":1}
+    val totalProcessingTimeMs: Long,
+    val avgInferenceTimeMs: Float,
+    val healthScore: Int,
+
+    val location: Location? = null,
+    val timestamp: Date = Date(),
+    val status: String = "processing",    // processing | complete | failed
+    val tags: String? = null
+) {
+    fun getRiskLevel(): RiskLevel {
+        return when {
+            healthScore >= 80 -> RiskLevel.LOW
+            healthScore >= 60 -> RiskLevel.MODERATE
+            healthScore >= 40 -> RiskLevel.HIGH
+            else -> RiskLevel.CRITICAL
+        }
+    }
+}

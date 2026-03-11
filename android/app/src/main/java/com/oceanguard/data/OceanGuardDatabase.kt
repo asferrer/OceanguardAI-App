@@ -55,8 +55,9 @@ import com.oceanguard.ai.data.converters.LocationConverter
         GeneratedReport::class,
         MarineDexEntry::class,
         Achievement::class,
+        VideoAnalysis::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(
@@ -74,6 +75,7 @@ abstract class OceanGuardDatabase : RoomDatabase() {
     abstract fun generatedReportDao(): GeneratedReportDao
     abstract fun marineDexDao(): MarineDexDao
     abstract fun achievementDao(): AchievementDao
+    abstract fun videoAnalysisDao(): VideoAnalysisDao
 
     // -----------------------------------------------------------------------
     // Singleton
@@ -165,13 +167,38 @@ abstract class OceanGuardDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS video_analyses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        sourceVideoUri TEXT NOT NULL,
+                        outputVideoUri TEXT,
+                        thumbnailUri TEXT,
+                        durationMs INTEGER NOT NULL,
+                        totalFrameCount INTEGER NOT NULL,
+                        processedFrameCount INTEGER NOT NULL,
+                        uniqueDebrisCount INTEGER NOT NULL,
+                        classCounts TEXT NOT NULL,
+                        totalProcessingTimeMs INTEGER NOT NULL,
+                        avgInferenceTimeMs REAL NOT NULL,
+                        healthScore INTEGER NOT NULL,
+                        location TEXT,
+                        timestamp INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        tags TEXT
+                    )
+                """.trimIndent())
+            }
+        }
+
         private fun buildDatabase(appContext: Context): OceanGuardDatabase {
             return Room.databaseBuilder(
                 appContext,
                 OceanGuardDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 // -----------------------------------------------------------------
                 // WAL mode
                 // -----------------------------------------------------------------
