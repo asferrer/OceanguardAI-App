@@ -6,6 +6,7 @@ import com.oceanguard.ai.data.DetectionRepository
 import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.data.GeneratedReport
 import com.oceanguard.ai.data.OceanGuardDatabase
+import com.oceanguard.ai.data.VideoAnalysisDao
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.data.TourDemoDataManager
 import com.oceanguard.ai.data.collection.AchievementChecker
@@ -15,6 +16,7 @@ import com.oceanguard.ai.inference.DetectionOrchestrator
 import com.oceanguard.ai.inference.OceanGuardInference
 import com.oceanguard.ai.inference.RTDETRInference
 import com.oceanguard.ai.inference.ReportGenerator
+import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.inference.VlmModelManager
 import com.oceanguard.ai.inference.ZoneReportInput
 import com.oceanguard.ai.service.InferenceServiceState
@@ -106,6 +108,10 @@ class OceanGuardApp : Application() {
         DetectionRepository(database.detectionSessionDao(), achievementChecker)
     }
 
+    val videoAnalysisDao: VideoAnalysisDao by lazy {
+        database.videoAnalysisDao()
+    }
+
     // Settings
     val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(this)
@@ -165,6 +171,10 @@ class OceanGuardApp : Application() {
 
     // Inference service state — shared between InferenceService and UI layer
     val inferenceServiceState = MutableStateFlow<InferenceServiceState>(InferenceServiceState.Idle)
+
+    // Current VideoProcessor reference — set by InferenceService during video jobs
+    // so the UI can subscribe to live frame updates for real-time preview.
+    val currentVideoProcessor = MutableStateFlow<VideoProcessor?>(null)
 
     override fun onCreate() {
         super.onCreate()

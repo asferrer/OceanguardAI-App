@@ -3,6 +3,7 @@ package com.oceanguard.ai.ui
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oceanguard.ai.OceanGuardApp
@@ -12,10 +13,12 @@ import com.oceanguard.ai.data.DetectionStatistics
 import com.oceanguard.ai.data.ImageQuality
 import com.oceanguard.ai.data.Location
 import com.oceanguard.ai.data.SettingsRepository
+import com.oceanguard.ai.data.VideoAnalysis
 import com.oceanguard.ai.inference.AnalysisResult
 import com.oceanguard.ai.inference.AnalysisState
 import com.oceanguard.ai.inference.DetectionOrchestrator
 import com.oceanguard.ai.inference.DetectionResult
+import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.service.InferenceService
 import com.oceanguard.ai.service.InferenceServiceState
 import com.oceanguard.ai.utils.BitmapAnnotator
@@ -242,6 +245,22 @@ class MainViewModel(
      */
     val statistics: Flow<DetectionStatistics> = repository.statistics
 
+    /**
+     * All video analyses ordered by timestamp descending.
+     */
+    val allVideoAnalyses: Flow<List<VideoAnalysis>> = app.videoAnalysisDao.getAll()
+
+    /**
+     * Inference service state for observing video processing progress.
+     */
+    val inferenceServiceState: StateFlow<InferenceServiceState> = app.inferenceServiceState
+
+    /**
+     * Current VideoProcessor reference for live frame preview.
+     * Non-null only while a video job is actively processing.
+     */
+    val currentVideoProcessor: StateFlow<VideoProcessor?> = app.currentVideoProcessor
+
     // -----------------------------------------------------------------------
     // Pipeline entry point
     // -----------------------------------------------------------------------
@@ -269,6 +288,61 @@ class MainViewModel(
         _batchUris.value = uris
         val intent = InferenceService.batchIntent(appContext, uris)
         ContextCompat.startForegroundService(appContext, intent)
+    }
+
+    /**
+     * Starts video analysis via the foreground service.
+     * All frames are processed with RT-DETRv2 + IoU tracking.
+     */
+    fun analyzeVideo(videoUri: Uri) {
+        val intent = InferenceService.videoIntent(appContext, videoUri)
+        ContextCompat.startForegroundService(appContext, intent)
+    }
+
+    /**
+     * Analyzes a mixed list of media URIs, auto-detecting images vs videos.
+     *
+     * Each media type is enqueued as a separate job. The job queue in
+     * [InferenceService] processes them sequentially — images first, then videos.
+     * The UI navigates to the first job's screen.
+     */
+    fun analyzeMedia(context: Context, uris: List<Uri>, navController: NavController) {
+        val contentResolver = context.contentResolver
+        val imageUris = uris.filter { uri ->
+            contentResolver.getType(uri)?.startsWith("image/") == true
+        }
+        val videoUris = uris.filter { uri ->
+            contentResolver.getType(uri)?.startsWith("video/") == true
+        }
+
+        // Enqueue images as a batch job
+        if (imageUris.isNotEmpty()) {
+            setBatchUris(imageUris)
+            val intent = InferenceService.batchIntent(appContext, imageUris)
+            ContextCompat.startForegroundService(appContext, intent)
+        }
+
+        // Enqueue each video as a separate job
+        for (videoUri in videoUris) {
+            val intent = InferenceService.videoIntent(appContext, videoUri)
+            ContextCompat.startForegroundService(appContext, intent)
+        }
+
+        // Navigate to the first job's screen
+        when {
+            imageUris.isNotEmpty() -> navController.navigate("batch")
+            videoUris.isNotEmpty() -> navController.navigate("video_results")
+        }
+    }
+
+    /**
+     * Cancel in-progress video analysis.
+     */
+    fun cancelVideoAnalysis() {
+        val intent = android.content.Intent(appContext, InferenceService::class.java).apply {
+            action = InferenceService.ACTION_CANCEL
+        }
+        appContext.startService(intent)
     }
 
     // -----------------------------------------------------------------------
@@ -339,6 +413,18 @@ class MainViewModel(
      * Fetch a single session by ID. Returns null if not found.
      */
     suspend fun getSession(id: Long): DetectionSession? = repository.getSession(id)
+
+    /**
+     * Fetch a single video analysis by ID. Returns null if not found.
+     */
+    suspend fun getVideoAnalysis(id: Long): VideoAnalysis? = app.videoAnalysisDao.getById(id)
+
+    /**
+     * Delete a video analysis from the database.
+     */
+    fun deleteVideoAnalysis(analysis: VideoAnalysis) {
+        viewModelScope.launch { app.videoAnalysisDao.delete(analysis) }
+    }
 
     /**
      * Resolves the best location for a session: prefers EXIF GPS from the image,

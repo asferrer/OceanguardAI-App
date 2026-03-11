@@ -1,6 +1,7 @@
 package com.oceanguard.ai.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -48,6 +49,9 @@ import com.oceanguard.ai.ui.screens.LocationPickerScreen
 import com.oceanguard.ai.ui.screens.MarineDexDetailScreen
 import com.oceanguard.ai.ui.screens.MarineDexScreen
 import com.oceanguard.ai.ui.screens.SplashScreen
+import com.oceanguard.ai.ui.screens.VideoDetailScreen
+import com.oceanguard.ai.ui.screens.VideoResultsScreen
+import com.oceanguard.ai.service.InferenceService
 import com.oceanguard.ai.ui.components.AchievementUnlockOverlay
 import com.oceanguard.ai.data.collection.AchievementDef
 import kotlinx.coroutines.launch
@@ -55,6 +59,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.oceanguard.ai.R
@@ -90,6 +95,17 @@ class MainActivity : AppCompatActivity() {
             // but the persistent progress notification won't show on Android 13+.
         }
 
+    /** Pending deep-link route from notification — mutable so setContent can observe it. */
+    private var _pendingDeepLink = mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val route = intent.getStringExtra(InferenceService.EXTRA_DEEP_LINK_ROUTE)
+        if (!route.isNullOrEmpty() && route != "home") {
+            _pendingDeepLink.value = route
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -114,6 +130,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         val viewModel = MainViewModel(applicationContext, app.detectionOrchestrator, app.repository, app.settingsRepository, app.locationProvider)
+
+        // Deep-link route from notification click (initial intent + onNewIntent)
+        _pendingDeepLink.value = intent?.getStringExtra(InferenceService.EXTRA_DEEP_LINK_ROUTE)
 
         setContent {
             val darkMode by app.settingsRepository.darkMode.collectAsStateWithLifecycle(
@@ -301,6 +320,45 @@ class MainActivity : AppCompatActivity() {
                                 onNavigateBack = { navController.popBackStack() },
                                 navController = navController,
                             )
+                        }
+                        composable("video_results") {
+                            VideoResultsScreen(
+                                navController = navController,
+                                viewModel = viewModel,
+                            )
+                        }
+                        composable("job_queue") {
+                            // Placeholder: for now redirect to home.
+                            // Queue status is shown via notification + existing screens.
+                            LaunchedEffect(Unit) {
+                                navController.navigate("home") {
+                                    popUpTo("job_queue") { inclusive = true }
+                                }
+                            }
+                        }
+                        composable(
+                            route = "video_detail/{analysisId}",
+                            arguments = listOf(navArgument("analysisId") { type = NavType.LongType }),
+                        ) { backStackEntry ->
+                            val analysisId = backStackEntry.arguments?.getLong("analysisId") ?: return@composable
+                            VideoDetailScreen(
+                                navController = navController,
+                                viewModel = viewModel,
+                                analysisId = analysisId,
+                            )
+                        }
+                    }
+                }
+
+                // Handle notification deep-link navigation
+                val deepLinkRoute by _pendingDeepLink
+                LaunchedEffect(deepLinkRoute) {
+                    val route = deepLinkRoute ?: return@LaunchedEffect
+                    _pendingDeepLink.value = null
+                    // Wait for NavHost to be ready (splash → home transition)
+                    if (route != "home" && route.isNotEmpty()) {
+                        navController.navigate(route) {
+                            launchSingleTop = true
                         }
                     }
                 }
