@@ -26,7 +26,7 @@ jobs:
       - name: Build Release APK
         working-directory: android
         env:
-          OCEANGUARD_KEYSTORE_PATH: app/oceanguard-release.jks
+          OCEANGUARD_KEYSTORE_PATH: oceanguard-release.jks
           OCEANGUARD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           OCEANGUARD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           OCEANGUARD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
