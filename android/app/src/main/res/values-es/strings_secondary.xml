@@ -409,7 +409,7 @@
 
     <!-- Tour de configuración -->
     <string name="tour_settings_confidence_title">Configuración de Detección</string>
-    <string name="tour_settings_confidence_desc">Ajusta el umbral de confianza, elige la precisión del modelo (FP16/INT8) y activa la confirmación de captura.</string>
+    <string name="tour_settings_confidence_desc">Activa o desactiva el análisis profundo con IA, y elige si previsualizar las fotos antes de enviarlas a detección.</string>
     <string name="tour_settings_deep_analysis_title">Análisis Profundo</string>
     <string name="tour_settings_deep_analysis_desc">Activa el motor de análisis profundo VLM para obtener información ambiental más detallada e informes generados por IA.</string>
     <string name="tour_settings_language_title">Idiomas</string>

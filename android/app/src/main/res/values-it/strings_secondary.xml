@@ -409,7 +409,7 @@
 
     <!-- Tour Impostazioni -->
     <string name="tour_settings_confidence_title">Impostazioni di Rilevamento</string>
-    <string name="tour_settings_confidence_desc">Regola la soglia di confidenza, scegli la precisione del modello (FP16/INT8) e attiva la conferma di cattura.</string>
+    <string name="tour_settings_confidence_desc">Attiva o disattiva l\'analisi approfondita con IA e scegli se visualizzare l\'anteprima delle foto prima del rilevamento.</string>
     <string name="tour_settings_deep_analysis_title">Analisi Approfondita</string>
     <string name="tour_settings_deep_analysis_desc">Attiva il motore VLM per analisi ambientali più dettagliate e rapporti generati dall\'IA.</string>
     <string name="tour_settings_theme_title">Modalità Scura</string>

@@ -410,7 +410,7 @@
 
     <!-- Tour de configurações -->
     <string name="tour_settings_confidence_title">Configurações de Deteção</string>
-    <string name="tour_settings_confidence_desc">Ajuste o limiar de confiança, escolha a precisão do modelo (FP16/INT8) e ative a confirmação de captura.</string>
+    <string name="tour_settings_confidence_desc">Ative ou desative a análise profunda com IA e escolha se deseja pré-visualizar as fotos antes da deteção.</string>
     <string name="tour_settings_deep_analysis_title">Análise Profunda</string>
     <string name="tour_settings_deep_analysis_desc">Ative o motor VLM para análises ambientais mais detalhadas e relatórios gerados por IA.</string>
     <string name="tour_settings_theme_title">Modo Escuro</string>

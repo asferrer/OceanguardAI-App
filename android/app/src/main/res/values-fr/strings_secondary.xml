@@ -409,7 +409,7 @@
 
     <!-- Visite des paramètres -->
     <string name="tour_settings_confidence_title">Paramètres de Détection</string>
-    <string name="tour_settings_confidence_desc">Ajustez le seuil de confiance, choisissez la précision du modèle (FP16/INT8) et activez la confirmation de capture.</string>
+    <string name="tour_settings_confidence_desc">Activez ou désactivez l\'analyse approfondie par IA, et choisissez si vous souhaitez prévisualiser les photos avant détection.</string>
     <string name="tour_settings_deep_analysis_title">Analyse approfondie</string>
     <string name="tour_settings_deep_analysis_desc">Activez le moteur VLM pour des analyses environnementales plus riches et des rapports générés par l\'IA.</string>
     <string name="tour_settings_theme_title">Mode sombre</string>

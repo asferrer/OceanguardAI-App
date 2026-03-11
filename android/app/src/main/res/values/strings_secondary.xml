@@ -407,7 +407,7 @@
 
     <!-- Settings tour -->
     <string name="tour_settings_confidence_title">Detection Settings</string>
-    <string name="tour_settings_confidence_desc">Adjust the confidence threshold, choose model precision (FP16/INT8), and toggle capture confirmation.</string>
+    <string name="tour_settings_confidence_desc">Toggle deep AI analysis on or off, and choose whether to preview photos before sending them for detection.</string>
     <string name="tour_settings_deep_analysis_title">Deep Analysis</string>
     <string name="tour_settings_deep_analysis_desc">Enable the VLM deep analysis engine for richer environmental insights and AI-generated reports.</string>
     <string name="tour_settings_language_title">Languages</string>

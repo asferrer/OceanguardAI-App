@@ -409,7 +409,7 @@
 
     <!-- Einstellungs-Tour -->
     <string name="tour_settings_confidence_title">Erkennungseinstellungen</string>
-    <string name="tour_settings_confidence_desc">Passen Sie den Konfidenzwert an, wählen Sie die Modellpräzision (FP16/INT8) und aktivieren Sie die Aufnahmebestätigung.</string>
+    <string name="tour_settings_confidence_desc">Aktivieren oder deaktivieren Sie die KI-Tiefenanalyse und wählen Sie, ob Fotos vor der Erkennung in der Vorschau angezeigt werden sollen.</string>
     <string name="tour_settings_deep_analysis_title">Tiefenanalyse</string>
     <string name="tour_settings_deep_analysis_desc">Aktivieren Sie die VLM-Tiefenanalyse für detailliertere Umweltinformationen und KI-generierte Berichte.</string>
     <string name="tour_settings_theme_title">Dunkelmodus</string>
