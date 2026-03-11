@@ -57,7 +57,7 @@ import com.oceanguard.ai.data.converters.LocationConverter
         Achievement::class,
         VideoAnalysis::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(
@@ -192,13 +192,28 @@ abstract class OceanGuardDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Remove duplicate sessions keeping only the oldest per imageUri
+                db.execSQL("""
+                    DELETE FROM detection_sessions WHERE id NOT IN (
+                        SELECT MIN(id) FROM detection_sessions GROUP BY imageUri
+                    )
+                """.trimIndent())
+                // Create unique index to prevent future duplicates
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_detection_sessions_imageUri ON detection_sessions (imageUri)"
+                )
+            }
+        }
+
         private fun buildDatabase(appContext: Context): OceanGuardDatabase {
             return Room.databaseBuilder(
                 appContext,
                 OceanGuardDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 // -----------------------------------------------------------------
                 // WAL mode
                 // -----------------------------------------------------------------

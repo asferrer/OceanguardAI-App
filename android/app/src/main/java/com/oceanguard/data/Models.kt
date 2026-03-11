@@ -1,6 +1,7 @@
 package com.oceanguard.ai.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.oceanguard.ai.data.converters.DebrisListConverter
@@ -196,7 +197,10 @@ enum class LocationSource {
 /**
  * Detection session stored in database
  */
-@Entity(tableName = "detection_sessions")
+@Entity(
+    tableName = "detection_sessions",
+    indices = [Index(value = ["imageUri"], unique = true)]
+)
 @TypeConverters(DebrisListConverter::class, LocationConverter::class)
 data class DetectionSession(
     @PrimaryKey(autoGenerate = true)

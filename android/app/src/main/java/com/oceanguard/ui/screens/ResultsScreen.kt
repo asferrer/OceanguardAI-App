@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +40,6 @@ import com.oceanguard.ai.data.EnvironmentalImpact
 import com.oceanguard.ai.inference.AnalysisResult
 import com.oceanguard.ai.inference.DetectionResult
 import com.oceanguard.ai.OceanGuardApp
-import com.oceanguard.ai.service.InferenceServiceState
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.UiState
 import com.oceanguard.ai.ui.components.BoundingBoxOverlay
@@ -119,34 +117,12 @@ fun ResultsScreen(
         if (!tourComplete && uiState is UiState.AnalysisComplete) tourController.start()
     }
 
-    // Auto-save when analysis completes.
-    // The InferenceService saves sessions autonomously. Wait for the service
-    // to reach a terminal state before deciding. A synchronous .value read
-    // is racy — the orchestrator emits Complete before the service persists.
+    // Mark session as saved when analysis completes.
+    // InferenceService is the single source of truth for persistence — it saves
+    // the session before emitting SingleComplete. No fallback save needed here.
     LaunchedEffect(uiState) {
         if (uiState is UiState.AnalysisComplete && !sessionSaved) {
-            val app = context.applicationContext as OceanGuardApp
-            // Suspend until the service reaches a terminal state
-            val finalState = app.inferenceServiceState.first { state ->
-                state is InferenceServiceState.SingleComplete ||
-                    state is InferenceServiceState.Error ||
-                    state is InferenceServiceState.Idle
-            }
-            if (finalState is InferenceServiceState.SingleComplete) {
-                // Service already saved — just mark as saved in the UI
-                sessionSaved = true
-            } else {
-                // Service did not save (error or idle/manual path) — save from here
-                val complete = uiState as UiState.AnalysisComplete
-                val uriStr = capturedImageUri?.toString() ?: ""
-                val location = viewModel.resolveLocation(uriStr)
-                viewModel.saveSession(
-                    imageUri = uriStr,
-                    result = complete.result,
-                    location = location,
-                )
-                sessionSaved = true
-            }
+            sessionSaved = true
         }
     }
 

@@ -31,12 +31,12 @@ interface DetectionSessionDao {
     /**
      * Insert a new [DetectionSession] and return the auto-generated row id.
      *
-     * [OnConflictStrategy.ABORT] is intentional: a duplicate primary key
-     * indicates a programming error (e.g. re-inserting an already-persisted
-     * session), and it should surface as an exception rather than silently
-     * replacing data. Use [update] for existing rows.
+     * [OnConflictStrategy.IGNORE] silently skips if a session with the same
+     * [DetectionSession.imageUri] already exists (unique index), returning -1.
+     * This prevents duplicate history entries when multiple code paths attempt
+     * to save the same inference result.
      */
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(session: DetectionSession): Long
 
     /**
