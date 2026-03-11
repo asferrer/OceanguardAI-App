@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OceanGuard AI — Marine Debris Detection</title>
+    <meta name="description" content="On-device marine debris detection for Android. 100% offline, private, and powered by AI.">
+    <meta property="og:title" content="OceanGuard AI">
+    <meta property="og:description" content="On-device marine debris detection for Android. 100% offline and private.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://asferrer.github.io/OceanguardAI">
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #0d1225;
+            --bg-card: rgba(15, 23, 42, 0.6);
+            --accent-cyan: #00d4ff;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-rose: #f43f5e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-subtle: rgba(148, 163, 184, 0.08);
+            --border-glow: rgba(0, 212, 255, 0.15);
+            --glass: rgba(15, 23, 42, 0.5);
+            --glass-border: rgba(148, 163, 184, 0.1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            background: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* ── Aurora Mesh Background ── */
+        .aurora {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .aurora-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: auroraFloat 20s ease-in-out infinite;
+        }
+
+        .aurora-orb:nth-child(1) {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #00d4ff, transparent 70%);
+            top: -10%; left: -5%;
+            animation-duration: 25s;
+        }
+
+        .aurora-orb:nth-child(2) {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #8b5cf6, transparent 70%);
+            top: 30%; right: -10%;
+            animation-duration: 20s;
+            animation-delay: -5s;
+        }
+
+        .aurora-orb:nth-child(3) {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, #10b981, transparent 70%);
+            bottom: -5%; left: 30%;
+            animation-duration: 22s;
+            animation-delay: -10s;
+        }
+
+        @keyframes auroraFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -40px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(40px, 30px) scale(1.02); }
+        }
+
+        /* ── Language Toggle ── */
+        .lang-toggle {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 100;
+            display: flex;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .lang-btn {
+            padding: 0.35rem 0.85rem;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .lang-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .lang-btn:not(.active):hover { color: var(--text-primary); }
+
+        /* ── Hero Section ── */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        /* Caustics light effect */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(ellipse 600px 200px at 20% 50%, rgba(0, 212, 255, 0.03) 0%, transparent 100%),
+                radial-gradient(ellipse 400px 300px at 80% 30%, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Animated depth lines */
+        .depth-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .depth-line {
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(0, 212, 255, 0.06), transparent);
+            animation: depthPulse 8s ease-in-out infinite;
+        }
+
+        .depth-line:nth-child(1) { left: 15%; animation-delay: 0s; }
+        .depth-line:nth-child(2) { left: 35%; animation-delay: -2s; }
+        .depth-line:nth-child(3) { left: 55%; animation-delay: -4s; }
+        .depth-line:nth-child(4) { left: 75%; animation-delay: -6s; }
+        .depth-line:nth-child(5) { left: 90%; animation-delay: -1s; }
+
+        @keyframes depthPulse {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 12s ease-in infinite;
+        }
+
+        .particle:nth-child(1) { width: 4px; height: 4px; left: 8%; background: var(--accent-cyan); animation-delay: 0s; animation-duration: 10s; }
+        .particle:nth-child(2) { width: 3px; height: 3px; left: 22%; background: var(--accent-emerald); animation-delay: 2s; animation-duration: 14s; }
+        .particle:nth-child(3) { width: 5px; height: 5px; left: 45%; background: var(--accent-cyan); animation-delay: 4s; animation-duration: 11s; }
+        .particle:nth-child(4) { width: 3px; height: 3px; left: 65%; background: var(--accent-purple); animation-delay: 1s; animation-duration: 13s; }
+        .particle:nth-child(5) { width: 4px; height: 4px; left: 80%; background: var(--accent-emerald); animation-delay: 3s; animation-duration: 9s; }
+        .particle:nth-child(6) { width: 2px; height: 2px; left: 92%; background: var(--accent-cyan); animation-delay: 5s; animation-duration: 12s; }
+        .particle:nth-child(7) { width: 3px; height: 3px; left: 35%; background: var(--accent-purple); animation-delay: 6s; animation-duration: 10s; }
+        .particle:nth-child(8) { width: 4px; height: 4px; left: 55%; background: var(--accent-emerald); animation-delay: 7s; animation-duration: 15s; }
+
+        @keyframes particleFloat {
+            0% { bottom: -10px; opacity: 0; transform: translateX(0); }
+            10% { opacity: 0.6; }
+            50% { transform: translateX(20px); }
+            90% { opacity: 0.2; }
+            100% { bottom: 110%; opacity: 0; transform: translateX(-10px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero-logo {
+            width: 130px;
+            height: 130px;
+            border-radius: 32px;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            animation: fadeInUp 0.8s ease-out both;
+            box-shadow:
+                0 0 40px rgba(0, 212, 255, 0.15),
+                0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: box-shadow 0.4s;
+        }
+
+        .hero-logo:hover {
+            box-shadow:
+                0 0 60px rgba(0, 212, 255, 0.25),
+                0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: clamp(2.8rem, 7vw, 4.5rem);
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-cyan) 50%, var(--accent-emerald) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-accent {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+            border-radius: 2px;
+            margin: 0.5rem auto 1.25rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+        }
+
+        .hero-desc {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 1rem;
+            border-radius: 24px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            color: var(--text-secondary);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: border-color 0.3s, color 0.3s;
+        }
+
+        .badge:hover {
+            border-color: var(--border-glow);
+            color: var(--accent-cyan);
+        }
+
+        .badge svg { width: 14px; height: 14px; }
+
+        .hero-sub {
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            animation: fadeInUp 0.8s ease-out 0.45s both;
+            letter-spacing: 0.5px;
+            font-weight: 400;
+        }
+
+        .hero-sub .dot {
+            margin: 0 0.6rem;
+            opacity: 0.3;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: var(--bg-primary);
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-emerald) 100%);
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-download:active { transform: translateY(0); }
+        .btn-download svg { width: 20px; height: 20px; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Section Divider ── */
+        .section-divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+        }
+
+        /* ── Section Layout ── */
+        section { padding: 6rem 2rem; position: relative; z-index: 1; }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            margin-bottom: 0.75rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 3.5rem;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 0.95rem;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+
+        /* ── Features Grid ── */
+        .features { background: transparent; }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 2rem 1.75rem;
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 1px;
+            background: linear-gradient(135deg, transparent 0%, transparent 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            transition: background 0.35s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: transparent;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card:hover::before {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-emerald) 100%);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon svg { width: 22px; height: 22px; }
+        .feature-icon.cyan { background: rgba(0, 212, 255, 0.1); color: var(--accent-cyan); }
+        .feature-icon.amber { background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+        .feature-icon.emerald { background: rgba(16, 185, 129, 0.1); color: var(--accent-emerald); }
+        .feature-icon.purple { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        /* ── Install Section ── */
+        .install { background: transparent; }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            gap: 1.25rem;
+            align-items: flex-start;
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: border-color 0.3s;
+        }
+
+        .step:hover {
+            border-color: var(--border-glow);
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald));
+            color: var(--bg-primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-text {
+            padding-top: 0.25rem;
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .step-text strong { color: var(--text-primary); font-weight: 600; }
+        .step-text a { color: var(--accent-cyan); text-decoration: none; transition: opacity 0.2s; }
+        .step-text a:hover { opacity: 0.8; }
+
+        .note-box {
+            max-width: 640px;
+            margin: 1.5rem auto 0;
+            padding: 1.25rem 1.5rem;
+            background: rgba(0, 212, 255, 0.04);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 0 12px 12px 0;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .note-box strong { color: var(--text-primary); font-weight: 600; }
+
+        /* ── Privacy Section ── */
+        .privacy { background: transparent; }
+
+        .privacy-content {
+            text-align: center;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .privacy-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.75rem;
+        }
+
+        .privacy-icon svg { width: 28px; height: 28px; color: var(--accent-emerald); }
+
+        .privacy-content p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+
+        .privacy-content strong { color: var(--text-primary); font-weight: 600; }
+
+        /* ── CTA Section ── */
+        .cta {
+            text-align: center;
+            padding: 5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 800px 400px at center, rgba(0, 212, 255, 0.06), transparent);
+            pointer-events: none;
+        }
+
+        .cta h2 {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            color: var(--text-primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            position: relative;
+        }
+
+        .cta p {
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+            position: relative;
+        }
+
+        .cta .btn-download { animation: none; position: relative; }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: 2.5rem 2rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-subtle);
+            position: relative;
+            z-index: 1;
+        }
+
+        footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        footer a:hover { opacity: 0.7; }
+
+        /* ── Scroll Animations ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            section { padding: 4rem 1.25rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hero-badges { gap: 0.4rem; }
+            .badge { font-size: 0.72rem; padding: 0.35rem 0.75rem; }
+            .lang-toggle { top: 0.75rem; right: 0.75rem; }
+            .hero h1 { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+            .btn-download { padding: 0.9rem 2rem; font-size: 0.95rem; }
+            .step { padding: 1rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Aurora Background ── -->
+<div class="aurora">
+    <div class="aurora-orb"></div>
+    <div class="aurora-orb"></div>
+    <div class="aurora-orb"></div>
+</div>
+
+<!-- ── Language Toggle ── -->
+<div class="lang-toggle" id="langToggle">
+    <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" data-lang="es" onclick="setLang('es')">ES</button>
+</div>
+
+<!-- ════ Hero ════ -->
+<section class="hero">
+    <div class="depth-lines">
+        <div class="depth-line"></div><div class="depth-line"></div><div class="depth-line"></div>
+        <div class="depth-line"></div><div class="depth-line"></div>
+    </div>
+    <div class="particles">
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div>
+    </div>
+
+    <div class="hero-content">
+        <img src="assets/logo.png" alt="OceanGuard AI" class="hero-logo">
+        <h1>OceanGuard AI</h1>
+        <div class="hero-accent"></div>
+        <p class="hero-desc" data-i18n="heroDesc">On-device marine debris detection for Android. 100% offline and private.</p>
+
+        <div class="hero-badges">
+            <span class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span data-i18n="badgeOffline">100% Offline</span>
+            </span>
+            <span class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+                Android 8.0+
+            </span>
+            <span class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <span data-i18n="badgeAI">AI-Powered</span>
+            </span>
+            <span class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span data-i18n="badgeLangs">6 Languages</span>
+            </span>
+        </div>
+
+        <p class="hero-sub">
+            <span data-i18n="subFree">Free</span>
+            <span class="dot">&middot;</span>
+            <span data-i18n="subNoAccount">No account required</span>
+            <span class="dot">&middot;</span>
+            ~200 MB
+        </p>
+
+        <a href="https://github.com/asferrer/OceanguardAI/releases/latest" class="btn-download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="btnDownload">Download APK</span>
+        </a>
+    </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ════ Features ════ -->
+<section class="features" id="features">
+    <div class="container">
+        <span class="section-label reveal" data-i18n="featuresLabel">Capabilities</span>
+        <h2 class="section-title reveal" data-i18n="featuresTitle">Features</h2>
+        <p class="section-subtitle reveal" data-i18n="featuresSubtitle">Everything you need for marine debris monitoring, running entirely on your device.</p>
+
+        <div class="features-grid">
+            <div class="feature-card reveal">
+                <div class="feature-icon cyan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <h3 data-i18n="feat1Title">Real-Time Detection</h3>
+                <p data-i18n="feat1Desc">Point your camera at marine debris and get instant classification results on screen.</p>
+            </div>
+
+            <div class="feature-card reveal">
+                <div class="feature-icon amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </div>
+                <h3 data-i18n="feat2Title">Batch Analysis</h3>
+                <p data-i18n="feat2Desc">Analyze multiple images at once from your gallery. Ideal for field survey sessions.</p>
+            </div>
+
+            <div class="feature-card reveal">
+                <div class="feature-icon purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                </div>
+                <h3 data-i18n="feat3Title">AI Deep Analysis</h3>
+                <p data-i18n="feat3Desc">Optional advanced model for detailed environmental reports and risk assessment.</p>
+            </div>
+
+            <div class="feature-card reveal">
+                <div class="feature-icon emerald">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <h3 data-i18n="feat4Title">GPS Mapping</h3>
+                <p data-i18n="feat4Desc">Geotag your detections automatically and visualize them on an interactive map.</p>
+            </div>
+
+            <div class="feature-card reveal">
+                <div class="feature-icon cyan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <h3 data-i18n="feat5Title">PDF Reports</h3>
+                <p data-i18n="feat5Desc">Generate detailed analysis reports and export them as PDF for sharing or archiving.</p>
+            </div>
+
+            <div class="feature-card reveal">
+                <div class="feature-icon amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <h3 data-i18n="feat6Title">MarineDex & Achievements</h3>
+                <p data-i18n="feat6Desc">Collect debris types, track your contributions and unlock achievements.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ════ Installation ════ -->
+<section class="install" id="install">
+    <div class="container">
+        <span class="section-label reveal" data-i18n="installLabel">Get Started</span>
+        <h2 class="section-title reveal" data-i18n="installTitle">Installation</h2>
+        <p class="section-subtitle reveal" data-i18n="installSubtitle">Get started in under a minute. No account or app store required.</p>
+
+        <div class="steps">
+            <div class="step reveal">
+                <div class="step-number">1</div>
+                <div class="step-text" data-i18n-html="step1">Download the latest <strong>APK</strong> from the <a href="https://github.com/asferrer/OceanguardAI/releases/latest">releases page</a></div>
+            </div>
+            <div class="step reveal">
+                <div class="step-number">2</div>
+                <div class="step-text" data-i18n-html="step2">On your Android device: <strong>Settings &gt; Apps &gt; &#x22EF; &gt; Special access &gt; Install unknown apps</strong></div>
+            </div>
+            <div class="step reveal">
+                <div class="step-number">3</div>
+                <div class="step-text" data-i18n="step3">Enable installation for your browser (Chrome, Firefox, etc.)</div>
+            </div>
+            <div class="step reveal">
+                <div class="step-number">4</div>
+                <div class="step-text" data-i18n-html="step4">Open the downloaded APK and tap <strong>Install</strong></div>
+            </div>
+        </div>
+
+        <div class="note-box reveal" data-i18n-html="noteBox">
+            Google Play Protect may show a warning &mdash; this is normal for apps distributed outside the Play Store.
+            Tap <strong>&ldquo;Install anyway&rdquo;</strong> to proceed. The app is signed with a developer certificate and is safe to install.
+        </div>
+    </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ════ Privacy ════ -->
+<section class="privacy" id="privacy">
+    <div class="container">
+        <div class="privacy-content">
+            <div class="privacy-icon reveal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <span class="section-label reveal" data-i18n="privacyLabel">Data Protection</span>
+            <h2 class="section-title reveal" data-i18n="privacyTitle">Your Privacy, Guaranteed</h2>
+            <br>
+            <p class="reveal" data-i18n-html="privacy1">All processing happens <strong>entirely on your device</strong>. No data is collected, transmitted, or shared with any server.</p>
+            <p class="reveal" data-i18n-html="privacy2">Camera images, GPS coordinates, and detection results are <strong>stored locally</strong> and can be deleted at any time from within the app.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ════ CTA ════ -->
+<section class="cta">
+    <h2 class="reveal" data-i18n="ctaTitle">Ready to protect the ocean?</h2>
+    <p class="reveal" data-i18n="ctaDesc">Download OceanGuard AI and start detecting marine debris today.</p>
+    <a href="https://github.com/asferrer/OceanguardAI/releases/latest" class="btn-download reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="btnDownload">Download APK</span>
+    </a>
+</section>
+
+<!-- ════ Footer ════ -->
+<footer>
+    <p data-i18n="footerText">OceanGuard AI &mdash; Part of a doctoral research project on AI-powered marine conservation.</p>
+    <p style="margin-top: 0.5rem;">
+        <a href="https://github.com/asferrer/OceanguardAI/releases" data-i18n="footerReleases">All releases</a>
+        &nbsp;&middot;&nbsp;
+        <a href="https://github.com/asferrer">GitHub</a>
+    </p>
+</footer>
+
+<script>
+const i18n = {
+    en: {
+        heroDesc: "On-device marine debris detection for Android. 100% offline and private.",
+        badgeOffline: "100% Offline",
+        badgeAI: "AI-Powered",
+        badgeLangs: "6 Languages",
+        btnDownload: "Download APK",
+        subFree: "Free",
+        subNoAccount: "No account required",
+        featuresLabel: "Capabilities",
+        featuresTitle: "Features",
+        featuresSubtitle: "Everything you need for marine debris monitoring, running entirely on your device.",
+        feat1Title: "Real-Time Detection",
+        feat1Desc: "Point your camera at marine debris and get instant classification results on screen.",
+        feat2Title: "Batch Analysis",
+        feat2Desc: "Analyze multiple images at once from your gallery. Ideal for field survey sessions.",
+        feat3Title: "AI Deep Analysis",
+        feat3Desc: "Optional advanced model for detailed environmental reports and risk assessment.",
+        feat4Title: "GPS Mapping",
+        feat4Desc: "Geotag your detections automatically and visualize them on an interactive map.",
+        feat5Title: "PDF Reports",
+        feat5Desc: "Generate detailed analysis reports and export them as PDF for sharing or archiving.",
+        feat6Title: "MarineDex & Achievements",
+        feat6Desc: "Collect debris types, track your contributions and unlock achievements.",
+        installLabel: "Get Started",
+        installTitle: "Installation",
+        installSubtitle: "Get started in under a minute. No account or app store required.",
+        step1: 'Download the latest <strong>APK</strong> from the <a href="https://github.com/asferrer/OceanguardAI/releases/latest">releases page</a>',
+        step2: 'On your Android device: <strong>Settings &gt; Apps &gt; &#x22EF; &gt; Special access &gt; Install unknown apps</strong>',
+        step3: "Enable installation for your browser (Chrome, Firefox, etc.)",
+        step4: 'Open the downloaded APK and tap <strong>Install</strong>',
+        noteBox: 'Google Play Protect may show a warning &mdash; this is normal for apps distributed outside the Play Store. Tap <strong>&ldquo;Install anyway&rdquo;</strong> to proceed. The app is signed with a developer certificate and is safe to install.',
+        privacyLabel: "Data Protection",
+        privacyTitle: "Your Privacy, Guaranteed",
+        privacy1: 'All processing happens <strong>entirely on your device</strong>. No data is collected, transmitted, or shared with any server.',
+        privacy2: 'Camera images, GPS coordinates, and detection results are <strong>stored locally</strong> and can be deleted at any time from within the app.',
+        ctaTitle: "Ready to protect the ocean?",
+        ctaDesc: "Download OceanGuard AI and start detecting marine debris today.",
+        footerText: "OceanGuard AI &mdash; Part of a doctoral research project on AI-powered marine conservation.",
+        footerReleases: "All releases"
+    },
+    es: {
+        heroDesc: "Detecci\u00f3n de residuos marinos en tu dispositivo Android. 100% sin conexi\u00f3n y privado.",
+        badgeOffline: "100% Sin conexi\u00f3n",
+        badgeAI: "Con IA",
+        badgeLangs: "6 Idiomas",
+        btnDownload: "Descargar APK",
+        subFree: "Gratis",
+        subNoAccount: "Sin cuenta necesaria",
+        featuresLabel: "Capacidades",
+        featuresTitle: "Funcionalidades",
+        featuresSubtitle: "Todo lo que necesitas para monitorizar residuos marinos, ejecut\u00e1ndose completamente en tu dispositivo.",
+        feat1Title: "Detecci\u00f3n en Tiempo Real",
+        feat1Desc: "Apunta tu c\u00e1mara hacia residuos marinos y obt\u00e9n resultados de clasificaci\u00f3n instant\u00e1neos.",
+        feat2Title: "An\u00e1lisis por Lotes",
+        feat2Desc: "Analiza m\u00faltiples im\u00e1genes de tu galer\u00eda a la vez. Ideal para sesiones de campo.",
+        feat3Title: "An\u00e1lisis Profundo con IA",
+        feat3Desc: "Modelo avanzado opcional para informes medioambientales detallados y evaluaci\u00f3n de riesgos.",
+        feat4Title: "Mapa GPS",
+        feat4Desc: "Geoetiqueta tus detecciones autom\u00e1ticamente y visual\u00edzalas en un mapa interactivo.",
+        feat5Title: "Informes PDF",
+        feat5Desc: "Genera informes de an\u00e1lisis detallados y exp\u00f3rtalos como PDF para compartir o archivar.",
+        feat6Title: "MarineDex y Logros",
+        feat6Desc: "Colecciona tipos de residuos, rastrea tus contribuciones y desbloquea logros.",
+        installLabel: "Empezar",
+        installTitle: "Instalaci\u00f3n",
+        installSubtitle: "Empieza en menos de un minuto. Sin cuenta ni tienda de aplicaciones.",
+        step1: 'Descarga el \u00faltimo <strong>APK</strong> desde la <a href="https://github.com/asferrer/OceanguardAI/releases/latest">p\u00e1gina de releases</a>',
+        step2: 'En tu dispositivo Android: <strong>Ajustes &gt; Apps &gt; &#x22EF; &gt; Acceso especial &gt; Instalar apps desconocidas</strong>',
+        step3: "Habilita la instalaci\u00f3n para tu navegador (Chrome, Firefox, etc.)",
+        step4: 'Abre el APK descargado y pulsa <strong>Instalar</strong>',
+        noteBox: 'Google Play Protect puede mostrar una advertencia &mdash; esto es normal para apps distribuidas fuera de la Play Store. Pulsa <strong>&ldquo;Instalar de todos modos&rdquo;</strong> para continuar. La app est\u00e1 firmada con un certificado de desarrollador y es segura.',
+        privacyLabel: "Protecci\u00f3n de datos",
+        privacyTitle: "Tu Privacidad, Garantizada",
+        privacy1: 'Todo el procesamiento ocurre <strong>completamente en tu dispositivo</strong>. No se recopilan, transmiten ni comparten datos con ning\u00fan servidor.',
+        privacy2: 'Las im\u00e1genes, coordenadas GPS y resultados de detecci\u00f3n se <strong>almacenan localmente</strong> y pueden eliminarse en cualquier momento desde la app.',
+        ctaTitle: "\u00bfListo para proteger el oc\u00e9ano?",
+        ctaDesc: "Descarga OceanGuard AI y empieza a detectar residuos marinos hoy.",
+        footerText: "OceanGuard AI &mdash; Parte de un proyecto de investigaci\u00f3n doctoral sobre conservaci\u00f3n marina con IA.",
+        footerReleases: "Todas las releases"
+    }
+};
+
+let currentLang = (navigator.language || '').startsWith('es') ? 'es' : 'en';
+
+function setLang(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+    const strings = i18n[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (strings[key]) el.textContent = strings[key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (strings[key]) el.innerHTML = strings[key];
+    });
+    localStorage.setItem('oceanguard-lang', lang);
+}
+
+// Scroll reveal with staggered delays per section
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
+
+document.querySelectorAll('.reveal').forEach((el, i) => {
+    el.style.transitionDelay = `${(i % 4) * 0.08}s`;
+    revealObserver.observe(el);
+});
+
+// Init language
+const saved = localStorage.getItem('oceanguard-lang');
+setLang(saved || currentLang);
+</script>
+
+</body>
+</html>

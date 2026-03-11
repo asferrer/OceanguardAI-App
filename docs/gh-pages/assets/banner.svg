@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300" viewBox="0 0 900 300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B2545;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#134074;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#13628B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4DA8DA;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#89CFF0;stop-opacity:0.15" />
+    </linearGradient>
+    <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4DA8DA;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#89CFF0;stop-opacity:0.08" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F0A500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E8891C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="300" fill="url(#bg)" rx="16"/>
+
+  <!-- Wave decorations -->
+  <path d="M0 220 Q150 190 300 210 Q450 230 600 200 Q750 170 900 195 L900 300 L0 300 Z" fill="url(#wave1)"/>
+  <path d="M0 250 Q200 225 400 245 Q600 265 800 235 Q850 230 900 235 L900 300 L0 300 Z" fill="url(#wave2)"/>
+
+  <!-- Accent line -->
+  <rect x="340" y="185" width="60" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Title -->
+  <text x="450" y="130" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#FFFFFF" letter-spacing="2">OceanGuard AI</text>
+
+  <!-- Subtitle -->
+  <text x="450" y="170" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#89CFF0" letter-spacing="4" font-weight="300">MARINE DEBRIS DETECTION</text>
+
+  <!-- Version badge area -->
+  <text x="450" y="220" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#8BB8CC" letter-spacing="1">On-device AI for ocean conservation</text>
+
+  <!-- Small bubbles decoration -->
+  <circle cx="80" cy="60" r="6" fill="#4DA8DA" opacity="0.25"/>
+  <circle cx="95" cy="40" r="4" fill="#4DA8DA" opacity="0.2"/>
+  <circle cx="105" cy="55" r="3" fill="#4DA8DA" opacity="0.15"/>
+  <circle cx="810" cy="70" r="5" fill="#4DA8DA" opacity="0.2"/>
+  <circle cx="830" cy="50" r="3.5" fill="#4DA8DA" opacity="0.15"/>
+  <circle cx="780" cy="45" r="4" fill="#4DA8DA" opacity="0.18"/>
+</svg>
