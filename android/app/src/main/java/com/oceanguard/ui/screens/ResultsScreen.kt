@@ -54,6 +54,8 @@ import com.oceanguard.ai.ui.theme.materialColor
 import com.oceanguard.ai.utils.BitmapAnnotator
 import com.oceanguard.ai.utils.ImageGallerySaver
 import androidx.compose.ui.platform.LocalContext
+import com.oceanguard.ai.ui.components.OceanGradientButton
+import com.oceanguard.ai.ui.components.OnGradientColor
 import com.oceanguard.ai.ui.components.pressableScale
 import com.oceanguard.ai.ui.components.spotlight.SpotlightOverlay
 import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
@@ -569,24 +571,23 @@ private fun FullResultContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (!sessionSaved) {
-                    Button(
+                    OceanGradientButton(
                         onClick = onSave,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .pressableScale(),
-                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        height = 60.dp,
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Save,
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
+                            tint = OnGradientColor,
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = stringResource(R.string.results_btn_save_history),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = OnGradientColor,
                         )
                     }
                 } else {
@@ -687,20 +688,18 @@ private fun ErrorContent(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Button(
+        OceanGradientButton(
             onClick = onRetry,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .pressableScale(),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-            ),
+            modifier = Modifier.fillMaxWidth(),
+            height = 60.dp,
         ) {
-            Icon(Icons.Filled.Refresh, contentDescription = null)
+            Icon(Icons.Filled.Refresh, contentDescription = null, tint = OnGradientColor)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.results_btn_retry_analysis), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.results_btn_retry_analysis),
+                style = MaterialTheme.typography.titleMedium,
+                color = OnGradientColor,
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))

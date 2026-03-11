@@ -56,6 +56,8 @@ import com.oceanguard.ai.ModelStatus
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.ui.MainViewModel
+import com.oceanguard.ai.ui.components.OceanGradientButton
+import com.oceanguard.ai.ui.components.OnGradientColor
 import com.oceanguard.ai.ui.components.spotlight.SpotlightOverlay
 import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
@@ -588,23 +590,24 @@ private fun CapturePreviewOverlay(
                 )
             }
 
-            Button(
+            OceanGradientButton(
                 onClick = onConfirm,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                height = 56.dp,
+                cornerRadius = 16.dp,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
+                    tint = OnGradientColor,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.camera_btn_analyze),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
+                    color = OnGradientColor,
                 )
             }
         }
@@ -667,23 +670,24 @@ private fun CameraPermissionScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Button(
+            OceanGradientButton(
                 onClick = onRequestPermission,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+                height = 64.dp,
+                cornerRadius = 16.dp,
             ) {
                 Icon(
                     imageVector = Icons.Filled.CameraAlt,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
+                    tint = OnGradientColor,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = stringResource(R.string.camera_btn_grant_permission),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    color = OnGradientColor,
                 )
             }
         }

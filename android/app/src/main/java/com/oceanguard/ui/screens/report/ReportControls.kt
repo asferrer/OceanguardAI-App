@@ -44,6 +44,8 @@ import androidx.compose.material3.TextButton
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.inference.VlmDownloadState
+import com.oceanguard.ai.ui.components.OceanGradientButton
+import com.oceanguard.ai.ui.components.OnGradientColor
 import com.oceanguard.ai.ui.components.pressableScale
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import androidx.compose.material.icons.filled.Download
@@ -159,36 +161,34 @@ internal fun GenerateButton(
     onGenerate: () -> Unit,
     boundsMap: MutableMap<String, androidx.compose.ui.geometry.Rect>,
 ) {
-    Button(
+    OceanGradientButton(
         onClick = onGenerate,
         modifier = Modifier
-            .pressableScale()
             .fillMaxWidth()
-            .height(52.dp)
             .spotlightTarget("reports_generate", boundsMap),
         enabled = !isGenerating && hasZoneSelected && sessionCount > 0,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-        ),
+        height = 52.dp,
+        cornerRadius = 12.dp,
     ) {
         if (isGenerating) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = OnGradientColor,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.report_btn_generating),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
+                color = OnGradientColor,
             )
         } else {
             Icon(
                 imageVector = Icons.Filled.AutoAwesome,
                 contentDescription = null,
                 modifier = Modifier.size(22.dp),
+                tint = OnGradientColor,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
@@ -199,6 +199,7 @@ internal fun GenerateButton(
                 },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
+                color = OnGradientColor,
             )
         }
     }
