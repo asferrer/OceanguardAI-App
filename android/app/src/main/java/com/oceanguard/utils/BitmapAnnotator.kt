@@ -11,6 +11,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import com.oceanguard.ai.inference.DetectionResult
+import com.oceanguard.ai.inference.Track
 import java.io.File
 import java.io.FileOutputStream
 
@@ -177,6 +178,79 @@ object BitmapAnnotator {
             canvas.drawRoundRect(chipRect, chipRadius, chipRadius, borderPaint)
 
             // Label text
+            canvas.drawText(label, left + padding, chipBottom - padding, textPaint)
+        }
+
+        return annotated
+    }
+
+    /**
+     * Render tracked bounding boxes onto a copy of the source bitmap.
+     * Labels include track ID: "#3 Bottle 87%".
+     * Coordinates in Track.bbox are normalized [0,1] as x1,y1,x2,y2.
+     */
+    fun annotateWithTrackIds(source: Bitmap, tracks: List<Track>): Bitmap {
+        val annotated = source.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(annotated)
+
+        val w = annotated.width.toFloat()
+        val h = annotated.height.toFloat()
+        val strokeWidth = (w * 0.005f).coerceIn(2f, 8f)
+        val textSize = (w * 0.028f).coerceIn(14f, 48f)
+        val padding = textSize * 0.3f
+
+        val bracketPaint = Paint().apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+            isAntiAlias = true
+            strokeCap = Paint.Cap.ROUND
+        }
+        val fillPaint = Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        val bgPaint = Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        val borderPaint = Paint().apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = 1f
+            color = android.graphics.Color.argb(51, 255, 255, 255)
+            isAntiAlias = true
+        }
+        val textPaint = Paint().apply {
+            color = android.graphics.Color.WHITE
+            this.textSize = textSize
+            isAntiAlias = true
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        for (track in tracks) {
+            val color = colorForClass(track.className)
+            val left = track.bbox[0] * w
+            val top = track.bbox[1] * h
+            val right = track.bbox[2] * w
+            val bottom = track.bbox[3] * h
+
+            fillPaint.color = (color and 0x00FFFFFF) or 0x1A000000.toInt()
+            canvas.drawRect(left, top, right, bottom, fillPaint)
+
+            bracketPaint.color = color
+            drawCornerBrackets(canvas, left, top, right, bottom, bracketPaint)
+
+            val label = "#${track.id} ${track.className} ${(track.bestConfidence * 100).toInt()}%"
+            val labelWidth = textPaint.measureText(label)
+            val chipHeight = textSize + padding * 2
+            val chipRadius = chipHeight / 2f
+            val chipTop = (top - chipHeight - strokeWidth).coerceAtLeast(0f)
+            val chipBottom = chipTop + chipHeight
+            val chipRight = (left + labelWidth + padding * 2).coerceAtMost(w)
+            val chipRect = RectF(left, chipTop, chipRight, chipBottom)
+
+            bgPaint.color = (color and 0x00FFFFFF) or 0xD9000000.toInt()
+            canvas.drawRoundRect(chipRect, chipRadius, chipRadius, bgPaint)
+            canvas.drawRoundRect(chipRect, chipRadius, chipRadius, borderPaint)
             canvas.drawText(label, left + padding, chipBottom - padding, textPaint)
         }
 
