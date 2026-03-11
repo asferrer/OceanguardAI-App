@@ -35,6 +35,9 @@
 -keep class org.maplibre.android.** { *; }
 -dontwarn org.maplibre.android.**
 
+# TensorFlow Lite GPU — classes referenced but stripped by litert-api exclusion
+-dontwarn org.tensorflow.lite.gpu.**
+
 # Keep Compose
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
