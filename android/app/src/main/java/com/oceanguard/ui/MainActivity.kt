@@ -69,6 +69,8 @@ import com.oceanguard.ai.ui.components.ScreenEnterTransition
 import com.oceanguard.ai.ui.components.ScreenExitTransition
 import com.oceanguard.ai.ui.components.ScreenPopEnterTransition
 import com.oceanguard.ai.ui.components.ScreenPopExitTransition
+import com.oceanguard.ai.ui.components.SplashExitTransition
+import com.oceanguard.ai.ui.components.SplashNextEnterTransition
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.ui.theme.OceanGuardTheme
 
@@ -188,7 +190,10 @@ class MainActivity : AppCompatActivity() {
                         popEnterTransition = { ScreenPopEnterTransition },
                         popExitTransition = { ScreenPopExitTransition },
                     ) {
-                        composable("splash") {
+                        composable(
+                            "splash",
+                            exitTransition = { SplashExitTransition },
+                        ) {
                             SplashScreen(
                                 settingsRepository = app.settingsRepository,
                                 onNavigateToHome = {
@@ -203,7 +208,11 @@ class MainActivity : AppCompatActivity() {
                                 },
                             )
                         }
-                        composable("onboarding") {
+                        composable(
+                            "onboarding",
+                            enterTransition = { SplashNextEnterTransition },
+                            exitTransition = { SplashExitTransition },
+                        ) {
                             OnboardingScreen(
                                 onComplete = {
                                     CoroutineScope(Dispatchers.IO).launch {

@@ -65,3 +65,15 @@ val BottomSheetExitTransition: ExitTransition =
         targetOffsetY = { fullHeight -> fullHeight },
         animationSpec = tween(200),
     ) + fadeOut(tween(150))
+
+/** Splash exit: slow fade-out + subtle scale-up (zoom dissolve) */
+val SplashExitTransition: ExitTransition =
+    fadeOut(animationSpec = tween(500, easing = FastOutSlowInEasing)) +
+        scaleOut(
+            targetScale = 1.05f,
+            animationSpec = tween(500, easing = FastOutSlowInEasing),
+        )
+
+/** Splash -> next screen entry: fade-in (no slide, pairs with splash dissolve) */
+val SplashNextEnterTransition: EnterTransition =
+    fadeIn(animationSpec = tween(500, delayMillis = 100))
