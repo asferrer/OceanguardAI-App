@@ -14,11 +14,15 @@ import androidx.lifecycle.lifecycleScope
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.DetectionSession
+import com.oceanguard.ai.data.VideoAnalysis
 import com.oceanguard.ai.inference.AnalysisState
+import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.ui.MainActivity
 import com.oceanguard.ai.utils.BitmapAnnotator
 import com.oceanguard.ai.utils.ExifLocationExtractor
 import com.oceanguard.ai.utils.ImagePersistence
+import com.oceanguard.ai.utils.VideoPersistence
+import com.google.gson.Gson
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.collectLatest
@@ -27,13 +31,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 /**
- * Foreground Service that runs inference in the background.
+ * Foreground Service that runs inference jobs sequentially from a queue.
  *
- * Keeps the process alive with a persistent notification while RT-DETRv2
- * and Gemma 3n process images. Supports both single-image and batch modes.
- *
- * Results are saved autonomously via [com.oceanguard.ai.data.DetectionRepository]
- * so they persist even if the user never returns to the app.
+ * New jobs are enqueued via [onStartCommand]. When the current job finishes,
+ * the next job in the queue is automatically started. The service stops itself
+ * only when the queue is empty and no job is running.
  *
  * State is shared with the UI via [OceanGuardApp.inferenceServiceState].
  */
@@ -44,15 +46,14 @@ class InferenceService : LifecycleService() {
         const val CHANNEL_ID = "oceanguard_inference"
         private const val NOTIFICATION_ID = 1001
 
-        /** Per-item timeout: VLM takes ~6min on CPU, allow 10min for safety. */
         private const val BATCH_ITEM_TIMEOUT_MS = 10L * 60 * 1000
-        /** Per-item timeout when VLM is disabled (RT-DETRv2 only: ~6s). */
         private const val BATCH_ITEM_TIMEOUT_NO_VLM_MS = 2L * 60 * 1000
 
         private const val EXTRA_MODE = "mode"
         private const val EXTRA_URI = "uri"
         private const val EXTRA_URI_LIST = "uri_list"
         const val ACTION_CANCEL = "com.oceanguard.ai.CANCEL_INFERENCE"
+        const val EXTRA_DEEP_LINK_ROUTE = "deep_link_route"
 
         fun singleImageIntent(context: Context, uri: Uri): Intent =
             Intent(context, InferenceService::class.java).apply {
@@ -63,13 +64,23 @@ class InferenceService : LifecycleService() {
         fun batchIntent(context: Context, uris: List<Uri>): Intent =
             Intent(context, InferenceService::class.java).apply {
                 putExtra(EXTRA_MODE, "batch")
-                putStringArrayListExtra(EXTRA_URI_LIST, ArrayList(uris.map { it.toString() }))
+                putStringArrayListExtra(
+                    EXTRA_URI_LIST, ArrayList(uris.map { it.toString() })
+                )
+            }
+
+        fun videoIntent(context: Context, uri: Uri): Intent =
+            Intent(context, InferenceService::class.java).apply {
+                putExtra(EXTRA_MODE, "video")
+                putExtra(EXTRA_URI, uri.toString())
             }
     }
 
     private lateinit var app: OceanGuardApp
     private lateinit var notificationManager: NotificationManager
     private var inferenceJob: Job? = null
+    private var videoProcessor: VideoProcessor? = null
+    private val jobQueue = InferenceJobQueue()
 
     override fun onCreate() {
         super.onCreate()
@@ -82,75 +93,116 @@ class InferenceService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
 
         if (intent?.action == ACTION_CANCEL) {
-            cancelInference()
+            cancelAll()
             return START_NOT_STICKY
         }
 
         val mode = intent?.getStringExtra(EXTRA_MODE) ?: run {
-            stopSelf()
+            if (jobQueue.totalCount == 0) stopSelf()
             return START_NOT_STICKY
         }
 
-        // Promote to foreground immediately (must happen within 5s of startForegroundService)
-        startForeground(NOTIFICATION_ID, buildNotification("Starting analysis..."))
+        // Promote to foreground immediately
+        startForeground(NOTIFICATION_ID, buildNotification("Preparing..."))
 
-        // Cancel any previous job before starting a new one
-        inferenceJob?.cancel()
+        // Parse intent into job(s) and enqueue
+        enqueueFromIntent(mode, intent)
 
-        when (mode) {
-            "single" -> {
-                val uriString = intent.getStringExtra(EXTRA_URI) ?: run {
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-                val uri = Uri.parse(uriString)
-                app.inferenceServiceState.value = InferenceServiceState.SingleRunning(uri)
-                launchSingleInference(uri)
-            }
-            "batch" -> {
-                val uriStrings = intent.getStringArrayListExtra(EXTRA_URI_LIST) ?: run {
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-                val uris = uriStrings.map { Uri.parse(it) }
-                app.inferenceServiceState.value =
-                    InferenceServiceState.BatchRunning(uris, 0, emptyList())
-                launchBatchInference(uris)
+        // If no job is currently running, start processing the queue
+        if (jobQueue.currentJob == null) {
+            processNextJob()
+        } else {
+            // Update notification to show queue count
+            val pending = jobQueue.pendingCount
+            if (pending > 0) {
+                updateNotification("Processing... ($pending queued)")
             }
         }
 
         return START_NOT_STICKY
     }
 
+    private fun enqueueFromIntent(mode: String, intent: Intent) {
+        when (mode) {
+            "single" -> {
+                val uri = intent.getStringExtra(EXTRA_URI)?.let { Uri.parse(it) }
+                    ?: return
+                jobQueue.enqueue(InferenceJob.SingleImage(uri))
+                Log.i(TAG, "Enqueued single image job (queue: ${jobQueue.totalCount})")
+            }
+            "batch" -> {
+                val uriStrings = intent.getStringArrayListExtra(EXTRA_URI_LIST)
+                    ?: return
+                val uris = uriStrings.map { Uri.parse(it) }
+                jobQueue.enqueue(InferenceJob.ImageBatch(uris))
+                Log.i(TAG, "Enqueued batch job: ${uris.size} images (queue: ${jobQueue.totalCount})")
+            }
+            "video" -> {
+                val uri = intent.getStringExtra(EXTRA_URI)?.let { Uri.parse(it) }
+                    ?: return
+                jobQueue.enqueue(InferenceJob.Video(uri))
+                Log.i(TAG, "Enqueued video job (queue: ${jobQueue.totalCount})")
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Queue processing loop
+    // -----------------------------------------------------------------------
+
+    private fun processNextJob() {
+        val job = jobQueue.dequeue()
+        if (job == null) {
+            Log.i(TAG, "Queue empty — stopping service")
+            app.inferenceServiceState.value = InferenceServiceState.Idle
+            stopSelf()
+            return
+        }
+
+        Log.i(TAG, "Starting job ${job.id} (${job.typeLabel}), ${jobQueue.pendingCount} pending")
+
+        when (job) {
+            is InferenceJob.SingleImage -> launchSingleInference(job)
+            is InferenceJob.ImageBatch -> launchBatchInference(job)
+            is InferenceJob.Video -> launchVideoInference(job)
+        }
+    }
+
+    private fun buildQueueInfo(job: InferenceJob) = QueueInfo(
+        currentJobId = job.id,
+        pendingCount = jobQueue.pendingCount,
+        deepLinkRoute = job.deepLinkRoute,
+    )
+
     // -----------------------------------------------------------------------
     // Single image inference
     // -----------------------------------------------------------------------
 
-    private fun launchSingleInference(uri: Uri) {
+    private fun launchSingleInference(job: InferenceJob.SingleImage) {
         inferenceJob = lifecycleScope.launch {
-            // Collect orchestrator state changes for notification updates
             val stateCollector = launch {
                 app.detectionOrchestrator.analysisState.collectLatest { state ->
-                    val text = analysisStateToNotificationText(state) ?: return@collectLatest
-                    updateNotification(text)
+                    val text = analysisStateToNotificationText(state)
+                        ?: return@collectLatest
+                    updateNotification(text, job.deepLinkRoute)
                 }
             }
 
             try {
+                app.inferenceServiceState.value =
+                    InferenceServiceState.SingleRunning(job.uri, buildQueueInfo(job))
+
                 val skipVLM = !app.settingsRepository.vlmEnabled.first()
                 val threshold = app.settingsRepository.confidenceThreshold.first()
                 val result = app.detectionOrchestrator.analyzeImage(
-                    uri, skipVLM = skipVLM, confidenceThreshold = threshold
+                    job.uri, skipVLM = skipVLM, confidenceThreshold = threshold
                 )
 
-                // Persist source image to internal storage so URI survives app restart
-                val persistedUri = ImagePersistence.persistImage(applicationContext, uri)
-
-                // Auto-save: prefer EXIF GPS from photo, fall back to device location
-                val exifLocation = try { ExifLocationExtractor.extract(applicationContext, uri) } catch (_: Exception) { null }
+                val persistedUri = ImagePersistence.persistImage(applicationContext, job.uri)
+                val exifLocation = try { ExifLocationExtractor.extract(applicationContext, job.uri) } catch (_: Exception) { null }
                 val deviceLocation = try { app.locationProvider.getLastKnownLocation() } catch (_: Exception) { null }
                 val location = exifLocation ?: deviceLocation
-                val annotatedUri = tryAnnotate(uri, result.rtdetrDetections)
+                val annotatedUri = tryAnnotate(job.uri, result.rtdetrDetections)
 
                 val session = DetectionSession(
                     imageUri = persistedUri,
@@ -164,17 +216,21 @@ class InferenceService : LifecycleService() {
                 )
                 app.repository.saveSession(session)
 
-                app.inferenceServiceState.value = InferenceServiceState.SingleComplete(uri, result)
-                updateNotification("Analysis complete! ${result.totalDebrisCount} debris items found.")
-                Log.i(TAG, "Single inference complete: ${result.totalDebrisCount} debris in ${result.processingTimeMs}ms")
+                app.inferenceServiceState.value =
+                    InferenceServiceState.SingleComplete(job.uri, result)
+                updateNotification(
+                    "Complete! ${result.totalDebrisCount} debris found.",
+                    job.deepLinkRoute,
+                )
+                Log.i(TAG, "Single inference complete: ${result.totalDebrisCount} debris")
             } catch (e: Exception) {
                 Log.e(TAG, "Single inference failed", e)
                 app.inferenceServiceState.value =
                     InferenceServiceState.Error(e.message ?: "Unknown error")
-                updateNotification("Analysis failed.")
             } finally {
                 stateCollector.cancel()
-                stopSelf()
+                jobQueue.clearCurrent()
+                processNextJob()
             }
         }
     }
@@ -183,17 +239,21 @@ class InferenceService : LifecycleService() {
     // Batch inference
     // -----------------------------------------------------------------------
 
-    private fun launchBatchInference(uris: List<Uri>) {
+    private fun launchBatchInference(job: InferenceJob.ImageBatch) {
         inferenceJob = lifecycleScope.launch {
             val results = mutableListOf<BatchItemResult>()
             val skipVLM = !app.settingsRepository.vlmEnabled.first()
             val threshold = app.settingsRepository.confidenceThreshold.first()
             val timeoutMs = if (skipVLM) BATCH_ITEM_TIMEOUT_NO_VLM_MS else BATCH_ITEM_TIMEOUT_MS
 
-            for ((index, uri) in uris.withIndex()) {
-                updateNotification("Image ${index + 1}/${uris.size}: analyzing...")
-                app.inferenceServiceState.value =
-                    InferenceServiceState.BatchRunning(uris, index, results.toList())
+            for ((index, uri) in job.uris.withIndex()) {
+                updateNotification(
+                    "Image ${index + 1}/${job.uris.size}: analyzing...",
+                    job.deepLinkRoute,
+                )
+                app.inferenceServiceState.value = InferenceServiceState.BatchRunning(
+                    job.uris, index, results.toList(), buildQueueInfo(job),
+                )
 
                 try {
                     val result = withTimeout(timeoutMs) {
@@ -202,10 +262,7 @@ class InferenceService : LifecycleService() {
                         )
                     }
 
-                    // Persist source image to internal storage so URI survives app restart
                     val persistedUri = ImagePersistence.persistImage(applicationContext, uri)
-
-                    // Prefer EXIF GPS from the photo, fall back to device location
                     val exifLocation = try { ExifLocationExtractor.extract(applicationContext, uri) } catch (_: Exception) { null }
                     val deviceLocation = try { app.locationProvider.getLastKnownLocation() } catch (_: Exception) { null }
                     val location = exifLocation ?: deviceLocation
@@ -222,28 +279,110 @@ class InferenceService : LifecycleService() {
                         processingTimeMs = result.processingTimeMs,
                     )
                     val sessionId = app.repository.saveSession(session)
-
                     results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri))
-                    updateNotification("Image ${index + 1}/${uris.size} done. ${result.totalDebrisCount} debris.")
-                    Log.i(TAG, "Batch item $index complete: ${result.totalDebrisCount} debris")
                 } catch (e: TimeoutCancellationException) {
-                    Log.e(TAG, "Batch item $index timed out after ${timeoutMs / 1000}s", e)
-                    results.add(BatchItemResult.Failed(uri, "Timed out (${timeoutMs / 60000}min limit)"))
-                    updateNotification("Image ${index + 1}/${uris.size} timed out.")
+                    results.add(BatchItemResult.Failed(uri, "Timed out"))
                 } catch (e: Exception) {
-                    Log.e(TAG, "Batch item $index failed", e)
                     results.add(BatchItemResult.Failed(uri, e.message ?: "Unknown error"))
                 }
-
-                // Reset orchestrator state between batch items
                 app.detectionOrchestrator.reset()
             }
 
-            app.inferenceServiceState.value = InferenceServiceState.BatchComplete(uris, results)
             val successCount = results.count { it is BatchItemResult.Done }
-            updateNotification("Batch complete! $successCount/${uris.size} images processed.")
-            Log.i(TAG, "Batch complete: $successCount/${uris.size} succeeded")
-            stopSelf()
+            app.inferenceServiceState.value =
+                InferenceServiceState.BatchComplete(job.uris, results)
+            updateNotification(
+                "Batch done! $successCount/${job.uris.size} processed.",
+                job.deepLinkRoute,
+            )
+            Log.i(TAG, "Batch complete: $successCount/${job.uris.size}")
+
+            jobQueue.clearCurrent()
+            processNextJob()
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Video inference
+    // -----------------------------------------------------------------------
+
+    private fun launchVideoInference(job: InferenceJob.Video) {
+        inferenceJob = lifecycleScope.launch {
+            try {
+                val threshold = app.settingsRepository.confidenceThreshold.first()
+                val processor = VideoProcessor(
+                    applicationContext, app.rtdetrInference, threshold
+                )
+                videoProcessor = processor
+
+                // Share processor reference for live preview
+                app.currentVideoProcessor.value = processor
+
+                app.inferenceServiceState.value = InferenceServiceState.VideoRunning(
+                    job.uri, 0, 0, 0L, 0L, buildQueueInfo(job),
+                )
+
+                val progressCollector = launch {
+                    processor.progress.collectLatest { progress ->
+                        if (progress.totalFrames > 0) {
+                            val remainMin = progress.estimatedRemainingMs / 60000
+                            val remainSec = (progress.estimatedRemainingMs % 60000) / 1000
+                            val text = "Frame ${progress.currentFrame}/${progress.totalFrames} — ~${remainMin}m ${remainSec}s"
+                            updateNotification(text, job.deepLinkRoute)
+                            app.inferenceServiceState.value =
+                                InferenceServiceState.VideoRunning(
+                                    job.uri, progress.currentFrame, progress.totalFrames,
+                                    progress.elapsedTimeMs, progress.estimatedRemainingMs,
+                                    buildQueueInfo(job),
+                                )
+                        }
+                    }
+                }
+
+                val persistedUri = VideoPersistence.persistVideo(applicationContext, job.uri)
+                val result = processor.processVideo(Uri.parse(persistedUri))
+                val location = try { app.locationProvider.getLastKnownLocation() } catch (_: Exception) { null }
+
+                val analysis = VideoAnalysis(
+                    sourceVideoUri = persistedUri,
+                    outputVideoUri = result.outputVideoUri,
+                    thumbnailUri = result.thumbnailUri,
+                    durationMs = result.durationMs,
+                    totalFrameCount = result.totalFrameCount,
+                    processedFrameCount = result.processedFrameCount,
+                    uniqueDebrisCount = result.uniqueDebrisCount,
+                    classCounts = Gson().toJson(result.classCounts),
+                    totalProcessingTimeMs = result.totalProcessingTimeMs,
+                    avgInferenceTimeMs = result.avgInferenceTimeMs,
+                    healthScore = result.healthScore,
+                    location = location,
+                    status = "complete",
+                )
+                val analysisId = app.videoAnalysisDao.insert(analysis)
+
+                app.inferenceServiceState.value = InferenceServiceState.VideoComplete(
+                    analysisId, result.outputVideoUri,
+                    result.uniqueDebrisCount, result.totalProcessingTimeMs,
+                )
+                updateNotification(
+                    "Video done! ${result.uniqueDebrisCount} unique debris.",
+                    "video_detail/$analysisId",
+                )
+                Log.i(TAG, "Video complete: ${result.uniqueDebrisCount} unique debris")
+                progressCollector.cancel()
+            } catch (e: java.util.concurrent.CancellationException) {
+                Log.i(TAG, "Video inference cancelled")
+                app.inferenceServiceState.value = InferenceServiceState.Idle
+            } catch (e: Exception) {
+                Log.e(TAG, "Video inference failed", e)
+                app.inferenceServiceState.value =
+                    InferenceServiceState.Error(e.message ?: "Video processing failed")
+            } finally {
+                videoProcessor = null
+                app.currentVideoProcessor.value = null
+                jobQueue.clearCurrent()
+                processNextJob()
+            }
         }
     }
 
@@ -251,11 +390,14 @@ class InferenceService : LifecycleService() {
     // Cancel
     // -----------------------------------------------------------------------
 
-    private fun cancelInference() {
+    private fun cancelAll() {
+        videoProcessor?.isCancelled = true
         inferenceJob?.cancel()
+        val removed = jobQueue.cancelAll()
+        app.currentVideoProcessor.value = null
         app.inferenceServiceState.value = InferenceServiceState.Idle
         app.detectionOrchestrator.reset()
-        Log.i(TAG, "Inference cancelled by user")
+        Log.i(TAG, "Cancelled: current job + ${removed.size} queued jobs")
         stopSelf()
     }
 
@@ -263,7 +405,10 @@ class InferenceService : LifecycleService() {
     // Helpers
     // -----------------------------------------------------------------------
 
-    private fun tryAnnotate(uri: Uri, detections: List<com.oceanguard.ai.inference.DetectionResult>): String? {
+    private fun tryAnnotate(
+        uri: Uri,
+        detections: List<com.oceanguard.ai.inference.DetectionResult>,
+    ): String? {
         if (detections.isEmpty()) return null
         return try {
             BitmapAnnotator.annotateAndSave(
@@ -277,15 +422,18 @@ class InferenceService : LifecycleService() {
         }
     }
 
-    private fun analysisStateToNotificationText(state: AnalysisState): String? = when (state) {
-        is AnalysisState.Idle -> null
-        is AnalysisState.LoadingImage -> "Loading image..."
-        is AnalysisState.Detecting -> "Running AI detection..."
-        is AnalysisState.DetectionsReady -> "${state.detections.size} objects found. Starting deep analysis..."
-        is AnalysisState.AnalyzingDeep -> "Running deep ecosystem analysis (this may take several minutes)..."
-        is AnalysisState.Complete -> "Analysis complete!"
-        is AnalysisState.Error -> "Analysis failed: ${state.message}"
-    }
+    private fun analysisStateToNotificationText(state: AnalysisState): String? =
+        when (state) {
+            is AnalysisState.Idle -> null
+            is AnalysisState.LoadingImage -> "Loading image..."
+            is AnalysisState.Detecting -> "Running AI detection..."
+            is AnalysisState.DetectionsReady ->
+                "${state.detections.size} objects found. Starting deep analysis..."
+            is AnalysisState.AnalyzingDeep ->
+                "Running deep ecosystem analysis (this may take several minutes)..."
+            is AnalysisState.Complete -> "Analysis complete!"
+            is AnalysisState.Error -> "Analysis failed: ${state.message}"
+        }
 
     // -----------------------------------------------------------------------
     // Notification
@@ -303,9 +451,13 @@ class InferenceService : LifecycleService() {
         notificationManager.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(contentText: String): Notification {
+    private fun buildNotification(
+        contentText: String,
+        deepLinkRoute: String = "home",
+    ): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_DEEP_LINK_ROUTE, deepLinkRoute)
         }
         val openAppPendingIntent = PendingIntent.getActivity(
             this, 0, openAppIntent,
@@ -320,9 +472,17 @@ class InferenceService : LifecycleService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        // Show queue count in title if there are pending jobs
+        val pending = jobQueue.pendingCount
+        val title = if (pending > 0) {
+            "OceanGuard AI ($pending queued)"
+        } else {
+            "OceanGuard AI"
+        }
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("OceanGuard AI")
+            .setContentTitle(title)
             .setContentText(contentText)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -338,11 +498,12 @@ class InferenceService : LifecycleService() {
         return notification
     }
 
-    private fun updateNotification(text: String) {
+    private fun updateNotification(text: String, deepLinkRoute: String = "home") {
         try {
-            notificationManager.notify(NOTIFICATION_ID, buildNotification(text))
+            notificationManager.notify(
+                NOTIFICATION_ID, buildNotification(text, deepLinkRoute)
+            )
         } catch (e: SecurityException) {
-            // POST_NOTIFICATIONS permission denied on Android 13+ — non-fatal
             Log.w(TAG, "Cannot update notification: permission denied", e)
         }
     }

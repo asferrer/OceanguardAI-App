@@ -11,7 +11,7 @@ import com.oceanguard.ai.inference.AnalysisResult
  *
  * This is separate from [com.oceanguard.ai.inference.AnalysisState] which
  * only tracks a single image in the orchestrator. InferenceServiceState
- * additionally tracks batch progress and service-level lifecycle.
+ * additionally tracks batch progress, video progress, and queue lifecycle.
  */
 sealed class InferenceServiceState {
 
@@ -19,7 +19,10 @@ sealed class InferenceServiceState {
     data object Idle : InferenceServiceState()
 
     /** A single image is being processed. */
-    data class SingleRunning(val uri: Uri) : InferenceServiceState()
+    data class SingleRunning(
+        val uri: Uri,
+        val queueInfo: QueueInfo = QueueInfo(),
+    ) : InferenceServiceState()
 
     /** Single image processing completed. The session has been saved by the service. */
     data class SingleComplete(
@@ -32,6 +35,7 @@ sealed class InferenceServiceState {
         val allUris: List<Uri>,
         val currentIndex: Int,
         val completedItems: List<BatchItemResult>,
+        val queueInfo: QueueInfo = QueueInfo(),
     ) : InferenceServiceState()
 
     /** All images in the batch have been processed. Sessions saved by the service. */
@@ -40,9 +44,40 @@ sealed class InferenceServiceState {
         val results: List<BatchItemResult>,
     ) : InferenceServiceState()
 
+    /** A video is being processed frame by frame. */
+    data class VideoRunning(
+        val uri: Uri,
+        val currentFrame: Int,
+        val totalFrames: Int,
+        val elapsedTimeMs: Long,
+        val estimatedRemainingMs: Long,
+        val queueInfo: QueueInfo = QueueInfo(),
+    ) : InferenceServiceState()
+
+    /** Video processing completed. The analysis has been saved by the service. */
+    data class VideoComplete(
+        val analysisId: Long,
+        val outputVideoUri: String?,
+        val uniqueDebrisCount: Int,
+        val processingTimeMs: Long,
+    ) : InferenceServiceState()
+
     /** An unrecoverable error occurred in the service. */
     data class Error(val message: String) : InferenceServiceState()
 }
+
+/**
+ * Info about the job queue, attached to running states so the UI can
+ * show "Job 2/5 — 3 queued" style indicators.
+ */
+data class QueueInfo(
+    /** ID of the current job (for deep-link matching). */
+    val currentJobId: Long = 0,
+    /** Number of jobs still waiting after the current one. */
+    val pendingCount: Int = 0,
+    /** Navigation route for notification deep-link. */
+    val deepLinkRoute: String = "home",
+)
 
 /** Result of processing a single image within a batch job. */
 sealed class BatchItemResult {
