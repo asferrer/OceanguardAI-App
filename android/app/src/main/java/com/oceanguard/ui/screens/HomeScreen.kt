@@ -75,6 +75,7 @@ import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
+import com.oceanguard.ai.utils.UpdateInfo
 import kotlinx.coroutines.launch
 
 /**
@@ -131,6 +132,12 @@ fun HomeScreen(
     val guidedTourActive by app.settingsRepository.guidedTourActive
         .collectAsStateWithLifecycle(initialValue = false)
     var showTransitionDialog by remember { mutableStateOf(false) }
+
+    // Update checker
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    LaunchedEffect(Unit) {
+        updateInfo = app.updateChecker.check()
+    }
 
     LaunchedEffect(tourComplete) {
         if (!tourComplete) tourController.start()
@@ -385,7 +392,74 @@ fun HomeScreen(
                 },
             )
         }
+
+        updateInfo?.let { info ->
+            UpdateAvailableDialog(
+                info = info,
+                onDownload = {
+                    app.updateChecker.downloadApk(homeContext, info)
+                    updateInfo = null
+                },
+                onSkip = {
+                    scope.launch { app.settingsRepository.setSkippedVersion(info.versionName) }
+                    updateInfo = null
+                },
+                onDismiss = { updateInfo = null },
+            )
+        }
     } // end Box
+}
+
+@Composable
+private fun UpdateAvailableDialog(
+    info: UpdateInfo,
+    onDownload: () -> Unit,
+    onSkip: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.update_available_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.update_new_version, info.versionName),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (info.releaseNotes.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = info.releaseNotes.take(500),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 10,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.update_data_preserved),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDownload) {
+                Text(stringResource(R.string.update_download))
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onSkip) {
+                    Text(stringResource(R.string.update_skip_version))
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.update_later))
+                }
+            }
+        },
+    )
 }
 
 // ---------------------------------------------------------------------------

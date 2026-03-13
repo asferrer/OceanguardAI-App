@@ -579,4 +579,17 @@
     <string name="save_to_gallery_success">Immagine salvata nella galleria</string>
     <string name="save_to_gallery_error">Impossibile salvare l\'immagine</string>
 
+
+    <!-- ================================================================== -->
+    <!-- Update checker                                                      -->
+    <!-- ================================================================== -->
+    <string name="update_available_title">Aggiornamento disponibile</string>
+    <string name="update_new_version">La versione %1$s è disponibile</string>
+    <string name="update_download">Scarica</string>
+    <string name="update_skip_version">Ignora</string>
+    <string name="update_later">Più tardi</string>
+    <string name="update_data_preserved">I tuoi dati e le analisi verranno conservati durante l\'aggiornamento.</string>
+    <string name="update_downloading">Download dell\'aggiornamento in corso…</string>
+    <string name="update_download_started">Download avviato — controlla le notifiche</string>
+
 </resources>

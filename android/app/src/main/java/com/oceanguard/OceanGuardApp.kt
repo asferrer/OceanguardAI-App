@@ -24,6 +24,7 @@ import com.oceanguard.ai.service.ReportGenerationService
 import com.oceanguard.ai.service.VlmDownloadService
 import com.oceanguard.ai.utils.LocationProvider
 import com.oceanguard.ai.utils.PhotonGeocoderClient
+import com.oceanguard.ai.utils.UpdateChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -124,6 +125,9 @@ class OceanGuardApp : Application() {
 
     // Geocoding (shared singleton for LRU cache)
     val geocoder: PhotonGeocoderClient by lazy { PhotonGeocoderClient() }
+
+    // Update checker
+    val updateChecker: UpdateChecker by lazy { UpdateChecker(settingsRepository) }
 
     // VLM model download manager
     val vlmModelManager: VlmModelManager by lazy { VlmModelManager(this) }

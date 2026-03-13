@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +43,8 @@ class SettingsRepository(private val context: Context) {
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val GUIDED_TOUR_ACTIVE = booleanPreferencesKey("guided_tour_active")
         val DEV_MODE_ENABLED = booleanPreferencesKey("dev_mode_enabled")
+        val LAST_UPDATE_CHECK_MS = longPreferencesKey("last_update_check_ms")
+        val SKIPPED_VERSION = stringPreferencesKey("skipped_update_version")
     }
 
     companion object {
@@ -311,5 +314,25 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setDevModeEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.DEV_MODE_ENABLED] = enabled }
+    }
+
+    // -----------------------------------------------------------------------
+    // Update checker
+    // -----------------------------------------------------------------------
+
+    val lastUpdateCheckMs: Flow<Long> = context.dataStore.data.map { prefs ->
+        prefs[Keys.LAST_UPDATE_CHECK_MS] ?: 0L
+    }
+
+    val skippedVersion: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SKIPPED_VERSION] ?: ""
+    }
+
+    suspend fun setLastUpdateCheckMs(ms: Long) {
+        context.dataStore.edit { prefs -> prefs[Keys.LAST_UPDATE_CHECK_MS] = ms }
+    }
+
+    suspend fun setSkippedVersion(version: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.SKIPPED_VERSION] = version }
     }
 }

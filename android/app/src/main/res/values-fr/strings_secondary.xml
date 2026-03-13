@@ -579,4 +579,17 @@
     <string name="save_to_gallery_success">Image enregistrée dans la galerie</string>
     <string name="save_to_gallery_error">Impossible d\'enregistrer l\'image</string>
 
+
+    <!-- ================================================================== -->
+    <!-- Update checker                                                      -->
+    <!-- ================================================================== -->
+    <string name="update_available_title">Mise à jour disponible</string>
+    <string name="update_new_version">La version %1$s est disponible</string>
+    <string name="update_download">Télécharger</string>
+    <string name="update_skip_version">Ignorer</string>
+    <string name="update_later">Plus tard</string>
+    <string name="update_data_preserved">Vos données et analyses seront conservées lors de la mise à jour.</string>
+    <string name="update_downloading">Téléchargement de la mise à jour…</string>
+    <string name="update_download_started">Téléchargement lancé — vérifiez vos notifications</string>
+
 </resources>
