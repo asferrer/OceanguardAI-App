@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "VideoProcessor"
 private const val MAX_WIDTH = 1920
@@ -46,14 +47,16 @@ data class VideoProcessingResult(
 
 class VideoProcessor(
     private val context: Context,
-    private val rtdetrInference: RTDETRInference,
-    private val confidenceThreshold: Float = 0.5f
+    private val detector: ObjectDetector,
+    private val confidenceThreshold: Float = 0.5f,
 ) {
     private val _progress = MutableStateFlow(VideoProgress(0, 0, 0L, 0L))
     val progress: StateFlow<VideoProgress> = _progress.asStateFlow()
 
-    @Volatile
-    var isCancelled: Boolean = false
+    private val _cancelled = AtomicBoolean(false)
+    var isCancelled: Boolean
+        get() = _cancelled.get()
+        set(value) { _cancelled.set(value) }
 
     suspend fun processVideo(videoUri: Uri): VideoProcessingResult = withContext(Dispatchers.Default) {
         val startTimeMs = System.currentTimeMillis()
@@ -88,7 +91,7 @@ class VideoProcessor(
                     ?: continue
 
                 val t0 = System.currentTimeMillis()
-                val detections = rtdetrInference.detect(rawBitmap, confidenceThreshold)
+                val detections = detector.detect(rawBitmap, confidenceThreshold)
                 inferenceTimes.add(System.currentTimeMillis() - t0)
 
                 val trackingResult = tracker.update(frameIdx, detections)
@@ -129,8 +132,12 @@ class VideoProcessor(
             Log.e(TAG, "Video processing failed", e)
             throw e
         } finally {
-            runCatching { retriever.release() }
-            if (encoder != null) runCatching { encoder.release() }
+            try { retriever.release() } catch (e: Exception) {
+                Log.w(TAG, "MediaMetadataRetriever.release() failed", e)
+            }
+            if (encoder != null) try { encoder.release() } catch (e: Exception) {
+                Log.w(TAG, "VideoEncoder.release() failed", e)
+            }
         }
     }
 
@@ -191,9 +198,12 @@ class VideoProcessor(
         val elapsed = System.currentTimeMillis() - startMs
         val avgMs = if (inferenceTimes.isEmpty()) 0L else inferenceTimes.average().toLong()
         val remaining = avgMs * (total - current)
-        // Recycle previous live frame to prevent memory leak
-        _progress.value.liveFrame?.recycle()
+        // Capture the outgoing frame reference BEFORE publishing the new value.
+        // Recycling after the swap ensures no collector can receive a recycled bitmap:
+        // once the new value is visible, the old one is no longer reachable via StateFlow.
+        val outgoingFrame = _progress.value.liveFrame
         _progress.value = VideoProgress(current, total, elapsed, remaining, liveFrame)
+        outgoingFrame?.recycle()
     }
 
     private fun calculateHealthScore(result: TrackingResult): Int {

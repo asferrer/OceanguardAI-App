@@ -23,9 +23,12 @@ import com.oceanguard.ai.utils.ExifLocationExtractor
 import com.oceanguard.ai.utils.ImagePersistence
 import com.oceanguard.ai.utils.VideoPersistence
 import com.google.gson.Gson
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -154,7 +157,10 @@ class InferenceService : LifecycleService() {
         val job = jobQueue.dequeue()
         if (job == null) {
             Log.i(TAG, "Queue empty — stopping service")
-            app.inferenceServiceState.value = InferenceServiceState.Idle
+            // Do NOT transition to Idle here — leave the last Complete state intact so
+            // that LaunchedEffect guards in the UI can still see it and block accidental
+            // re-launches triggered by recompositions or Activity recreation.
+            // Idle is set explicitly by resetState() or the next analyzeMedia() call.
             stopSelf()
             return
         }
@@ -282,6 +288,8 @@ class InferenceService : LifecycleService() {
                     results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri))
                 } catch (e: TimeoutCancellationException) {
                     results.add(BatchItemResult.Failed(uri, "Timed out"))
+                } catch (e: CancellationException) {
+                    throw e  // never swallow — lets cancelAll() stop the loop immediately
                 } catch (e: Exception) {
                     results.add(BatchItemResult.Failed(uri, e.message ?: "Unknown error"))
                 }
@@ -311,7 +319,9 @@ class InferenceService : LifecycleService() {
             try {
                 val threshold = app.settingsRepository.confidenceThreshold.first()
                 val processor = VideoProcessor(
-                    applicationContext, app.rtdetrInference, threshold
+                    context = applicationContext,
+                    detector = app.rtdetrInference,
+                    confidenceThreshold = threshold,
                 )
                 videoProcessor = processor
 
@@ -322,8 +332,11 @@ class InferenceService : LifecycleService() {
                     job.uri, 0, 0, 0L, 0L, buildQueueInfo(job),
                 )
 
+                @OptIn(FlowPreview::class)
                 val progressCollector = launch {
-                    processor.progress.collectLatest { progress ->
+                    processor.progress
+                        .debounce(200L)
+                        .collectLatest { progress ->
                         if (progress.totalFrames > 0) {
                             val remainMin = progress.estimatedRemainingMs / 60000
                             val remainSec = (progress.estimatedRemainingMs % 60000) / 1000

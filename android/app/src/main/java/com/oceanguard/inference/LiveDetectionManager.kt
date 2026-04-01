@@ -37,7 +37,7 @@ import java.util.Locale
  * - Auto-saves frames with detections to history (throttled)
  */
 class LiveDetectionManager(
-    private val rtdetrInference: RTDETRInference,
+    private val detector: ObjectDetector,
     private val context: Context? = null,
     private val repository: DetectionRepository? = null,
     private val locationProvider: LocationProvider? = null,
@@ -92,8 +92,8 @@ class LiveDetectionManager(
             try {
                 val startTime = System.currentTimeMillis()
 
-                val targetSize = RTDETRInference.INPUT_SIZE
-                // Resize bitmap to model's fixed input size (640x640)
+                val targetSize = detector.inputSize
+                // Resize bitmap to detector's fixed input size
                 val resized = if (bitmap.width != targetSize || bitmap.height != targetSize) {
                     Bitmap.createScaledBitmap(bitmap, targetSize, targetSize, true)
                 } else {
@@ -101,7 +101,7 @@ class LiveDetectionManager(
                 }
 
                 // Run inference directly (bypasses orchestrator, no VLM)
-                val detections = rtdetrInference.detectPreResized(resized, confidenceThreshold)
+                val detections = detector.detect(resized, confidenceThreshold)
 
                 if (resized !== bitmap) {
                     resized.recycle()

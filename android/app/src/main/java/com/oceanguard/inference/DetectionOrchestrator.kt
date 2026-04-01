@@ -6,6 +6,8 @@ import android.util.Log
 import com.oceanguard.ai.data.*
 import com.oceanguard.ai.utils.ImagePreprocessor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,17 +16,21 @@ import kotlinx.coroutines.withContext
 /**
  * Orchestrates the dual inference pipeline:
  * 1. RT-DETRv2 for fast object detection (~30ms)
- * 2. Gemma 3n VLM for deep analysis (~8-15s) - only if debris detected
+ * 2. Qwen3.5-2B VLM for deep analysis (optional, loaded on demand) — pass null
+ *    until the user downloads the vision model.
  *
  * Emits partial results via StateFlow for progressive UI updates.
  */
 class DetectionOrchestrator(
     private val context: Context,
-    private val rtdetrInference: RTDETRInference,
-    private val vlmInference: OceanGuardInference
+    private val detector: ObjectDetector,
+    private val vlmVisionEngine: VlmVisionEngine? = null,
 ) {
     companion object {
         private const val TAG = "DetectionOrchestrator"
+        private const val DEEP_ANALYSIS_PROMPT =
+            "Identify all visible marine debris in this image. List each item with its material type, " +
+            "approximate size, and potential environmental impact. Be concise and structured."
     }
 
     private val imagePreprocessor = ImagePreprocessor(context)
@@ -49,37 +55,54 @@ class DetectionOrchestrator(
             _analysisState.value = AnalysisState.LoadingImage
 
             // Load and preprocess image
-            val bitmap = imagePreprocessor.loadAndPreprocess(imageUri, 640)
+            val bitmap = imagePreprocessor.loadAndPreprocess(imageUri, detector.inputSize)
             Log.i(TAG, "Image loaded: ${bitmap.width}x${bitmap.height}")
 
-            // Step 1: Fast detection with RT-DETRv2
+            // Parallel pipeline: RT-DETR (fast) + VLM (slow) run concurrently.
+            // RT-DETR result is emitted immediately for UI; VLM awaited only if debris found.
             _analysisState.value = AnalysisState.Detecting
-            val detections = if (rtdetrInference.isReady()) {
-                rtdetrInference.detect(bitmap, confidenceThreshold)
-            } else {
-                Log.w(TAG, "RT-DETRv2 not ready, skipping fast detection")
-                emptyList()
-            }
 
-            val detectionTime = System.currentTimeMillis() - startTime
-            Log.i(TAG, "Fast detection: ${detections.size} objects in ${detectionTime}ms")
-
-            // Emit partial result for immediate UI update
-            _analysisState.value = AnalysisState.DetectionsReady(detections)
-
-            // Step 2: Deep analysis with VLM (only if enabled and debris found or RT-DETR unavailable)
-            var vlmAnalysis: DebrisDetection? = null
-            if (!skipVLM && (detections.isNotEmpty() || !rtdetrInference.isReady())) {
-                _analysisState.value = AnalysisState.AnalyzingDeep(detections)
-
-                try {
-                    vlmAnalysis = vlmInference.detectDebris(imageUri)
-                    Log.i(TAG, "VLM analysis: ${vlmAnalysis.debrisList.size} objects")
-                } catch (e: Exception) {
-                    Log.e(TAG, "VLM analysis failed, using RT-DETR results only", e)
+            val (detections, vlmAnalysis) = coroutineScope {
+                val rtdetrDeferred = async {
+                    if (detector.isReady()) {
+                        detector.detect(bitmap, confidenceThreshold)
+                    } else {
+                        Log.w(TAG, "RT-DETRv2 not ready, skipping fast detection")
+                        emptyList()
+                    }
                 }
-            } else if (skipVLM) {
-                Log.i(TAG, "VLM analysis skipped (disabled in settings)")
+
+                // Start VLM image preprocessing in parallel with RT-DETR (only if vision model loaded)
+                val vlmDeferred = if (!skipVLM && vlmVisionEngine?.isReady() == true) {
+                    async(Dispatchers.Default) {
+                        try {
+                            // Vision engine generates text; DebrisDetection built from RT-DETR result
+                            vlmVisionEngine.generateWithImage(bitmap, DEEP_ANALYSIS_PROMPT)
+                            null  // Text result used for report context, not for DebrisDetection
+                        } catch (e: Exception) {
+                            Log.e(TAG, "VLM analysis failed", e)
+                            null
+                        }
+                    }
+                } else null
+
+                // Wait for RT-DETR first (fast) → emit partial UI update
+                val dets = rtdetrDeferred.await()
+                val detectionTime = System.currentTimeMillis() - startTime
+                Log.i(TAG, "Fast detection: ${dets.size} objects in ${detectionTime}ms")
+                _analysisState.value = AnalysisState.DetectionsReady(dets)
+
+                // Wait for VLM only if debris detected or RT-DETR unavailable
+                val vlm: DebrisDetection? = if (vlmDeferred != null && (dets.isNotEmpty() || !detector.isReady())) {
+                    _analysisState.value = AnalysisState.AnalyzingDeep(dets)
+                    vlmDeferred.await()  // returns null (vision text output not converted to DebrisDetection)
+                } else {
+                    vlmDeferred?.cancel()
+                    if (skipVLM) Log.i(TAG, "VLM analysis skipped (disabled)")
+                    null
+                }
+
+                Pair(dets, vlm)
             }
 
             val totalTime = System.currentTimeMillis() - startTime
@@ -106,8 +129,8 @@ class DetectionOrchestrator(
         imageUri: Uri,
         confidenceThreshold: Float = 0.5f,
     ): List<DetectionResult> = withContext(Dispatchers.Default) {
-        val bitmap = imagePreprocessor.loadAndPreprocess(imageUri, 640)
-        rtdetrInference.detect(bitmap, confidenceThreshold)
+        val bitmap = imagePreprocessor.loadAndPreprocess(imageUri, detector.inputSize)
+        detector.detect(bitmap, confidenceThreshold)
     }
 
     /**

@@ -85,6 +85,10 @@ class IoUTracker(
         tracks.filter { it.isActive && (frameIndex - it.lastSeenFrame) > maxAge }
             .forEach { it.isActive = false }
 
+        // Prune dead tracks that have been inactive long enough to never match again.
+        // Prevents unbounded list growth during long video sessions.
+        tracks.removeAll { !it.isActive && (frameIndex - it.lastSeenFrame) > maxAge * 3 }
+
         return buildResult()
     }
 
