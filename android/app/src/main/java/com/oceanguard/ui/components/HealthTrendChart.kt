@@ -67,6 +67,18 @@ private val LINE_STROKE = 2.dp
 /** Stroke width of the dashed grid lines. */
 private val GRID_STROKE = 1.dp
 
+// Cached Paint objects — allocated once, reused every Canvas draw.
+// Canvas rendering is always on the main thread, so no synchronisation needed.
+private val cachedYLabelPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    textAlign   = android.graphics.Paint.Align.RIGHT
+}
+
+private val cachedXLabelPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    textAlign   = android.graphics.Paint.Align.CENTER
+}
+
 /** Y-axis fixed range: health score 0-100. */
 private const val Y_MIN = 0f
 private const val Y_MAX = 100f
@@ -232,6 +244,10 @@ private fun TrendLineChart(
     val surfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
     val lineColor           = healthScoreColor(points.last().healthScore)
 
+    // Reuse Path objects across draws — reset+rebuild is cheaper than allocating new ones.
+    val linePath = remember { Path() }
+    val areaPath = remember { Path() }
+
     Canvas(
         modifier = modifier.height(CHART_HEIGHT),
     ) {
@@ -284,21 +300,19 @@ private fun TrendLineChart(
         }
 
         // ----------------------------------------------------------------
-        // Draw the connecting line as a Path
+        // Draw the connecting line as a Path (reusing remembered Path instances)
         // ----------------------------------------------------------------
-        val linePath = Path().apply {
-            moveTo(coords.first().x, coords.first().y)
-            coords.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
-        }
+        linePath.reset()
+        linePath.moveTo(coords.first().x, coords.first().y)
+        coords.drop(1).forEach { pt -> linePath.lineTo(pt.x, pt.y) }
 
         // Area fill under the line (gradient from line color to transparent)
-        val areaPath = Path().apply {
-            moveTo(coords.first().x, coords.first().y)
-            coords.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
-            lineTo(coords.last().x, bodyBottom)
-            lineTo(coords.first().x, bodyBottom)
-            close()
-        }
+        areaPath.reset()
+        areaPath.moveTo(coords.first().x, coords.first().y)
+        coords.drop(1).forEach { pt -> areaPath.lineTo(pt.x, pt.y) }
+        areaPath.lineTo(coords.last().x, bodyBottom)
+        areaPath.lineTo(coords.first().x, bodyBottom)
+        areaPath.close()
         drawPath(
             path = areaPath,
             brush = Brush.verticalGradient(
@@ -393,15 +407,11 @@ private fun DrawScope.drawYLabel(
     color: Color,
 ) {
     drawContext.canvas.nativeCanvas.apply {
-        val paint = android.graphics.Paint().apply {
-            this.color       = color.copy(alpha = 0.75f).toArgb()
-            this.textSize    = textSizePx
-            this.isAntiAlias = true
-            this.textAlign   = android.graphics.Paint.Align.RIGHT
-        }
-        val metrics = paint.fontMetrics
+        cachedYLabelPaint.color    = color.copy(alpha = 0.75f).toArgb()
+        cachedYLabelPaint.textSize = textSizePx
+        val metrics = cachedYLabelPaint.fontMetrics
         val textY   = y - (metrics.ascent + metrics.descent) / 2f
-        drawText(label, x + maxWidth - 4f, textY, paint)
+        drawText(label, x + maxWidth - 4f, textY, cachedYLabelPaint)
     }
 }
 
@@ -414,15 +424,11 @@ private fun DrawScope.drawXLabel(
     color: Color,
 ) {
     drawContext.canvas.nativeCanvas.apply {
-        val paint = android.graphics.Paint().apply {
-            this.color       = color.copy(alpha = 0.75f).toArgb()
-            this.textSize    = textSizePx
-            this.isAntiAlias = true
-            this.textAlign   = android.graphics.Paint.Align.CENTER
-        }
-        val metrics = paint.fontMetrics
+        cachedXLabelPaint.color    = color.copy(alpha = 0.75f).toArgb()
+        cachedXLabelPaint.textSize = textSizePx
+        val metrics = cachedXLabelPaint.fontMetrics
         val textY   = y - metrics.ascent
-        drawText(label, centerX, textY, paint)
+        drawText(label, centerX, textY, cachedXLabelPaint)
     }
 }
 

@@ -54,6 +54,29 @@ import com.oceanguard.ai.ui.theme.MaterialRubber
 // with DebrisCard material badges.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Cached Paint objects — allocated once, reused every frame.
+// Canvas rendering is always on the main thread, so no synchronisation needed.
+// ---------------------------------------------------------------------------
+
+private val cachedTextPaint = android.graphics.Paint().apply {
+    color       = android.graphics.Color.WHITE
+    isAntiAlias = true
+    typeface    = android.graphics.Typeface.DEFAULT_BOLD
+}
+
+private val cachedBgPaint = android.graphics.Paint().apply {
+    style       = android.graphics.Paint.Style.FILL
+    isAntiAlias = true
+}
+
+private val cachedBorderPaint = android.graphics.Paint().apply {
+    color       = android.graphics.Color.argb(51, 255, 255, 255)
+    style       = android.graphics.Paint.Style.STROKE
+    strokeWidth = 1f
+    isAntiAlias = true
+}
+
 private val CLASS_COLOR_MAP: Map<String, Color> = mapOf(
     // Plastic-family
     "bottle"         to MaterialPlastic,
@@ -221,14 +244,11 @@ internal fun DrawScope.drawDetection(
     val paddingV   = 3.dp.toPx()
 
     drawIntoCanvas { canvas ->
-        val textPaint = android.graphics.Paint().apply {
-            this.color       = android.graphics.Color.WHITE
-            this.textSize    = textSizePx
-            this.isAntiAlias = true
-            this.typeface    = android.graphics.Typeface.DEFAULT_BOLD
-        }
+        // Reuse cached Paint objects — update only the mutable property that varies per call.
+        cachedTextPaint.textSize = textSizePx
+        cachedBgPaint.color      = baseColor.copy(alpha = 0.85f).toArgb()
 
-        val textWidth  = textPaint.measureText(label)
+        val textWidth  = cachedTextPaint.measureText(label)
         val chipHeight = textSizePx + paddingV * 2
         val chipRadius = chipHeight / 2f   // full pill shape
 
@@ -240,31 +260,55 @@ internal fun DrawScope.drawDetection(
 
         val chipRect = android.graphics.RectF(chipLeft, chipTop, chipRight, chipBottom)
 
-        // Pill background with material color at 85% alpha
-        val bgPaint = android.graphics.Paint().apply {
-            this.color     = baseColor.copy(alpha = 0.85f).toArgb()
-            this.style     = android.graphics.Paint.Style.FILL
-            this.isAntiAlias = true
-        }
-        canvas.nativeCanvas.drawRoundRect(chipRect, chipRadius, chipRadius, bgPaint)
-
-        // Thin white border on the pill (20% white, 1px)
-        val borderPaint = android.graphics.Paint().apply {
-            this.color       = android.graphics.Color.argb(51, 255, 255, 255)
-            this.style       = android.graphics.Paint.Style.STROKE
-            this.strokeWidth = 1f
-            this.isAntiAlias = true
-        }
-        canvas.nativeCanvas.drawRoundRect(chipRect, chipRadius, chipRadius, borderPaint)
+        canvas.nativeCanvas.drawRoundRect(chipRect, chipRadius, chipRadius, cachedBgPaint)
+        canvas.nativeCanvas.drawRoundRect(chipRect, chipRadius, chipRadius, cachedBorderPaint)
 
         // White label text centered vertically within the pill
         canvas.nativeCanvas.drawText(
             label,
             chipLeft + paddingH,
             chipBottom - paddingV,
-            textPaint,
+            cachedTextPaint,
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// Shared animation state — extracted to avoid duplicating rememberInfiniteTransition
+// in both BoundingBoxOverlay overloads.
+// ---------------------------------------------------------------------------
+
+private data class BboxAnimState(
+    val pulseAlpha    : Float,
+    val entranceScale : Float,
+    val entranceAlpha : Float,
+)
+
+@Composable
+private fun rememberBboxAnimState(detections: List<DetectionResult>): BboxAnimState {
+    val infiniteTransition = rememberInfiniteTransition(label = "bboxPulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue  = 0.4f,
+        targetValue   = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation  = tween(durationMillis = 800, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "bboxPulseAlpha",
+    )
+    var entranceTriggered by remember { mutableStateOf(false) }
+    LaunchedEffect(detections) { entranceTriggered = detections.isNotEmpty() }
+    val entranceScale by animateFloatAsState(
+        targetValue   = if (entranceTriggered) 1f else 0.8f,
+        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
+        label         = "bboxEntranceScale",
+    )
+    val entranceAlpha by animateFloatAsState(
+        targetValue   = if (entranceTriggered) 1f else 0f,
+        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
+        label         = "bboxEntranceAlpha",
+    )
+    return BboxAnimState(pulseAlpha, entranceScale, entranceAlpha)
 }
 
 // ---------------------------------------------------------------------------
@@ -291,34 +335,7 @@ fun BoundingBoxOverlay(
     modifier   : Modifier = Modifier
 ) {
     var displaySize by remember { mutableStateOf(IntSize.Zero) }
-
-    // --- Animations ---
-    val infiniteTransition = rememberInfiniteTransition(label = "bboxPulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue  = 0.4f,
-        targetValue   = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation  = tween(durationMillis = 800, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "bboxPulseAlpha",
-    )
-
-    // Entrance: triggered when a new detection list arrives
-    var entranceTriggered by remember { mutableStateOf(false) }
-    LaunchedEffect(detections) {
-        entranceTriggered = detections.isNotEmpty()
-    }
-    val entranceScale by animateFloatAsState(
-        targetValue   = if (entranceTriggered) 1f else 0.8f,
-        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
-        label         = "bboxEntranceScale",
-    )
-    val entranceAlpha by animateFloatAsState(
-        targetValue   = if (entranceTriggered) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
-        label         = "bboxEntranceAlpha",
-    )
+    val anim = rememberBboxAnimState(detections)
 
     Box(
         modifier         = modifier,
@@ -344,14 +361,14 @@ fun BoundingBoxOverlay(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer(
-                            scaleX = entranceScale,
-                            scaleY = entranceScale,
-                            alpha  = entranceAlpha,
+                            scaleX = anim.entranceScale,
+                            scaleY = anim.entranceScale,
+                            alpha  = anim.entranceAlpha,
                         )
                 ) {
                     val strokePx = 3.dp.toPx()
                     for (detection in detections) {
-                        drawDetection(detection, scaleX, scaleY, strokePx, pulseAlpha)
+                        drawDetection(detection, scaleX, scaleY, strokePx, anim.pulseAlpha)
                     }
                 }
             }
@@ -389,33 +406,7 @@ fun BoundingBoxOverlay(
     modifier  : Modifier = Modifier
 ) {
     var displaySize by remember { mutableStateOf(IntSize.Zero) }
-
-    // --- Animations ---
-    val infiniteTransition = rememberInfiniteTransition(label = "bboxPulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue  = 0.4f,
-        targetValue   = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation  = tween(durationMillis = 800, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "bboxPulseAlpha",
-    )
-
-    var entranceTriggered by remember { mutableStateOf(false) }
-    LaunchedEffect(detections) {
-        entranceTriggered = detections.isNotEmpty()
-    }
-    val entranceScale by animateFloatAsState(
-        targetValue   = if (entranceTriggered) 1f else 0.8f,
-        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
-        label         = "bboxEntranceScale",
-    )
-    val entranceAlpha by animateFloatAsState(
-        targetValue   = if (entranceTriggered) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = EaseInOut),
-        label         = "bboxEntranceAlpha",
-    )
+    val anim = rememberBboxAnimState(detections)
 
     Box(
         modifier         = modifier,
@@ -442,14 +433,14 @@ fun BoundingBoxOverlay(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer(
-                            scaleX = entranceScale,
-                            scaleY = entranceScale,
-                            alpha  = entranceAlpha,
+                            scaleX = anim.entranceScale,
+                            scaleY = anim.entranceScale,
+                            alpha  = anim.entranceAlpha,
                         )
                 ) {
                     val strokePx = 3.dp.toPx()
                     for (detection in detections) {
-                        drawDetection(detection, scaleX, scaleY, strokePx, pulseAlpha)
+                        drawDetection(detection, scaleX, scaleY, strokePx, anim.pulseAlpha)
                     }
                 }
             }

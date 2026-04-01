@@ -45,6 +45,7 @@ class SettingsRepository(private val context: Context) {
         val DEV_MODE_ENABLED = booleanPreferencesKey("dev_mode_enabled")
         val LAST_UPDATE_CHECK_MS = longPreferencesKey("last_update_check_ms")
         val SKIPPED_VERSION = stringPreferencesKey("skipped_update_version")
+        val VLM_MODEL_TIER = stringPreferencesKey("vlm_model_tier")
     }
 
     companion object {
@@ -56,6 +57,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_LIVE_DETECTION_RESOLUTION = 480
         const val DEFAULT_CONFIRM_CAPTURE = true
         const val DEFAULT_DETECTOR_PRECISION = "fp16"
+        const val DEFAULT_VLM_MODEL_TIER = "fast"
 
         /** Supported detector precision modes. INT8 removed: causes native
          *  SIGABRT on Exynos 2200 NNAPI delegate (irrecoverable crash). */
@@ -320,6 +322,14 @@ class SettingsRepository(private val context: Context) {
     // Update checker
     // -----------------------------------------------------------------------
 
+    /**
+     * Selected VLM text-model tier: "fast" (1.5B) or "quality" (3B).
+     * Controls which model is loaded when generating reports.
+     */
+    val vlmModelTier: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
+    }
+
     val lastUpdateCheckMs: Flow<Long> = context.dataStore.data.map { prefs ->
         prefs[Keys.LAST_UPDATE_CHECK_MS] ?: 0L
     }
@@ -334,5 +344,14 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setSkippedVersion(version: String) {
         context.dataStore.edit { prefs -> prefs[Keys.SKIPPED_VERSION] = version }
+    }
+
+    suspend fun setVlmModelTier(tier: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.VLM_MODEL_TIER] = tier }
+    }
+
+    fun getVlmModelTierSync(): String {
+        val prefs = runBlocking { context.dataStore.data.first() }
+        return prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
     }
 }

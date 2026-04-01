@@ -107,6 +107,7 @@
     <string name="report_card_cd_template">Plantilla</string>
     <string name="report_card_delete_cd">Eliminar informe</string>
     <string name="report_loading_engine">Cargando motor de análisis…</string>
+    <string name="report_verifying_detections">Verificando detecciones… %1$d / %2$d</string>
     <string name="report_header_ai_generated">Informe generado por IA</string>
     <string name="report_header_template">Informe de plantilla</string>
     <string name="report_template_banner_text">Informe de plantilla generado. Despliega el modelo de IA para un análisis asistido.</string>
@@ -479,6 +480,7 @@
     <string name="report_zone_preview_trend_degrading">Empeorando</string>
     <string name="report_zone_preview_trend_stable">Estable</string>
     <string name="report_btn_generate_zone">Generar reporte de zona</string>
+    <string name="report_btn_generate_vision">Informe Visual</string>
     <string name="report_no_zones_message">No hay ubicaciones con datos GPS</string>
     <string name="zone_name_unknown">Zona de estudio</string>
     <string name="report_zone_fallback">Zona %d</string>
@@ -567,6 +569,7 @@
     <string name="vlm_download_dialog_confirm">Descargar</string>
     <string name="vlm_download_banner_title">Descargando modelo de IA…</string>
     <string name="vlm_download_complete_snackbar">¡Modelo de IA listo!</string>
+    <string name="vlm_download_error_snackbar">Error al descargar: %1$s</string>
     <string name="vlm_download_notif_title">Descargando modelo de IA</string>
     <string name="vlm_download_notif_preparing">Preparando descarga…</string>
     <string name="vlm_download_notif_progress">%1$d / %2$d MB</string>

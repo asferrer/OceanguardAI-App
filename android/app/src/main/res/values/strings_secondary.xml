@@ -107,6 +107,7 @@
     <string name="report_card_cd_template">Template</string>
     <string name="report_card_delete_cd">Delete report</string>
     <string name="report_loading_engine">Loading analysis engine…</string>
+    <string name="report_verifying_detections">Verifying detections… %1$d / %2$d</string>
     <string name="report_header_ai_generated">AI-Generated Report</string>
     <string name="report_header_template">Template Report</string>
     <string name="report_template_banner_text">Template report generated. Deploy the AI model for assisted analysis.</string>
@@ -479,6 +480,7 @@
     <string name="report_zone_preview_trend_degrading">Degrading</string>
     <string name="report_zone_preview_trend_stable">Stable</string>
     <string name="report_btn_generate_zone">Generate Zone Report</string>
+    <string name="report_btn_generate_vision">Vision Report</string>
     <string name="report_no_zones_message">No locations with GPS data found</string>
     <string name="zone_name_unknown">Survey Zone</string>
     <string name="report_zone_fallback">Zone %d</string>
@@ -567,6 +569,7 @@
     <string name="vlm_download_dialog_confirm">Download</string>
     <string name="vlm_download_banner_title">Downloading AI model…</string>
     <string name="vlm_download_complete_snackbar">AI model ready!</string>
+    <string name="vlm_download_error_snackbar">Download failed: %1$s</string>
     <string name="vlm_download_notif_title">Downloading AI Model</string>
     <string name="vlm_download_notif_preparing">Preparing download…</string>
     <string name="vlm_download_notif_progress">%1$d / %2$d MB</string>

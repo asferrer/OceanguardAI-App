@@ -107,6 +107,7 @@
     <string name="report_card_cd_template">Modello</string>
     <string name="report_card_delete_cd">Elimina report</string>
     <string name="report_loading_engine">Caricamento motore di analisi…</string>
+    <string name="report_verifying_detections">Verifica rilevamenti… %1$d / %2$d</string>
     <string name="report_header_ai_generated">Report Generato dall\'AI</string>
     <string name="report_header_template">Report Modello</string>
     <string name="report_template_banner_text">Report modello generato. Distribuisci il modello AI per l\'analisi assistita.</string>
@@ -479,6 +480,7 @@
     <string name="report_zone_preview_trend_degrading">In peggioramento</string>
     <string name="report_zone_preview_trend_stable">Stabile</string>
     <string name="report_btn_generate_zone">Genera report della zona</string>
+    <string name="report_btn_generate_vision">Rapporto Visivo</string>
     <string name="report_no_zones_message">Nessuna posizione con dati GPS trovata</string>
     <string name="zone_name_unknown">Zona di studio</string>
     <string name="report_zone_fallback">Zona %d</string>
@@ -567,6 +569,7 @@
     <string name="vlm_download_dialog_confirm">Scarica</string>
     <string name="vlm_download_banner_title">Download del modello IA…</string>
     <string name="vlm_download_complete_snackbar">Modello IA pronto!</string>
+    <string name="vlm_download_error_snackbar">Errore di download: %1$s</string>
     <string name="vlm_download_notif_title">Download del modello IA</string>
     <string name="vlm_download_notif_preparing">Preparazione del download…</string>
     <string name="vlm_download_notif_progress">%1$d / %2$d MB</string>

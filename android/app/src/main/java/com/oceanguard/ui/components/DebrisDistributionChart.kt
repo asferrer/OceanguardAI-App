@@ -104,6 +104,19 @@ private const val BAR_MIN_FRACTION = 0.02f
 /** Corner radius applied to bar rectangles. */
 private val BAR_CORNER_RADIUS: Dp = 4.dp
 
+// Cached Paint objects — allocated once, reused every Canvas draw.
+// Canvas rendering is always on the main thread, so no synchronisation needed.
+private val cachedMaterialLabelPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    textAlign   = android.graphics.Paint.Align.LEFT
+}
+
+private val cachedCountLabelPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    textAlign   = android.graphics.Paint.Align.LEFT
+    typeface    = android.graphics.Typeface.DEFAULT_BOLD
+}
+
 // ---------------------------------------------------------------------------
 // Public composable
 // ---------------------------------------------------------------------------
@@ -350,19 +363,15 @@ private fun DrawScope.drawMaterialLabel(
     color: Color,
 ) {
     drawContext.canvas.nativeCanvas.apply {
-        val paint = android.graphics.Paint().apply {
-            this.color     = color.toArgb()
-            this.textSize  = textSizePx
-            this.isAntiAlias = true
-            this.textAlign = android.graphics.Paint.Align.LEFT
-        }
+        cachedMaterialLabelPaint.color    = color.toArgb()
+        cachedMaterialLabelPaint.textSize = textSizePx
         // Truncate label to fit maxWidth.
-        val truncated = truncateText(label, paint, maxWidth)
+        val truncated   = truncateText(label, cachedMaterialLabelPaint, maxWidth)
         // Centre vertically within the bar row.
-        val fontMetrics = paint.fontMetrics
+        val fontMetrics = cachedMaterialLabelPaint.fontMetrics
         val textHeight  = fontMetrics.descent - fontMetrics.ascent
         val textY       = y - textHeight / 2f - fontMetrics.ascent
-        drawText(truncated, x, textY, paint)
+        drawText(truncated, x, textY, cachedMaterialLabelPaint)
     }
 }
 
@@ -375,17 +384,12 @@ private fun DrawScope.drawCountLabel(
     color: Color,
 ) {
     drawContext.canvas.nativeCanvas.apply {
-        val paint = android.graphics.Paint().apply {
-            this.color       = color.toArgb()
-            this.textSize    = textSizePx
-            this.isAntiAlias = true
-            this.textAlign   = android.graphics.Paint.Align.LEFT
-            this.typeface    = android.graphics.Typeface.DEFAULT_BOLD
-        }
-        val fontMetrics = paint.fontMetrics
+        cachedCountLabelPaint.color    = color.toArgb()
+        cachedCountLabelPaint.textSize = textSizePx
+        val fontMetrics = cachedCountLabelPaint.fontMetrics
         val textHeight  = fontMetrics.descent - fontMetrics.ascent
         val textY       = y - textHeight / 2f - fontMetrics.ascent
-        drawText(label, x, textY, paint)
+        drawText(label, x, textY, cachedCountLabelPaint)
     }
 }
 

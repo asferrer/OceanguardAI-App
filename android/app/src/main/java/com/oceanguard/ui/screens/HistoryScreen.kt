@@ -404,23 +404,31 @@ private fun SessionList(
         locationKeys.keys.removeAll { it !in locatedIds }
     }
 
-    val filteredSessions = sessions.filter { session ->
-        val matchesText = searchQuery.isBlank() ||
-            session.debrisList.any { it.type.name.contains(searchQuery, ignoreCase = true) } ||
-            session.debrisList.any { it.material.name.contains(searchQuery, ignoreCase = true) } ||
-            session.getRiskLevel().name.contains(searchQuery, ignoreCase = true)
+    // derivedStateOf avoids re-filtering on every recomposition:
+    // - outer remember(sessions) invalidates when the list itself changes
+    // - inner derivedStateOf tracks state reads (searchQuery, selectedDebrisType,
+    //   selectedPlaceName, dateRangeStart, dateRangeEnd, placeNames) automatically
+    val filteredSessions by remember(sessions) {
+        derivedStateOf {
+            sessions.filter { session ->
+                val matchesText = searchQuery.isBlank() ||
+                    session.debrisList.any { it.type.name.contains(searchQuery, ignoreCase = true) } ||
+                    session.debrisList.any { it.material.name.contains(searchQuery, ignoreCase = true) } ||
+                    session.getRiskLevel().name.contains(searchQuery, ignoreCase = true)
 
-        val matchesType = selectedDebrisType == null ||
-            session.debrisList.any { it.type == selectedDebrisType }
+                val matchesType = selectedDebrisType == null ||
+                    session.debrisList.any { it.type == selectedDebrisType }
 
-        val matchesLocation = selectedPlaceName == null ||
-            placeNames[session.id] == selectedPlaceName
+                val matchesLocation = selectedPlaceName == null ||
+                    placeNames[session.id] == selectedPlaceName
 
-        val matchesDate = (dateRangeStart == null && dateRangeEnd == null) ||
-            (session.timestamp.time >= (dateRangeStart ?: 0L) &&
-             session.timestamp.time <= (dateRangeEnd ?: Long.MAX_VALUE))
+                val matchesDate = (dateRangeStart == null && dateRangeEnd == null) ||
+                    (session.timestamp.time >= (dateRangeStart ?: 0L) &&
+                     session.timestamp.time <= (dateRangeEnd ?: Long.MAX_VALUE))
 
-        matchesText && matchesType && matchesLocation && matchesDate
+                matchesText && matchesType && matchesLocation && matchesDate
+            }
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {

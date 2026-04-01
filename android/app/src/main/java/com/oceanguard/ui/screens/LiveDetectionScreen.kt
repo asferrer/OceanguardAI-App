@@ -183,7 +183,7 @@ private fun LiveDetectionContent(
     )
     val liveDetectionManager = remember {
         LiveDetectionManager(
-            rtdetrInference = app.rtdetrInference,
+            detector = app.rtdetrInference,
             context = context,
             repository = app.repository,
             locationProvider = app.locationProvider,
@@ -407,6 +407,16 @@ private fun LiveCameraPreview(
                     val imageAnalysis = ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                        .setResolutionSelector(
+                            androidx.camera.core.resolutionselector.ResolutionSelector.Builder()
+                                .setResolutionStrategy(
+                                    androidx.camera.core.resolutionselector.ResolutionStrategy(
+                                        android.util.Size(640, 640),
+                                        androidx.camera.core.resolutionselector.ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
+                                    )
+                                )
+                                .build()
+                        )
                         .build()
 
                     imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->

@@ -72,19 +72,37 @@ object ZoneAggregator {
         val located = sessions.filter { it.location != null }
         if (located.isEmpty()) return emptyList()
 
-        // Each entry: mutable list of sessions forming one zone
-        val groups = mutableListOf<MutableList<DetectionSession>>()
+        // Each entry: mutable list of sessions forming one zone.
+        // Parallel centroid arrays keep an incremental running average so we
+        // avoid recomputing centroidOf(group) from scratch on every iteration
+        // (was O(n²) — now O(n)).
+        val groups    = mutableListOf<MutableList<DetectionSession>>()
+        val centLats  = mutableListOf<Double>()
+        val centLons  = mutableListOf<Double>()
 
         for (session in located) {
             val loc = session.location!!
-            val nearest = groups.firstOrNull { group ->
-                val centroid = centroidOf(group)
-                haversineDistance(loc.latitude, loc.longitude, centroid.first, centroid.second) <= radiusMeters
+            var nearestIdx = -1
+            for (i in groups.indices) {
+                if (haversineDistance(loc.latitude, loc.longitude, centLats[i], centLons[i]) <= radiusMeters) {
+                    nearestIdx = i
+                    break
+                }
             }
-            if (nearest != null) nearest.add(session) else groups.add(mutableListOf(session))
+            if (nearestIdx >= 0) {
+                val n = groups[nearestIdx].size   // size before adding
+                centLats[nearestIdx] = (centLats[nearestIdx] * n + loc.latitude)  / (n + 1)
+                centLons[nearestIdx] = (centLons[nearestIdx] * n + loc.longitude) / (n + 1)
+                groups[nearestIdx].add(session)
+            } else {
+                groups.add(mutableListOf(session))
+                centLats.add(loc.latitude)
+                centLons.add(loc.longitude)
+            }
         }
 
         return groups.map { group ->
+            // Recompute centroid precisely at the end (one pass per group).
             val (lat, lon) = centroidOf(group)
             val avgScore = group.map { it.healthScore }.average().toInt()
             ZoneCluster(

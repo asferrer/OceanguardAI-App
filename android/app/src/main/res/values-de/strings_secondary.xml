@@ -107,6 +107,7 @@
     <string name="report_card_cd_template">Vorlage</string>
     <string name="report_card_delete_cd">Bericht löschen</string>
     <string name="report_loading_engine">Analysemodul wird geladen…</string>
+    <string name="report_verifying_detections">Erkennungen werden verifiziert… %1$d / %2$d</string>
     <string name="report_header_ai_generated">KI-generierter Bericht</string>
     <string name="report_header_template">Vorlagenbericht</string>
     <string name="report_template_banner_text">Vorlagenbericht erstellt. Stellen Sie das KI-Modell bereit, um eine unterstützte Analyse zu erhalten.</string>
@@ -479,6 +480,7 @@
     <string name="report_zone_preview_trend_degrading">Verschlechternd</string>
     <string name="report_zone_preview_trend_stable">Stabil</string>
     <string name="report_btn_generate_zone">Zonenbericht erstellen</string>
+    <string name="report_btn_generate_vision">Visueller Bericht</string>
     <string name="report_no_zones_message">Keine Standorte mit GPS-Daten gefunden</string>
     <string name="zone_name_unknown">Untersuchungszone</string>
     <string name="report_zone_fallback">Zone %d</string>
@@ -567,6 +569,7 @@
     <string name="vlm_download_dialog_confirm">Herunterladen</string>
     <string name="vlm_download_banner_title">KI-Modell wird heruntergeladen…</string>
     <string name="vlm_download_complete_snackbar">KI-Modell bereit!</string>
+    <string name="vlm_download_error_snackbar">Download-Fehler: %1$s</string>
     <string name="vlm_download_notif_title">KI-Modell herunterladen</string>
     <string name="vlm_download_notif_preparing">Download wird vorbereitet…</string>
     <string name="vlm_download_notif_progress">%1$d / %2$d MB</string>

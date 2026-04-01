@@ -640,7 +640,7 @@ private fun GradientActionTile(
 @Composable
 private fun ModelStatusIndicator(modelState: ModelLoadingState) {
     val rtdetrReady = modelState.rtdetr == ModelStatus.Ready
-    val gemmaStandby = modelState.gemma == ModelStatus.Standby
+    val gemmaStandby = modelState.qwenText == ModelStatus.Standby
 
     val readyText = stringResource(R.string.home_model_ready)
     val deepAnalysisName = stringResource(R.string.home_model_name_deep_analysis)
@@ -664,7 +664,7 @@ private fun ModelStatusIndicator(modelState: ModelLoadingState) {
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 ReadyBannerContent(text = readyText)
-                ModelStatusRow(name = deepAnalysisName, status = modelState.gemma)
+                ModelStatusRow(name = deepAnalysisName, status = modelState.qwenText)
             }
         }
     } else if (rtdetrReady) {
