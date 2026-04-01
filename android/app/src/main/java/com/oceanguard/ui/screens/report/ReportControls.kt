@@ -14,11 +14,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.draw.scale
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -154,7 +159,7 @@ internal fun LanguageChip(
 }
 
 @Composable
-internal fun GenerateButton(
+internal fun GenerateButtonRow(
     isGenerating: Boolean,
     hasZoneSelected: Boolean,
     sessionCount: Int,
@@ -205,11 +210,48 @@ internal fun GenerateButton(
     }
 }
 
+/**
+ * Animated AutoAwesome icon that pulses independently.
+ *
+ * Extracted from GeneratingBanner so the 120-FPS animation only recomposes
+ * this small composable — NOT the parent banner with its MarkdownText.
+ */
+@Composable
+private fun PulsingAIIcon(tint: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "icon_pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue  = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation  = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "icon_scale",
+    )
+    Icon(
+        imageVector = Icons.Filled.AutoAwesome,
+        contentDescription = null,
+        modifier = modifier.scale(scale),
+        tint = tint,
+    )
+}
+
 @Composable
 internal fun GeneratingBanner(
     isLoadingModel: Boolean,
+    streamingText: String? = null,
+    verifyingProgress: Pair<Int, Int>? = null, // (verified, total) while verifying
     modifier: Modifier = Modifier,
 ) {
+    val currentHeading = remember(streamingText) {
+        if (streamingText.isNullOrBlank()) return@remember ""
+        val lastIdx = streamingText.lastIndexOf("\n## ")
+        if (lastIdx >= 0) {
+            val end = streamingText.indexOf('\n', lastIdx + 1).takeIf { it > 0 } ?: streamingText.length
+            streamingText.substring(lastIdx + 1, end).removePrefix("## ").trim()
+        } else ""
+    }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -223,27 +265,45 @@ internal fun GeneratingBanner(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                PulsingAIIcon(
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = if (isLoadingModel) {
-                        stringResource(R.string.report_loading_engine)
-                    } else {
-                        stringResource(R.string.report_btn_generating)
+                    text = when {
+                        verifyingProgress != null ->
+                            stringResource(R.string.report_verifying_detections, verifyingProgress.first, verifyingProgress.second)
+                        isLoadingModel -> stringResource(R.string.report_loading_engine)
+                        else -> stringResource(R.string.report_btn_generating)
                     },
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
-            )
+            if (verifyingProgress != null) {
+                LinearProgressIndicator(
+                    progress = { verifyingProgress.first.toFloat() / verifyingProgress.second.coerceAtLeast(1) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+                )
+            } else {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+                )
+            }
+            if (currentHeading.isNotBlank()) {
+                Text(
+                    text = "▶ $currentHeading",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -299,21 +359,17 @@ internal fun VlmDownloadBanner(
                 }
             }
             when (downloadState) {
-                is VlmDownloadState.Downloading -> {
-                    LinearProgressIndicator(
-                        progress = { downloadState.progress },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.tertiary,
-                        trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
-                    )
-                }
-                else -> {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.tertiary,
-                        trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
-                    )
-                }
+                is VlmDownloadState.Downloading -> LinearProgressIndicator(
+                    progress = { downloadState.progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                )
+                else -> LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                )
             }
         }
     }

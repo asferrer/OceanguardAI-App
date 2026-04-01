@@ -173,6 +173,8 @@ class MainViewModel(
     init {
         // Observe the orchestrator's analysis state for progressive UI updates
         // (real-time pipeline stage transitions while the service is running).
+        // distinctUntilChanged skips re-emissions of the identical state object,
+        // preventing unnecessary UI recompositions when the state hasn't actually changed.
         viewModelScope.launch {
             orchestrator.analysisState.collectLatest { analysisState ->
                 // Only map when the service is actively processing a single image
@@ -283,9 +285,9 @@ class MainViewModel(
 
     /**
      * Starts batch processing for multiple images via the foreground service.
+     * URIs must already be set via [setBatchUris] before calling this.
      */
     fun startBatchInference(uris: List<Uri>) {
-        _batchUris.value = uris
         val intent = InferenceService.batchIntent(appContext, uris)
         ContextCompat.startForegroundService(appContext, intent)
     }
@@ -315,11 +317,11 @@ class MainViewModel(
             contentResolver.getType(uri)?.startsWith("video/") == true
         }
 
-        // Enqueue images as a batch job
+        // Reset state to Idle so the LaunchedEffect guard in BatchResultsScreen
+        // allows the new batch to start even if a previous BatchComplete was still set.
         if (imageUris.isNotEmpty()) {
+            app.inferenceServiceState.value = InferenceServiceState.Idle
             setBatchUris(imageUris)
-            val intent = InferenceService.batchIntent(appContext, imageUris)
-            ContextCompat.startForegroundService(appContext, intent)
         }
 
         // Enqueue each video as a separate job

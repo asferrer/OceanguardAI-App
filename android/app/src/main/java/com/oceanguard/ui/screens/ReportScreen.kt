@@ -37,6 +37,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,9 +67,10 @@ import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
+import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.ui.screens.report.DateLanguageRow
 import com.oceanguard.ai.ui.screens.report.ErrorContent
-import com.oceanguard.ai.ui.screens.report.GenerateButton
+import com.oceanguard.ai.ui.screens.report.GenerateButtonRow
 import com.oceanguard.ai.ui.screens.report.GeneratingBanner
 import com.oceanguard.ai.ui.screens.report.VlmDownloadBanner
 import com.oceanguard.ai.ui.screens.report.IdleContent
@@ -147,15 +149,28 @@ fun ReportScreen(
 
     // VLM download state
     val vlmDownloadState by app.vlmModelManager.downloadState.collectAsStateWithLifecycle()
-    var showDownloadDialog by remember { mutableStateOf(false) }
-    val isDownloading = vlmDownloadState is VlmDownloadState.Downloading ||
-        vlmDownloadState is VlmDownloadState.Preparing ||
-        vlmDownloadState is VlmDownloadState.Installing
+    var showVisionDownloadDialog by remember { mutableStateOf(false) }
+    val isDownloading by remember {
+        derivedStateOf {
+            vlmDownloadState is VlmDownloadState.Downloading ||
+                vlmDownloadState is VlmDownloadState.Preparing ||
+                vlmDownloadState is VlmDownloadState.Installing
+        }
+    }
 
     // Background generation state (inline banner, not full-screen)
-    val isGenerating = generationState is ReportGenerationState.Generating ||
-        generationState is ReportGenerationState.LoadingModel
-    val isLoadingModel = generationState is ReportGenerationState.LoadingModel
+    val isGenerating by remember {
+        derivedStateOf {
+            generationState is ReportGenerationState.Generating ||
+                generationState is ReportGenerationState.LoadingModel ||
+                generationState is ReportGenerationState.StreamingText ||
+                generationState is ReportGenerationState.VerifyingDetections
+        }
+    }
+    val isLoadingModel by remember { derivedStateOf { generationState is ReportGenerationState.LoadingModel } }
+    val streamingText = (generationState as? ReportGenerationState.StreamingText)?.partialText
+    val verifyingProgress = (generationState as? ReportGenerationState.VerifyingDetections)
+        ?.let { it.verified to it.total }
 
     // -----------------------------------------------------------------------
     // Zone clustering + geocoded names (parallel)
@@ -243,7 +258,9 @@ fun ReportScreen(
         when (val state = generationState) {
             is ReportGenerationState.Idle -> {}
             is ReportGenerationState.LoadingModel,
-            is ReportGenerationState.Generating -> {} // inline banner handles this
+            is ReportGenerationState.Generating,
+            is ReportGenerationState.StreamingText,
+            is ReportGenerationState.VerifyingDetections -> {} // inline banner handles this
             is ReportGenerationState.Complete -> {
                 val completedReport = state.report
                 screenState = ReportScreenState.Idle
@@ -265,35 +282,40 @@ fun ReportScreen(
         }
     }
 
-    // Auto-launch generation after download completes
+    // React to download state changes
     LaunchedEffect(vlmDownloadState) {
-        if (vlmDownloadState is VlmDownloadState.Complete && selectedZone != null) {
-            snackbarHostState.showSnackbar(
+        when (val s = vlmDownloadState) {
+            is VlmDownloadState.Complete -> snackbarHostState.showSnackbar(
                 message = context.getString(R.string.vlm_download_complete_snackbar),
                 duration = SnackbarDuration.Short,
             )
+            is VlmDownloadState.Error -> snackbarHostState.showSnackbar(
+                message = context.getString(R.string.vlm_download_error_snackbar, s.message),
+                duration = SnackbarDuration.Long,
+            )
+            else -> {}
         }
     }
 
-    // Helper lambda: build ZoneReportInput and launch generation
+    // Helper: build ZoneReportInput from current UI state
+    fun buildZoneReportInput() = ZoneReportInput(
+        locationName     = selectedZoneName,
+        centroidLat      = selectedZone!!.centroidLat,
+        centroidLon      = selectedZone!!.centroidLon,
+        sessions         = filteredZoneSessions,
+        dayGroups        = filteredDayGroups,
+        trend            = selectedZone!!.trend,
+        dateRangeStartMs = dateRangeStartMs,
+        dateRangeEndMs   = dateRangeEndMs,
+    )
+
+    // Unified report: uses any available text tier (FAST / BALANCED / QUALITY).
     val launchGeneration = {
         if (selectedZone != null) {
-            if (!app.vlmModelManager.isModelAvailable()) {
-                showDownloadDialog = true
-            } else {
-                app.launchZoneReportGeneration(
-                    ZoneReportInput(
-                        locationName = selectedZoneName,
-                        centroidLat = selectedZone.centroidLat,
-                        centroidLon = selectedZone.centroidLon,
-                        sessions = filteredZoneSessions,
-                        dayGroups = filteredDayGroups,
-                        trend = selectedZone.trend,
-                        dateRangeStartMs = dateRangeStartMs,
-                        dateRangeEndMs = dateRangeEndMs,
-                    ),
-                    selectedLanguage,
-                )
+            when {
+                app.vlmModelManager.isAnyTextModelAvailable() ->
+                    app.launchZoneReportGeneration(buildZoneReportInput(), selectedLanguage)
+                else -> showVisionDownloadDialog = true
             }
         }
     }
@@ -314,22 +336,29 @@ fun ReportScreen(
         )
     }
 
-    // VLM download dialog
-    if (showDownloadDialog) {
+    // Model download dialog (BALANCED text model — 2B, recommended)
+    if (showVisionDownloadDialog) {
         AlertDialog(
-            onDismissRequest = { showDownloadDialog = false },
+            onDismissRequest = { showVisionDownloadDialog = false },
             title = { Text(stringResource(R.string.vlm_download_dialog_title)) },
-            text = { Text(stringResource(R.string.vlm_download_dialog_message, app.vlmModelManager.getModelSizeLabel())) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.vlm_download_dialog_message,
+                        app.vlmModelManager.getModelSizeLabel(TextModelTier.BALANCED),
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    showDownloadDialog = false
-                    app.launchVlmDownload()
+                    showVisionDownloadDialog = false
+                    app.launchVlmDownload(TextModelTier.BALANCED)
                 }) {
                     Text(stringResource(R.string.vlm_download_dialog_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDownloadDialog = false }) {
+                TextButton(onClick = { showVisionDownloadDialog = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
@@ -421,23 +450,23 @@ fun ReportScreen(
 
                 // Date range + language row
                 DateLanguageRow(
-                    dateRangeStartMs = dateRangeStartMs,
-                    dateRangeEndMs = dateRangeEndMs,
+                    dateRangeStartMs   = dateRangeStartMs,
+                    dateRangeEndMs     = dateRangeEndMs,
                     onDateRangeCleared = { dateRangeStartMs = null; dateRangeEndMs = null },
-                    onDateRangeClick = { showDatePicker = true },
-                    selectedLanguage = selectedLanguage,
+                    onDateRangeClick   = { showDatePicker = true },
+                    selectedLanguage   = selectedLanguage,
                     onLanguageSelected = { selectedLanguage = it },
-                    enabled = !isGenerating,
+                    enabled   = !isGenerating,
                     boundsMap = boundsMap,
                 )
 
-                // Generate button
-                GenerateButton(
-                    isGenerating = isGenerating || isDownloading,
+                // Generate buttons (text + optional vision)
+                GenerateButtonRow(
+                    isGenerating    = isGenerating || isDownloading,
                     hasZoneSelected = selectedZone != null,
-                    sessionCount = filteredZoneSessions.size,
-                    onGenerate = launchGeneration,
-                    boundsMap = boundsMap,
+                    sessionCount    = filteredZoneSessions.size,
+                    onGenerate      = launchGeneration,
+                    boundsMap       = boundsMap,
                 )
 
                 // Inline generating banner (background generation)
@@ -446,7 +475,11 @@ fun ReportScreen(
                     enter = slideInVertically { -it } + fadeIn(),
                     exit = slideOutVertically { -it } + fadeOut(),
                 ) {
-                    GeneratingBanner(isLoadingModel = isLoadingModel)
+                    GeneratingBanner(
+                        isLoadingModel    = isLoadingModel,
+                        streamingText     = streamingText,
+                        verifyingProgress = verifyingProgress,
+                    )
                 }
 
                 // VLM download progress banner
