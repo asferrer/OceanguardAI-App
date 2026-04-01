@@ -69,7 +69,7 @@ android {
 
     defaultConfig {
         applicationId = "com.oceanguard.ai"
-        minSdk = 26  // Android 8.0 - minimum for MediaPipe GenAI
+        minSdk = 26  // Android 8.0
         targetSdk = 35
         versionCode = gitVersionCode()
         versionName = gitVersionName()
@@ -80,9 +80,27 @@ android {
             useSupportLibrary = true
         }
 
-        // Native library configuration
+        // Native library configuration — arm64-v8a only (S22 Ultra is ARM64; halves NDK build time)
         ndk {
-            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+            abiFilters.clear()
+            abiFilters.add("arm64-v8a")
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared",
+                    "-DANDROID_ARM_NEON=ON",
+                )
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 
@@ -123,18 +141,17 @@ android {
         }
     }
 
-    // CRITICAL: Don't compress model files
+    // CRITICAL: Don't compress model files (gguf added for Qwen3.5 GGUF models)
     androidResources {
-        noCompress += listOf("bin", "tflite", "litert", "task", "litertlm")
+        noCompress += listOf("bin", "tflite", "litert", "task", "litertlm", "gguf")
     }
 
     // Asset pack configuration (for large model files)
     assetPacks += mutableSetOf()
 }
 
-// Resolve duplicate classes between LiteRT (from MediaPipe) and TensorFlow Lite.
-// Both provide org.tensorflow.lite.* classes. We keep our explicit TFLite and
-// exclude the LiteRT API that MediaPipe brings transitively.
+// tensorflow-lite-gpu still brings litert-api transitively — exclude to avoid duplicate classes
+// with org.tensorflow:tensorflow-lite-api brought by tensorflow-lite:2.17.0
 configurations.all {
     exclude(group = "com.google.ai.edge.litert", module = "litert-api")
 }
@@ -159,11 +176,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-text-google-fonts:1.7.6")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
-
-    // MediaPipe GenAI - On-device LLM inference (0.10.32 required for Gemma 3n)
-    implementation("com.google.mediapipe:tasks-genai:0.10.32")
-    // MediaPipe Vision - Provides BitmapImageBuilder / MPImage for multimodal input
-    implementation("com.google.mediapipe:tasks-vision:0.10.32")
 
     // TensorFlow Lite - for RT-DETRv2 object detection
     implementation("org.tensorflow:tensorflow-lite:2.17.0")

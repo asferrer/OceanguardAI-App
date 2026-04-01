@@ -20,9 +20,12 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Keep MediaPipe classes
--keep class com.google.mediapipe.** { *; }
--dontwarn com.google.mediapipe.**
+# llama.cpp JNI bridge — keep JNI-called Kotlin classes and callback interface
+-keep class com.oceanguard.ai.inference.LlamaCppBridge { *; }
+-keep interface com.oceanguard.ai.inference.TokenStreamCallback { *; }
+-keepclassmembers interface com.oceanguard.ai.inference.TokenStreamCallback {
+    public void onToken(java.lang.String);
+}
 
 # Keep Kotlin metadata
 -keep class kotlin.Metadata { *; }
