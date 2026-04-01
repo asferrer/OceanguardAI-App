@@ -59,7 +59,13 @@ class ReportGenerationService : LifecycleService() {
                     is ReportGenerationState.LoadingModel -> {
                         updateNotification(getString(R.string.report_notif_loading_model))
                     }
+                    is ReportGenerationState.VerifyingDetections -> {
+                        updateNotification(getString(R.string.report_notif_generating))
+                    }
                     is ReportGenerationState.Generating -> {
+                        updateNotification(getString(R.string.report_notif_generating))
+                    }
+                    is ReportGenerationState.StreamingText -> {
                         updateNotification(getString(R.string.report_notif_generating))
                     }
                     is ReportGenerationState.Complete -> {
