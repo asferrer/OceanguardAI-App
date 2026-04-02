@@ -43,6 +43,9 @@ import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.oceanguard.ai.inference.TextModelTier
+import com.oceanguard.ai.inference.VlmDownloadState
+import com.oceanguard.ai.inference.VlmModelManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -68,6 +71,9 @@ fun SettingsScreen(
     )
     val language by settings.language.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_LANGUAGE
+    )
+    val reportAudience by settings.reportAudience.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_REPORT_AUDIENCE
     )
     val darkMode by settings.darkMode.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_DARK_MODE
@@ -128,16 +134,8 @@ fun SettingsScreen(
                 icon = Icons.Filled.Tune,
                 modifier = Modifier.spotlightTarget("settings_confidence", boundsMap),
             ) {
-                // Deep Analysis toggle
-                SettingsToggleRow(
-                    title = stringResource(R.string.settings_label_deep_analysis),
-                    description = stringResource(R.string.settings_desc_deep_analysis),
-                    checked = vlmEnabled,
-                    onCheckedChange = { scope.launch { settings.setVlmEnabled(it) } },
-                    modifier = Modifier.spotlightTarget("settings_deep_analysis", boundsMap),
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                // TODO: Deep Analysis toggle hidden until vision pipeline is implemented
+                // (LlamaVisionEngine + mmproj wiring to DetectionOrchestrator)
 
                 // Confirm capture toggle
                 SettingsToggleRow(
@@ -177,6 +175,28 @@ fun SettingsScreen(
                     options = SettingsRepository.SUPPORTED_LANGUAGES,
                     selected = language,
                     onSelect = { scope.launch { settings.setLanguage(it) } },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.settings_label_report_audience),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = stringResource(R.string.settings_desc_report_audience),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                val audienceOptions = mapOf(
+                    "scientific" to stringResource(R.string.audience_scientific),
+                    "ngo"        to stringResource(R.string.audience_ngo),
+                    "citizen"    to stringResource(R.string.audience_citizen),
+                )
+                LanguageDropdown(
+                    options = audienceOptions,
+                    selected = reportAudience,
+                    onSelect = { scope.launch { settings.setReportAudience(it) } },
                 )
             }
 
@@ -240,7 +260,12 @@ fun SettingsScreen(
             // Developer Settings (hidden until easter egg is activated)
             // ---------------------------------------------------------------
             if (devModeEnabled) {
-                DeveloperSettingsSection(settings = settings, scope = scope)
+                DeveloperSettingsSection(
+                    settings = settings,
+                    scope = scope,
+                    vlmModelManager = app.vlmModelManager,
+                    onDownloadTier = { app.launchVlmDownload(it) },
+                )
             }
 
             // ---------------------------------------------------------------
@@ -382,12 +407,20 @@ private fun DataManagementContent(viewModel: MainViewModel) {
 private fun DeveloperSettingsSection(
     settings: SettingsRepository,
     scope: CoroutineScope,
+    vlmModelManager: VlmModelManager,
+    onDownloadTier: (TextModelTier) -> Unit,
 ) {
     val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
     val detectorPrecision by settings.detectorPrecision.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_DETECTOR_PRECISION
+    )
+    val vlmModelTierKey by settings.vlmModelTier.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_VLM_MODEL_TIER
+    )
+    val downloadState by vlmModelManager.downloadState.collectAsStateWithLifecycle(
+        initialValue = VlmDownloadState.Idle
     )
 
     SettingsSection(
@@ -494,9 +527,108 @@ private fun DeveloperSettingsSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+        // VLM model tier selector
+        var tierExpanded by remember { mutableStateOf(false) }
+        val currentTier = TextModelTier.fromKey(vlmModelTierKey)
+
+        Text(
+            text = stringResource(R.string.settings_label_vlm_tier),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = stringResource(R.string.settings_desc_vlm_tier),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        val currentAvailable = vlmModelManager.isModelAvailable(currentTier)
+        val notDownloaded = stringResource(R.string.settings_vlm_not_downloaded)
+        val isDownloading = downloadState is VlmDownloadState.Downloading ||
+            downloadState is VlmDownloadState.Preparing ||
+            downloadState is VlmDownloadState.Installing
+
+        ExposedDropdownMenuBox(
+            expanded = tierExpanded,
+            onExpandedChange = { tierExpanded = it },
+        ) {
+            OutlinedTextField(
+                value = "${currentTier.displayName} — ${currentTier.sizeLabel}" +
+                    if (!currentAvailable) " ($notDownloaded)" else "",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tierExpanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                shape = RoundedCornerShape(12.dp),
+            )
+            ExposedDropdownMenu(
+                expanded = tierExpanded,
+                onDismissRequest = { tierExpanded = false },
+            ) {
+                TextModelTier.entries.forEach { tier ->
+                    val tierAvailable = vlmModelManager.isModelAvailable(tier)
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text("${tier.displayName} — ${tier.sizeLabel}")
+                                if (!tierAvailable) {
+                                    Text(
+                                        text = notDownloaded,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        },
+                        onClick = {
+                            scope.launch { settings.setVlmModelTier(tier.name.lowercase()) }
+                            tierExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        if (!currentAvailable) {
+            Spacer(modifier = Modifier.height(4.dp))
+            if (isDownloading) {
+                val progress = (downloadState as? VlmDownloadState.Downloading)?.progress
+                if (progress != null) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%  ${currentTier.sizeLabel}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onDownloadTier(currentTier) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Download ${currentTier.displayName} (${currentTier.sizeLabel})")
+                }
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
         // Technical info
         Text(
-            text = "RT-DETRv2 + Gemma 3n VLM",
+            text = "RT-DETRv2 + Qwen3.5 (llama.cpp)",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

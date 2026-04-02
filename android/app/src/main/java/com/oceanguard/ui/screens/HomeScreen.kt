@@ -640,35 +640,15 @@ private fun GradientActionTile(
 @Composable
 private fun ModelStatusIndicator(modelState: ModelLoadingState) {
     val rtdetrReady = modelState.rtdetr == ModelStatus.Ready
-    val gemmaStandby = modelState.qwenText == ModelStatus.Standby
 
     val readyText = stringResource(R.string.home_model_ready)
-    val deepAnalysisName = stringResource(R.string.home_model_name_deep_analysis)
     val aiDetectionName = stringResource(R.string.home_model_name_detection)
 
     // Glass style matching landing page: rgba(15,23,42,0.5) bg + rgba(148,163,184,0.1) border
     val glassColor = Color(0x800F172A)
     val glassBorderColor = Color(0x1A94A3B8)
 
-    if (rtdetrReady && gemmaStandby) {
-        // RT-DETR ready, VLM on standby — show ready banner + VLM info
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
-            shape = RoundedCornerShape(12.dp),
-            color = glassColor,
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                ReadyBannerContent(text = readyText)
-                ModelStatusRow(name = deepAnalysisName, status = modelState.qwenText)
-            }
-        }
-    } else if (rtdetrReady) {
-        // RT-DETR ready, VLM in some other state (loading for report, ready, error)
+    if (rtdetrReady) {
         ReadyBanner(text = readyText)
     } else {
         // RT-DETR still loading
@@ -777,6 +757,8 @@ private fun ModelStatusRow(name: String, status: ModelStatus) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.widthIn(max = 100.dp),
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
 
         when (status) {
             ModelStatus.NotLoaded, ModelStatus.Loading -> {

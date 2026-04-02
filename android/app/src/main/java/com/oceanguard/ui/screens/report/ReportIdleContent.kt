@@ -24,8 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Masks
+import androidx.compose.material.icons.filled.Phishing
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +40,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +54,37 @@ import com.oceanguard.ai.ui.components.pressableScale
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
+
+// ---------------------------------------------------------------------------
+// Debris icon configs — one per detectable class, ocean-palette themed
+// ---------------------------------------------------------------------------
+
+internal data class DebrisIconCfg(val icon: ImageVector, val containerColor: Color, val tint: Color)
+
+internal val debrisIcons = listOf(
+    DebrisIconCfg(Icons.Filled.LocalDrink,  Color(0xFF0E2438), Color(0xFF4FC3F7)), // Bottle
+    DebrisIconCfg(Icons.Filled.Recycling,   Color(0xFF0A2A22), Color(0xFF4DB6AC)), // Can
+    DebrisIconCfg(Icons.Filled.Phishing,    Color(0xFF092028), Color(0xFF00D4FF)), // Fishing Net
+    DebrisIconCfg(Icons.Filled.Masks,       Color(0xFF281A08), Color(0xFFFFB74D)), // Mask
+    DebrisIconCfg(Icons.Filled.ShoppingBag, Color(0xFF280A18), Color(0xFFF48FB1)), // Plastic Debris
+)
+
+internal fun debrisIconConfig(reportId: Long) =
+    debrisIcons[(reportId % debrisIcons.size).toInt().coerceAtLeast(0)]
+
+/** Strips markdown syntax to produce a clean plain-text preview snippet. */
+private fun stripMarkdownForPreview(text: String): String = text
+    .replace(Regex("#{1,6}\\s+"), "")               // ## Heading → Heading
+    .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")       // **bold** → bold
+    .replace(Regex("__(.+?)__"), "$1")               // __bold__ → bold
+    .replace(Regex("\\*(.+?)\\*"), "$1")             // *italic* → italic
+    .replace(Regex("_(.+?)_"), "$1")                 // _italic_ → italic
+    .replace(Regex("`(.+?)`"), "$1")                 // `code` → code
+    .replace(Regex("^>\\s*", RegexOption.MULTILINE), "") // > blockquote
+    .replace(Regex("^[-*+]\\s+", RegexOption.MULTILINE), "") // list items
+    .replace(Regex("\\|.+"), "")                     // table rows
+    .replace(Regex("\\n+"), " ")                     // newlines → spaces
+    .trim()
 
 @Composable
 internal fun IdleContent(
@@ -153,25 +190,19 @@ internal fun SavedReportCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // AI/Template icon badge
+            // Debris icon badge — deterministic per report ID
+            val iconCfg = remember(report.id) { debrisIconConfig(report.id) }
             Surface(
                 shape = CircleShape,
-                color = if (report.usedAi) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.tertiaryContainer,
+                color = iconCfg.containerColor,
                 modifier = Modifier.size(40.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = if (report.usedAi) Icons.Filled.SmartToy
-                        else Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = if (report.usedAi) {
-                            stringResource(R.string.report_card_cd_ai)
-                        } else {
-                            stringResource(R.string.report_card_cd_template)
-                        },
+                        imageVector = iconCfg.icon,
+                        contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = if (report.usedAi) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onTertiaryContainer,
+                        tint = iconCfg.tint,
                     )
                 }
             }
@@ -221,7 +252,7 @@ internal fun SavedReportCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = report.text.take(120).replace("\n", " ") + "...",
+                    text = stripMarkdownForPreview(report.text).take(140) + "\u2026",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

@@ -317,7 +317,7 @@ internal fun VlmDownloadBanner(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.tertiaryContainer,
+        color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -332,14 +332,14 @@ internal fun VlmDownloadBanner(
                     imageVector = Icons.Filled.Download,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.vlm_download_banner_title),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     if (downloadState is VlmDownloadState.Downloading) {
                         val mbDownloaded = downloadState.downloadedBytes / (1024 * 1024)
@@ -347,7 +347,7 @@ internal fun VlmDownloadBanner(
                         Text(
                             text = "$mbDownloaded / $mbTotal MB",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         )
                     }
                 }
@@ -362,13 +362,13 @@ internal fun VlmDownloadBanner(
                 is VlmDownloadState.Downloading -> LinearProgressIndicator(
                     progress = { downloadState.progress },
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.tertiary,
-                    trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                 )
                 else -> LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.tertiary,
-                    trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                 )
             }
         }

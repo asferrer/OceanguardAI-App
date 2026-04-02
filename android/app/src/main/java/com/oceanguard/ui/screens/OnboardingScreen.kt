@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -111,6 +112,12 @@ fun OnboardingScreen(
             title = stringResource(R.string.onboarding_page4_title),
             description = stringResource(R.string.onboarding_page4_desc),
             accentColor = GradientCTAEnd,
+        ),
+        OnboardingPage(
+            icon = Icons.Filled.EmojiEvents,
+            title = stringResource(R.string.onboarding_page5_title),
+            description = stringResource(R.string.onboarding_page5_desc),
+            accentColor = OceanGreen,
         ),
     )
 

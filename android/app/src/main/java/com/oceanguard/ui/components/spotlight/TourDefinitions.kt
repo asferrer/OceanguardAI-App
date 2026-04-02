@@ -73,7 +73,6 @@ object TourDefinitions {
 
     val SETTINGS = listOf(
         SpotlightStep("settings_confidence", R.string.tour_settings_confidence_title, R.string.tour_settings_confidence_desc),
-        SpotlightStep("settings_deep_analysis", R.string.tour_settings_deep_analysis_title, R.string.tour_settings_deep_analysis_desc),
         SpotlightStep("settings_language", R.string.tour_settings_language_title, R.string.tour_settings_language_desc),
         SpotlightStep("settings_theme", R.string.tour_settings_theme_title, R.string.tour_settings_theme_desc),
         SpotlightStep("settings_data", R.string.tour_settings_data_title, R.string.tour_settings_data_desc),

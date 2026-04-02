@@ -319,6 +319,7 @@ private fun LiveDetectionContent(
                                         Log.i(TAG, "Live capture saved: $savedUri")
                                         ContextCompat.getMainExecutor(context).execute {
                                             isCapturing = false
+                                            scope.launch { app.achievementChecker.checkFirstLive() }
                                             viewModel.analyzeImage(savedUri)
                                             navController.navigate("results") {
                                                 popUpTo("live_detection") { inclusive = true }

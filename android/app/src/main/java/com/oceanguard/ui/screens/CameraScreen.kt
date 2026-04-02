@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -528,11 +529,32 @@ private fun CapturePreviewOverlay(
 ) {
     val context = LocalContext.current
 
-    // Load bitmap from file URI
+    // Load bitmap from file URI and correct EXIF orientation
     val bitmap = remember(imageUri) {
         try {
             val stream = context.contentResolver.openInputStream(imageUri)
-            android.graphics.BitmapFactory.decodeStream(stream).also { stream?.close() }
+            val decoded = android.graphics.BitmapFactory.decodeStream(stream).also { stream?.close() }
+                ?: return@remember null
+
+            // Read EXIF orientation and rotate bitmap so preview matches capture orientation
+            val exifStream = context.contentResolver.openInputStream(imageUri)
+            val orientation = if (exifStream != null) {
+                val exif = ExifInterface(exifStream)
+                exifStream.close()
+                exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            } else ExifInterface.ORIENTATION_NORMAL
+
+            val matrix = android.graphics.Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90  -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                else -> null
+            }
+            if (!matrix.isIdentity) {
+                android.graphics.Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                    .also { if (it !== decoded) decoded.recycle() }
+            } else decoded
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load preview bitmap", e)
             null

@@ -149,6 +149,9 @@ fun ReportScreen(
 
     // VLM download state
     val vlmDownloadState by app.vlmModelManager.downloadState.collectAsStateWithLifecycle()
+    val vlmModelTierKey by app.settingsRepository.vlmModelTier
+        .collectAsStateWithLifecycle(initialValue = SettingsRepository.DEFAULT_VLM_MODEL_TIER)
+    val preferredTier = remember(vlmModelTierKey) { TextModelTier.fromKey(vlmModelTierKey) }
     var showVisionDownloadDialog by remember { mutableStateOf(false) }
     val isDownloading by remember {
         derivedStateOf {
@@ -309,13 +312,14 @@ fun ReportScreen(
         dateRangeEndMs   = dateRangeEndMs,
     )
 
-    // Unified report: uses any available text tier (FAST / BALANCED / QUALITY).
+    // Unified report: requires the preferred tier to be downloaded.
+    // If the user changed the tier in Settings but hasn't downloaded it yet, show a dialog.
     val launchGeneration = {
         if (selectedZone != null) {
             when {
-                app.vlmModelManager.isAnyTextModelAvailable() ->
+                app.vlmModelManager.isModelAvailable(preferredTier) ->
                     app.launchZoneReportGeneration(buildZoneReportInput(), selectedLanguage)
-                else -> showVisionDownloadDialog = true
+                !isDownloading -> showVisionDownloadDialog = true
             }
         }
     }
@@ -323,6 +327,36 @@ fun ReportScreen(
     // -----------------------------------------------------------------------
     // Dialogs
     // -----------------------------------------------------------------------
+
+    // Model download dialog — tier is the user's preferred tier from Settings (default: BALANCED 2B)
+    if (showVisionDownloadDialog) {
+        AlertDialog(
+            onDismissRequest = { showVisionDownloadDialog = false },
+            title = { Text(stringResource(R.string.vlm_download_dialog_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.vlm_download_dialog_message,
+                        "${preferredTier.displayName} · ${preferredTier.sizeLabel}",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showVisionDownloadDialog = false
+                    app.launchVlmDownload(preferredTier)
+                }) {
+                    Text(stringResource(R.string.vlm_download_dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVisionDownloadDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
     reportToDelete?.let { report ->
         DeleteReportDialog(
             onConfirm = {
@@ -336,34 +370,6 @@ fun ReportScreen(
         )
     }
 
-    // Model download dialog (BALANCED text model — 2B, recommended)
-    if (showVisionDownloadDialog) {
-        AlertDialog(
-            onDismissRequest = { showVisionDownloadDialog = false },
-            title = { Text(stringResource(R.string.vlm_download_dialog_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.vlm_download_dialog_message,
-                        app.vlmModelManager.getModelSizeLabel(TextModelTier.BALANCED),
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showVisionDownloadDialog = false
-                    app.launchVlmDownload(TextModelTier.BALANCED)
-                }) {
-                    Text(stringResource(R.string.vlm_download_dialog_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showVisionDownloadDialog = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
 
     if (showDatePicker) {
         DataDotDatePickerDialog(

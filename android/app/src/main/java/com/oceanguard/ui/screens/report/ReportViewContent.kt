@@ -24,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -201,20 +200,18 @@ internal fun ReportHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            val iconCfg = remember(report.id) { debrisIconConfig(report.id) }
             Surface(
                 shape = CircleShape,
-                color = if (report.usedAi) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.tertiaryContainer,
+                color = iconCfg.containerColor,
                 modifier = Modifier.size(44.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = if (report.usedAi) Icons.Filled.SmartToy
-                        else Icons.AutoMirrored.Filled.MenuBook,
+                        imageVector = iconCfg.icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = if (report.usedAi) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onTertiaryContainer,
+                        tint = iconCfg.tint,
                     )
                 }
             }
