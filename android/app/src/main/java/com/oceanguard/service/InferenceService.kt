@@ -283,6 +283,7 @@ class InferenceService : LifecycleService() {
                         location = location,
                         imageQuality = result.vlmAnalysis.imageQuality,
                         processingTimeMs = result.processingTimeMs,
+                        tags = "source:batch",
                     )
                     val sessionId = app.repository.saveSession(session)
                     results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri))

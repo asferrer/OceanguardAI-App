@@ -30,20 +30,30 @@ class AchievementChecker(
 
     /**
      * Process a saved session: update MarineDex, evaluate and unlock achievements.
+     *
+     * Batch-uploaded sessions (tag "source:batch") only update MarineDex and
+     * check the first_batch achievement. Scan counts, streaks, and other
+     * achievements require camera or real-time captures.
      */
     suspend fun processSession(session: DetectionSession) {
         try {
+            val isBatch = session.tags?.contains("source:batch") == true
+
             // 1. Extract unique debris types from the session
             val debrisTypes = session.debrisList.map { it.type.name }.distinct()
 
-            // 2. Update MarineDex entries
-            var newDiscoveries = 0
+            // 2. Update MarineDex entries (always, including batch)
             for (type in debrisTypes) {
-                val isNew = collectionRepo.discoverOrUpdate(type, session.id)
-                if (isNew) newDiscoveries++
+                collectionRepo.discoverOrUpdate(type, session.id)
             }
 
-            // 3. Evaluate all achievement categories
+            // 3. Batch sessions: only unlock first_batch, skip all other achievements
+            if (isBatch) {
+                checkFirstBatch()
+                return
+            }
+
+            // 4. Camera/real-time sessions: full achievement evaluation
             evaluateScanAchievements()
             evaluateDexAchievements()
             evaluateDebrisCountAchievements()
@@ -109,12 +119,12 @@ class AchievementChecker(
     // -----------------------------------------------------------------------
 
     private suspend fun evaluateScanAchievements() {
-        val totalSessions = sessionDao.getTotalSessionCount().first()
-        tryAdvance("first_scan", minOf(totalSessions, 1))
-        tryAdvance("scan_10", totalSessions)
-        tryAdvance("scan_50", totalSessions)
-        tryAdvance("scan_100", totalSessions)
-        tryAdvance("scan_500", totalSessions)
+        val cameraSessions = sessionDao.getCameraSessionCount().first()
+        tryAdvance("first_scan", minOf(cameraSessions, 1))
+        tryAdvance("scan_10", cameraSessions)
+        tryAdvance("scan_50", cameraSessions)
+        tryAdvance("scan_100", cameraSessions)
+        tryAdvance("scan_500", cameraSessions)
     }
 
     private suspend fun evaluateDexAchievements() {
@@ -139,8 +149,8 @@ class AchievementChecker(
     }
 
     private suspend fun evaluateStreakAchievement() {
-        // Calculate consecutive days with at least one scan
-        val allSessions = sessionDao.getAllSessions().first()
+        // Calculate consecutive days with at least one camera/real-time scan
+        val allSessions = sessionDao.getCameraAllSessions().first()
         if (allSessions.isEmpty()) return
 
         val calendar = Calendar.getInstance()

@@ -130,6 +130,30 @@ interface DetectionSessionDao {
     )
     fun getSessionsByDateRange(startMs: Long, endMs: Long): Flow<List<DetectionSession>>
 
+    /**
+     * Emit sessions captured with camera or real-time mode.
+     * Excludes batch-uploaded sessions (tag "source:batch") and demo tours.
+     * Used for achievement evaluation to count only active field captures.
+     */
+    @Query("""
+        SELECT * FROM detection_sessions
+        WHERE (tags IS NULL OR tags NOT LIKE '%source:batch%')
+          AND (tags IS NULL OR tags NOT LIKE '%demo:tour%')
+        ORDER BY timestamp DESC
+    """)
+    fun getCameraAllSessions(): Flow<List<DetectionSession>>
+
+    /**
+     * Emit the count of camera/real-time sessions (excludes batch uploads and demo tours).
+     * Used by [AchievementChecker] to count only active field captures for scan achievements.
+     */
+    @Query("""
+        SELECT COUNT(*) FROM detection_sessions
+        WHERE (tags IS NULL OR tags NOT LIKE '%source:batch%')
+          AND (tags IS NULL OR tags NOT LIKE '%demo:tour%')
+    """)
+    fun getCameraSessionCount(): Flow<Int>
+
     // -----------------------------------------------------------------------
     // Aggregate / statistics queries (Flow)
     // -----------------------------------------------------------------------
