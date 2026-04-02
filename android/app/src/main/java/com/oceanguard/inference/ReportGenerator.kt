@@ -84,13 +84,14 @@ class ReportGenerator(
     suspend fun generateReport(
         sessions: List<DetectionSession>,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): String = withContext(Dispatchers.IO) {
         require(sessions.isNotEmpty()) { "Cannot generate report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
         val summary = buildJsonSummary(sessions)
         Log.i(TAG, "Generating report for ${sessions.size} sessions in $languageName")
         val prompt = buildVlmPrompt(languageName, summary, language)
-        val response = runTextInference(prompt, language, languageName)
+        val response = runTextInference(prompt, language, languageName, audience)
         Log.i(TAG, "VLM report generated successfully (${response.length} chars)")
         QwenPromptFormatter.sanitizeOutput(response)
     }
@@ -102,6 +103,7 @@ class ReportGenerator(
     suspend fun generateZoneReport(
         input: ZoneReportInput,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
@@ -109,7 +111,7 @@ class ReportGenerator(
         Log.i(TAG, "Generating zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
         val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language)
-        val response = runTextInference(prompt, language, languageName)
+        val response = runTextInference(prompt, language, languageName, audience)
         Log.i(TAG, "Zone VLM report generated (${response.length} chars)")
         QwenPromptFormatter.sanitizeOutput(response)
     }
@@ -121,6 +123,7 @@ class ReportGenerator(
     suspend fun generateReportStreaming(
         sessions: List<DetectionSession>,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
         onPartialResult: (String) -> Unit,
     ): String = withContext(Dispatchers.IO) {
         require(sessions.isNotEmpty()) { "Cannot generate report with no sessions" }
@@ -132,7 +135,7 @@ class ReportGenerator(
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 4096,
-            systemMessage = buildSystemMessage(languageName),
+            systemMessage = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -144,6 +147,7 @@ class ReportGenerator(
     suspend fun generateZoneReportStreaming(
         input: ZoneReportInput,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
         onPartialResult: (String) -> Unit,
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
@@ -156,7 +160,7 @@ class ReportGenerator(
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 4096,
-            systemMessage = buildSystemMessage(languageName),
+            systemMessage = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -344,6 +348,7 @@ Rules:
         input: ZoneReportInput,
         verifications: List<VlmVerificationResult>,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
         onPartialResult: (String) -> Unit,
     ): String = withContext(Dispatchers.IO) {
         val languageName = LANGUAGE_NAMES[language] ?: "English"
@@ -356,7 +361,7 @@ Rules:
         val response = inference.generateText(
             prompt           = prompt,
             maxTokens        = 4096,
-            systemMessage    = buildSystemMessage(languageName),
+            systemMessage    = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -374,6 +379,7 @@ Rules:
         sessions: List<DetectionSession>,
         verifications: List<VlmVerificationResult>,
         language: String = "en",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
         onPartialResult: (String) -> Unit,
     ): String = withContext(Dispatchers.IO) {
         val languageName = LANGUAGE_NAMES[language] ?: "English"
@@ -389,15 +395,15 @@ Rules:
         else ""
 
         val prompt = """
-LANGUAGE REQUIREMENT: Write this entire report in $languageName. Every heading, sentence, and table cell must be in $languageName.
-
 Generate a marine debris environmental assessment using ONLY the JSON data below.
 The JSON includes RT-DETRv2 detections enriched with visual verification from a multimodal AI
 that inspected $verifiedCount field photographs. Each verified session has a "vlm_verification"
 field with confirmed detections, false positives, material_issues, site conditions, and debris state.$fpNote$matNote
 
+STRICT GROUNDING: every species, percentage, and ecological claim must be derivable from the JSON.
 Rules: never invent data; ## headings; markdown tables with | separators; bullet lists;
 "analyzed images" not "sessions"; be quantitative; prefer confirmed detections over raw when available.
+TRANSLATE ALL SECTION HEADINGS to $languageName (do not write any ## heading in English).
 
 ${buildVlmPrompt(languageName, enrichedJson, language)
     .lines()
@@ -408,7 +414,7 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
         val response = inference.generateText(
             prompt           = prompt,
             maxTokens        = 4096,
-            systemMessage    = buildSystemMessage(languageName),
+            systemMessage    = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -541,29 +547,78 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
     // -----------------------------------------------------------------
 
     /**
-     * System message with a language directive injected.
-     * Placing the language requirement in the system role is essential:
-     * Qwen3.5 tends to default to English when the system prompt is
-     * language-neutral, regardless of instructions in the user message.
+     * Audience-aware system message with language directive in first position.
+     * Language comes first because Qwen3.5 tends to default to English when the
+     * directive appears later — front-loading it minimises that failure mode.
+     * Grounding rules are explicit numbered constraints to reduce hallucinations.
      */
-    private fun buildSystemMessage(languageName: String): String =
-        "You are a professional marine conservation scientist and environmental analyst. " +
-        "Generate comprehensive, scientifically rigorous environmental assessment reports " +
-        "based solely on the provided detection data. " +
-        "Format with ## section headings, bullet points, and markdown tables using | separators. " +
-        "Be quantitative: always include exact counts, percentages, and scores from the data. " +
-        "Never invent or extrapolate data not present in the input. " +
-        "CRITICAL: Your entire response MUST be written in $languageName. " +
-        "Every heading, sentence, bullet point, and table cell must be in $languageName. " +
-        "Do not write in English unless a scientific term has absolutely no equivalent in $languageName."
+    private fun buildSystemMessage(
+        languageName: String,
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
+    ): String {
+        val persona = when (audience) {
+            ReportAudience.SCIENTIFIC ->
+                "You are a professional marine conservation scientist authoring a peer-reviewed " +
+                "field assessment report. Use scientific nomenclature, cite ecological mechanisms " +
+                "by name, and maintain methodological rigor."
+            ReportAudience.NGO_MANAGER ->
+                "You are an environmental consultant preparing an operational marine debris " +
+                "assessment for a coastal conservation organization. Balance technical accuracy " +
+                "with practical, action-oriented language suited for field managers."
+            ReportAudience.CITIZEN ->
+                "You are a marine environment educator writing for citizen scientists and " +
+                "recreational divers. Use clear, jargon-free language. Motivate action by " +
+                "connecting findings to tangible marine impacts."
+        }
+        val styleRules = when (audience) {
+            ReportAudience.SCIENTIFIC ->
+                "Style rules:\n" +
+                "- Passive voice for methodology; active voice for findings.\n" +
+                "- Hedge appropriately: 'indicates', 'suggests', 'consistent with'.\n" +
+                "- Species: binomial Latin name (e.g. Caretta caretta) + common name in parentheses on first mention.\n" +
+                "- Tense: present for findings, conditional ('should', 'would') for recommendations.\n" +
+                "- Bullet points are complete sentences ending with a period."
+            ReportAudience.NGO_MANAGER ->
+                "Style rules:\n" +
+                "- Active voice, imperative mood for recommendations.\n" +
+                "- Label each intervention as IMMEDIATE (<48 h) / SHORT-TERM (<30 days) / LONG-TERM.\n" +
+                "- Species: common name first, Latin in parentheses only if helpful.\n" +
+                "- Tense: present for findings, imperative for recommendations.\n" +
+                "- Name specific local actors: municipality, port authority, fishing community, coast guard."
+            ReportAudience.CITIZEN ->
+                "Style rules:\n" +
+                "- Active voice, warm and motivating tone — never condescending.\n" +
+                "- Convert abstract metrics to relatable analogies (e.g. 450 years ≈ 6 human lifetimes).\n" +
+                "- Explain jargon on first use: 'microplastics (tiny plastic particles smaller than 5 mm)'.\n" +
+                "- Species: common names only, no Latin binomials.\n" +
+                "- Recommendations: mix personal actions (what you can do) with community and civic actions."
+        }
+        return "OUTPUT LANGUAGE: $languageName. Every word of your response must be in " +
+            "$languageName. Do not write a single sentence in English unless a scientific " +
+            "Latin term has no equivalent. Section headings (##) must also be in $languageName.\n\n" +
+            "$persona\n\n" +
+            "$styleRules\n\n" +
+            "Consistency rules: use present tense for findings throughout; " +
+            "always refer to data points as 'analyzed images', never 'samples', 'photos', or 'sessions'; " +
+            "keep terminology uniform — do not alternate between synonyms.\n\n" +
+            "Generate the report using ONLY the data provided in the JSON. " +
+            "GROUNDING RULES — mandatory, no exceptions:\n" +
+            "1. Only mention debris types, materials, and species that correspond to entries in the JSON.\n" +
+            "2. Percentages must match the JSON counts exactly (round to 1 decimal).\n" +
+            "3. Dates must fall within date_range in the JSON.\n" +
+            "4. If health_score > 75: the site is in good condition — do not describe it as contaminated.\n" +
+            "5. Do not invent GPS coordinates, species names, or ecological pathways not supported by the data.\n" +
+            "Format: ## headings, bullet points, markdown tables with | separators."
+    }
 
     private suspend fun runTextInference(
         prompt: String,
         language: String = "en",
         languageName: String = "English",
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): String = inference.generateText(
         prompt = prompt,
-        systemMessage = buildSystemMessage(languageName),
+        systemMessage = buildSystemMessage(languageName, audience),
         assistantPrefill = FIRST_HEADING[language] ?: "## Executive Summary",
     )
 
@@ -692,44 +747,49 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
     }
 
     private fun buildVlmPrompt(languageName: String, jsonSummary: String, language: String = "en"): String = """
-LANGUAGE REQUIREMENT: Write this entire report in $languageName. Every heading, sentence, bullet point, and table cell must be in $languageName. Do not write in English unless a technical term has no equivalent.
-
 Generate a marine debris environmental assessment report using ONLY the JSON data below.
-Rules: no invented data; use ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative with exact numbers and percentages.
+STRICT GROUNDING: every species, percentage, and ecological claim must be directly derivable from the JSON. If a debris type is not in type_breakdown, do not mention its impacts.
+Rules: no invented data; ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative with exact numbers and percentages.
+TRANSLATE ALL SECTION HEADINGS to $languageName: "Executive Summary", "Survey Overview", "Debris Composition", "Environmental Impact Assessment", "Risk Assessment", "Location and Spatial Context", "Conservation Recommendations".
 
-## Executive Summary
-4 sentences: (1) total analyzed images and date range, (2) total debris items and dominant material with its % of total, (3) health score interpretation (0=critically contaminated, 100=pristine), (4) primary environmental threat and urgency level.
+## Executive Summary (write in $languageName)
+Lead with the most critical finding. Do NOT start with "This report presents..." or similar filler.
+- Sentence 1: Open with urgency — state the health category (Critical <30 / High 30–50 / Moderate 50–70 / Good >70) + total debris count across N analyzed images.
+- Sentence 2: Name the dominant threat — highest-count debris type, its exact % of total, and its primary ecological risk in this marine context.
+- Sentence 3: Spatial/temporal scope — date range and location (if GPS available, otherwise "unspecified location").
+- Sentence 4: Recommended action priority — Immediate cleanup / Short-term monitoring / Routine surveillance, justified by the health score.
 
-## Survey Overview
+## Survey Overview (write in $languageName)
 - Date range, total analyzed images, average debris items per image
 - Image quality breakdown (from image_quality field): count per quality tier
 - Detection confidence range: min / avg / max from confidence_range
 - Risk profile summary: high_risk / medium_risk / low_risk item counts
 
-## Debris Composition
+## Debris Composition (write in $languageName)
 
-Table 1 — by material (calculate % from total_debris_items):
+Table 1 — by material (calculate % from total_debris_items; all column headers in $languageName):
 | Material | Count | % of Total | Estimated Marine Persistence | Risk Level |
 
-Table 2 — by detection type:
+Table 2 — by detection type (all column headers in $languageName):
 | Debris Type | Count | % of Total | Primary Marine Hazard |
 
-## Environmental Impact Assessment
-- **Marine fauna at risk**: for each major debris type found, name specific vulnerable species (fishing nets → entanglement → sea turtles, dolphins, seabirds; plastic fragments → ingestion → fish, seabirds, sea turtles; tires → habitat alteration → benthic invertebrates)
-- **Microplastic fragmentation**: identify which materials will fragment into microplastics and approximate timeline (PET plastic ~450 yr; rubber ~80 yr; aluminum ~200 yr)
-- **Benthic and coastal impact**: seabed accumulation dynamics, shoreline retention, tidal redistribution potential
-- **Trophic bioaccumulation**: debris-to-plankton-to-fish-to-predator pathway for materials detected
+## Environmental Impact Assessment (write in $languageName)
+Base EVERY claim on the materials and types present in material_breakdown and type_breakdown.
+For each debris category actually found in the data (and ONLY those):
+- Name one specific threatened species + threat mechanism (entanglement / ingestion / habitat alteration)
+- If the material generates microplastics: state estimated fragmentation timeline
+Maximum 4 bullet points. Do NOT mention species, habitats, or pathways for debris types absent from the data.
 
-## Risk Assessment
+## Risk Assessment (write in $languageName)
 - High-risk items (exact count from data): identify which types, why critical in marine context
 - Medium-risk items (exact count): describe ecological concern
 - Low-risk items (exact count): describe
 - **Overall site risk rating**: Critical / High / Moderate / Low — justify using health_score and dominant_material
 
-## Location and Spatial Context
+## Location and Spatial Context (write in $languageName)
 If GPS data available: describe coordinate extent, identify likely marine zone (coastal/estuary/open water/pelagic). If no GPS: note limitation, recommend systematic georeferencing for future surveys.
 
-## Conservation Recommendations
+## Conservation Recommendations (write in $languageName)
 6 specific, prioritized, actionable interventions referencing the actual debris found:
 1. Immediate removal (within 48h): specify the most hazardous debris type and the exact collection method
 2. Cleanup methodology best suited to the dominant material and site type
@@ -742,6 +802,7 @@ If GPS data available: describe coordinate extent, identify likely marine zone (
 Detection data (read only — do not copy into report):
 $jsonSummary
 ---
+Before writing: confirm that (1) every ## heading will be in $languageName, not English; (2) no complete sentence will be in English; (3) all table column headers will be in $languageName.
 Write the full report now in $languageName. Start directly with ${FIRST_HEADING[language] ?: "## Executive Summary"}:""".trimIndent()
 
     // -----------------------------------------------------------------
@@ -789,6 +850,22 @@ Write the full report now in $languageName. Start directly with ${FIRST_HEADING[
             put("material_breakdown", JSONObject(materialCounts as Map<*, *>))
         }
 
+        val trendDelta = if (input.dayGroups.size >= 2) {
+            val sorted = input.dayGroups.sortedBy { it.date }
+            val first = sorted.first()
+            val last = sorted.last()
+            JSONObject().apply {
+                put("first_day", DAY_FORMAT.format(first.date))
+                put("last_day", DAY_FORMAT.format(last.date))
+                put("health_score_first", first.avgHealthScore)
+                put("health_score_last", last.avgHealthScore)
+                put("health_score_change", last.avgHealthScore - first.avgHealthScore)
+                put("debris_count_first", first.totalDebris)
+                put("debris_count_last", last.totalDebris)
+                put("debris_count_change", last.totalDebris - first.totalDebris)
+            }
+        } else null
+
         return JSONObject().apply {
             put("location", input.locationName)
             put("coordinates", JSONObject().apply {
@@ -797,6 +874,7 @@ Write the full report now in $languageName. Start directly with ${FIRST_HEADING[
             })
             put("survey_days", surveyDays)
             put("overall", overall)
+            if (trendDelta != null) put("trend_delta", trendDelta)
         }.toString(2)
     }
 
@@ -812,43 +890,45 @@ Write the full report now in $languageName. Start directly with ${FIRST_HEADING[
         } else ""
 
         return """
-LANGUAGE REQUIREMENT: Write this entire report in $languageName. Every heading, sentence, bullet point, and table cell must be in $languageName. Do not write in English unless a technical term has no equivalent.
+Generate a marine debris environmental assessment for $locationName using ONLY the JSON data below.
+${periodLine}STRICT GROUNDING: every species, percentage, and ecological claim must be directly derivable from the JSON. If a debris type is not in type_breakdown, do not mention its impacts.
+Rules: never invent data; ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative.
+TRANSLATE ALL SECTION HEADINGS to $languageName: "Zone Profile", "Survey Timeline", "Debris Composition", "Environmental Impact Assessment", "Contamination Trend", "Recommended Actions".
 
-You are generating a marine debris environmental assessment for $locationName.
-${periodLine}Rules: use ONLY the JSON data; never invent data; use ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative.
-
-## Zone Profile
+## Zone Profile (write in $languageName)
 - Site name and coordinates (lat/lon from JSON); classify the marine zone (coastal/estuary/open water/port)
 - Survey coverage: number of survey days, date range, total analyzed images, total debris items
 - Site health: interpret overall avg_health_score (0=critically contaminated, 50=moderately contaminated, 100=pristine)
 
-## Survey Timeline
-If survey_days has 2 or more entries, show temporal evolution:
+## Survey Timeline (write in $languageName)
+If survey_days has 2 or more entries, show temporal evolution (all column headers in $languageName):
 | Date | Images | Debris Items | Health Score | Dominant Material | Change vs Prior |
 
 If only 1 survey day: state that temporal trend analysis requires multiple survey visits.
 
-## Debris Composition
+## Debris Composition (write in $languageName)
 
-Table 1 — by material (calculate % from total_debris_items):
+Table 1 — by material (calculate % from total_debris_items; all column headers in $languageName):
 | Material | Count | % of Total | Marine Persistence | Risk Level |
 
-Table 2 — by detection type:
+Table 2 — by detection type (all column headers in $languageName):
 | Debris Type | Count | % of Total | Primary Marine Hazard |
 
-## Environmental Impact Assessment
-- **Fauna at risk**: for each major debris type found, name specific vulnerable species and threat mechanism (fishing nets → entanglement → sea turtles, dolphins, diving seabirds; plastic fragments → ingestion → fish larvae, seabirds; ghost gear → passive entanglement → large marine mammals)
-- **Microplastic generation**: identify which materials present will fragment and their estimated timeline (PET ~450 yr; polypropylene ~20–30 yr; rubber ~80 yr; aluminum ~200 yr)
-- **Benthic and coastal dynamics**: describe seabed accumulation risk, shoreline retention, tidal redistribution for this specific site type
-- **Ecosystem stress**: combine health score + high_risk item count + dominant material persistence to characterize overall site stress level
+## Environmental Impact Assessment (write in $languageName)
+Base EVERY claim on the materials and types present in material_breakdown and type_breakdown.
+For each debris category actually found in the data (and ONLY those):
+- Name one specific threatened species + threat mechanism (entanglement / ingestion / habitat alteration)
+- If the material generates microplastics: state estimated fragmentation timeline
+Maximum 4 bullet points. Do NOT mention species, habitats, or pathways for debris types absent from the data.
 
-## Contamination Trend
-Using the "trend" field (IMPROVING/STABLE/WORSENING/INSUFFICIENT_DATA):
-- IMPROVING or WORSENING with multiple days: quantify as % change in total debris count and health score delta (first survey vs last survey)
-- STABLE: describe steady-state contamination level and contributing factors
-- INSUFFICIENT_DATA: specify what follow-up surveys (frequency, method) would enable trend detection
+## Contamination Trend (write in $languageName)
+Use the trend_delta field if present (2+ survey days):
+- Health score: from [health_score_first] to [health_score_last] = [health_score_change] points (positive = improvement / negative = degradation)
+- Debris count: from [debris_count_first] to [debris_count_last] = [debris_count_change] items
+- Characterize trajectory: IMPROVING (health_score_change > 0 AND debris_count_change < 0) / DEGRADING / MIXED / STABLE — use the exact numbers, do not paraphrase
+- If trend_delta is absent (single survey day): state that temporal trend requires multiple visits; recommend revisit interval based on contamination severity.
 
-## Recommended Actions for $locationName
+## Recommended Actions for $locationName (write in $languageName)
 6 prioritized, site-specific, actionable interventions:
 1. Immediate removal target: name the most hazardous debris type present and the specific collection method for this site
 2. Cleanup methodology adapted to site type and dominant debris material
@@ -861,6 +941,7 @@ Using the "trend" field (IMPROVING/STABLE/WORSENING/INSUFFICIENT_DATA):
 Detection data (read only — do not copy into report):
 $jsonSummary
 ---
+Before writing: confirm that (1) every ## heading will be in $languageName, not English; (2) no complete sentence will be in English; (3) all table column headers will be in $languageName.
 Write the full report now in $languageName for $locationName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
     }
 

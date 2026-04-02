@@ -42,12 +42,11 @@ object QwenPromptFormatter : PromptFormatter {
     private val EXCESS_BOLD_RE  = Regex("\\*{4,}")
 
     const val DEFAULT_SYSTEM_PROMPT =
-        "You are a professional marine conservation scientist and environmental analyst. " +
-        "Generate comprehensive, scientifically rigorous environmental assessment reports " +
-        "based solely on the provided detection data. " +
-        "Format with ## section headings, bullet points, and markdown tables using | separators. " +
-        "Be quantitative: always include exact counts, percentages, and scores from the data. " +
-        "Never invent or extrapolate data not present in the input."
+        "You are a marine conservation scientist. " +
+        "Generate environmental assessment reports using ONLY the provided data. " +
+        "GROUNDING: never mention species, debris types, or percentages not present in the input. " +
+        "Format: ## headings, bullet points, markdown tables with | separators. " +
+        "Never invent or extrapolate data not in the input."
 
     /**
      * Wraps a user message in the ChatML template ready for inference.

@@ -16,6 +16,7 @@ import com.oceanguard.ai.inference.DetectionOrchestrator
 import com.oceanguard.ai.inference.LlamaTextEngine
 import com.oceanguard.ai.inference.LlamaVisionEngine
 import com.oceanguard.ai.inference.RTDETRInference
+import com.oceanguard.ai.inference.ReportAudience
 import com.oceanguard.ai.inference.ReportGenerator
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VideoProcessor
@@ -234,14 +235,17 @@ class OceanGuardApp : Application() {
     // -----------------------------------------------------------------------
 
     /**
-     * Best available text tier: Quality (4B) → Balanced (2B) → Fast (0.8B).
-     * This allows the 2B model (shared with the vision pipeline) to be used
-     * text-only when Quality is not downloaded.
+     * Best available text tier respecting user preference.
+     * Tries the user-selected tier first; falls back to highest available quality.
      */
-    private fun bestAvailableTier(): TextModelTier = when {
-        vlmModelManager.isModelAvailable(TextModelTier.QUALITY)  -> TextModelTier.QUALITY
-        vlmModelManager.isModelAvailable(TextModelTier.BALANCED) -> TextModelTier.BALANCED
-        else -> TextModelTier.FAST
+    private fun bestAvailableTier(): TextModelTier {
+        val preferred = TextModelTier.fromKey(settingsRepository.getVlmModelTierSync())
+        if (vlmModelManager.isModelAvailable(preferred)) return preferred
+        return when {
+            vlmModelManager.isModelAvailable(TextModelTier.QUALITY)  -> TextModelTier.QUALITY
+            vlmModelManager.isModelAvailable(TextModelTier.BALANCED) -> TextModelTier.BALANCED
+            else -> TextModelTier.FAST
+        }
     }
 
     /**
@@ -325,6 +329,7 @@ class OceanGuardApp : Application() {
         vlmReleaseJob?.cancel()
         startForegroundReportService()
         applicationScope.launch {
+            val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
             try {
                 if (vlmModelManager.isVisionModelAvailable()) {
                     // ── Two-phase: verify images + generate report with same 2B model ─
@@ -347,6 +352,7 @@ class OceanGuardApp : Application() {
                         sessions      = sessions,
                         verifications = verifications,
                         language      = language,
+                        audience      = audience,
                     ) { partial ->
                         reportGenerationState.value = ReportGenerationState.StreamingText(partial)
                     }
@@ -364,7 +370,7 @@ class OceanGuardApp : Application() {
                     val engine = loadTextEngineIfNeeded()
                     reportGenerationState.value = ReportGenerationState.Generating
                     val generator = ReportGenerator(engine)
-                    val reportText = generator.generateReportStreaming(sessions, language) { partial ->
+                    val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
                         reportGenerationState.value = ReportGenerationState.StreamingText(partial)
                     }
                     val report = GeneratedReport(
@@ -403,11 +409,12 @@ class OceanGuardApp : Application() {
         vlmReleaseJob?.cancel()
         startForegroundReportService()
         applicationScope.launch {
+            val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
             try {
                 val engine = loadTextEngineIfNeeded()
                 reportGenerationState.value = ReportGenerationState.Generating
                 val generator = ReportGenerator(engine)
-                val reportText = generator.generateZoneReportStreaming(input, language) { partial ->
+                val reportText = generator.generateZoneReportStreaming(input, language, audience) { partial ->
                     reportGenerationState.value = ReportGenerationState.StreamingText(partial)
                 }
                 val report = GeneratedReport(
@@ -455,6 +462,7 @@ class OceanGuardApp : Application() {
         vlmReleaseJob?.cancel()
         startForegroundReportService()
         applicationScope.launch {
+            val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
             try {
                 releaseTextEngineNow()
                 loadVisionEngineIfNeeded()
@@ -480,6 +488,7 @@ class OceanGuardApp : Application() {
                     input         = input,
                     verifications = verifications,
                     language      = language,
+                    audience      = audience,
                 ) { partial ->
                     reportGenerationState.value = ReportGenerationState.StreamingText(partial)
                 }

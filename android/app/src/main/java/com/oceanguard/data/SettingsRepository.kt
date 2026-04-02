@@ -46,6 +46,7 @@ class SettingsRepository(private val context: Context) {
         val LAST_UPDATE_CHECK_MS = longPreferencesKey("last_update_check_ms")
         val SKIPPED_VERSION = stringPreferencesKey("skipped_update_version")
         val VLM_MODEL_TIER = stringPreferencesKey("vlm_model_tier")
+        val REPORT_AUDIENCE = stringPreferencesKey("report_audience")
     }
 
     companion object {
@@ -57,7 +58,15 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_LIVE_DETECTION_RESOLUTION = 480
         const val DEFAULT_CONFIRM_CAPTURE = true
         const val DEFAULT_DETECTOR_PRECISION = "fp16"
-        const val DEFAULT_VLM_MODEL_TIER = "fast"
+        const val DEFAULT_VLM_MODEL_TIER = "balanced"
+        const val DEFAULT_REPORT_AUDIENCE = "scientific"
+
+        /** Supported audience modes for report generation. Keys match ReportAudience.fromKey(). */
+        val REPORT_AUDIENCES = mapOf(
+            "scientific" to "Scientific",
+            "ngo"        to "NGO / Manager",
+            "citizen"    to "Citizen",
+        )
 
         /** Supported detector precision modes. INT8 removed: causes native
          *  SIGABRT on Exynos 2200 NNAPI delegate (irrecoverable crash). */
@@ -328,6 +337,20 @@ class SettingsRepository(private val context: Context) {
      */
     val vlmModelTier: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
+    }
+
+    /** Audience for AI-generated reports: "scientific", "ngo", or "citizen". */
+    val reportAudience: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.REPORT_AUDIENCE] ?: DEFAULT_REPORT_AUDIENCE
+    }
+
+    fun getReportAudienceSync(): String {
+        val prefs = runBlocking { context.dataStore.data.first() }
+        return prefs[Keys.REPORT_AUDIENCE] ?: DEFAULT_REPORT_AUDIENCE
+    }
+
+    suspend fun setReportAudience(value: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.REPORT_AUDIENCE] = value }
     }
 
     val lastUpdateCheckMs: Flow<Long> = context.dataStore.data.map { prefs ->
