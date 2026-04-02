@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% sin conexión\n&amp; privado</string>
     <string name="onboarding_page4_desc">Todo el procesamiento ocurre en el dispositivo. No requiere internet. Tus datos nunca salen del teléfono \u2014 ideal para trabajo de campo remoto.</string>
 
+    <!-- Página 5 -->
+    <string name="onboarding_page5_title">Gana\nlogros</string>
+    <string name="onboarding_page5_desc">Desbloquea insignias escaneando con la cámara o en tiempo real. Las subidas en lote no cuentan \u2014 ¡sal al campo a ganar tu rango!</string>
+
     <!-- Botones -->
     <string name="onboarding_btn_get_started">Comenzar</string>
     <string name="onboarding_btn_continue">Continuar</string>

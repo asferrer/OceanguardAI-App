@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% Hors ligne\n&amp; Privé</string>
     <string name="onboarding_page4_desc">Tout le traitement s\'effectue sur l\'appareil. Aucune connexion Internet requise. Vos données ne quittent jamais votre téléphone \u2014 idéal pour le travail de terrain à distance.</string>
 
+    <!-- Page 5 -->
+    <string name="onboarding_page5_title">Gagnez des\nrécompenses</string>
+    <string name="onboarding_page5_desc">Débloquez des badges en scannant avec la caméra ou en temps réel. Les imports par lot ne comptent pas \u2014 partez sur le terrain pour gravir les rangs\u00a0!</string>
+
     <!-- Boutons -->
     <string name="onboarding_btn_get_started">Commencer</string>
     <string name="onboarding_btn_continue">Continuer</string>

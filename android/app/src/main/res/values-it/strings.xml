@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% Offline\ne Privato</string>
     <string name="onboarding_page4_desc">Tutto il processo avviene sul dispositivo. Nessuna connessione internet richiesta. I tuoi dati non lasciano mai il tuo telefono \u2014 perfetto per il lavoro sul campo in zone remote.</string>
 
+    <!-- Pagina 5 -->
+    <string name="onboarding_page5_title">Conquista\ni premi</string>
+    <string name="onboarding_page5_desc">Sblocca i badge scansionando con la fotocamera o in tempo reale. I caricamenti in batch non contano \u2014 esci sul campo per guadagnare il tuo rango!</string>
+
     <!-- Pulsanti -->
     <string name="onboarding_btn_get_started">Inizia</string>
     <string name="onboarding_btn_continue">Continua</string>

@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% Offline\n&amp; Privat</string>
     <string name="onboarding_page4_desc">Die gesamte Verarbeitung erfolgt auf dem Gerät. Keine Internetverbindung erforderlich. Ihre Daten verlassen Ihr Telefon nie \u2014 ideal für Feldarbeit an abgelegenen Orten.</string>
 
+    <!-- Seite 5 -->
+    <string name="onboarding_page5_title">Erfolge\nfreischalten</string>
+    <string name="onboarding_page5_desc">Verdienen Sie Abzeichen durch Aufnahmen mit der Kamera oder im Echtzeitmodus. Batch-Uploads zählen nicht \u2014 raus ins Feld, um Ihren Rang zu erringen!</string>
+
     <!-- Schaltflächen -->
     <string name="onboarding_btn_get_started">Loslegen</string>
     <string name="onboarding_btn_continue">Weiter</string>

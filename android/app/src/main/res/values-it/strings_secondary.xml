@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Report</string>
     <string name="settings_label_report_language">Lingua del Report</string>
     <string name="settings_desc_report_language">Lingua per i report ambientali generati dall\'AI</string>
+    <string name="settings_label_report_audience">Pubblico del report</string>
+    <string name="settings_desc_report_audience">Adatta il tono, il vocabolario e lo stile dei report generati dall\'AI</string>
+    <string name="audience_scientific">Scientifico</string>
+    <string name="audience_ngo">ONG / Responsabile</string>
+    <string name="audience_citizen">Cittadino</string>
 
     <!-- Sezione Visualizzazione -->
     <string name="settings_section_display">Visualizzazione</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Modalità sviluppatore attivata!</string>
     <string name="settings_dev_mode_countdown">Ancora %1$d tocchi…</string>
     <string name="settings_dev_mode_disable">Disattiva modalità sviluppatore</string>
+    <string name="settings_label_vlm_tier">Modello di testo VLM</string>
+    <string name="settings_desc_vlm_tier">Modello Qwen3.5 preferito per la generazione dei report. Usa il migliore disponibile se quello scelto non è scaricato.</string>
+    <string name="settings_vlm_not_downloaded">non scaricato</string>
 
     <!-- Sezione Info -->
     <string name="settings_section_about">Informazioni</string>
     <string name="settings_cd_logo">Logo OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Rilevamento offline dei rifiuti marini con IA. Proteggere i nostri oceani, una scansione alla volta.</string>
-    <string name="settings_about_powered_by">Basato su MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Basato su llama.cpp &amp; TensorFlow Lite</string>
     <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" è mantenuto intenzionalmente
          hardcoded in SettingsScreen.kt come da istruzioni del progetto. -->
 

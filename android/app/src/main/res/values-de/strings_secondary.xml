@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Berichte</string>
     <string name="settings_label_report_language">Berichtssprache</string>
     <string name="settings_desc_report_language">Sprache für KI-generierte Umweltberichte</string>
+    <string name="settings_label_report_audience">Zielgruppe des Berichts</string>
+    <string name="settings_desc_report_audience">Passt Ton, Vokabular und Stil der KI-generierten Berichte an</string>
+    <string name="audience_scientific">Wissenschaftlich</string>
+    <string name="audience_ngo">NGO / Manager</string>
+    <string name="audience_citizen">Bürger</string>
 
     <!-- Anzeigeabschnitt -->
     <string name="settings_section_display">Anzeige</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Entwicklermodus aktiviert!</string>
     <string name="settings_dev_mode_countdown">Noch %1$d Mal tippen…</string>
     <string name="settings_dev_mode_disable">Entwicklermodus deaktivieren</string>
+    <string name="settings_label_vlm_tier">VLM-Textmodell</string>
+    <string name="settings_desc_vlm_tier">Bevorzugtes Qwen3.5-Modell für die Berichtserstellung. Weicht auf das beste verfügbare Modell aus, wenn das gewählte nicht heruntergeladen ist.</string>
+    <string name="settings_vlm_not_downloaded">nicht heruntergeladen</string>
 
     <!-- Über-Abschnitt -->
     <string name="settings_section_about">Über</string>
     <string name="settings_cd_logo">OceanGuard Logo</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Offline-Erkennung von Meeresmüll mit KI. Unsere Ozeane schützen, ein Scan nach dem anderen.</string>
-    <string name="settings_about_powered_by">Unterstützt von MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Unterstützt von llama.cpp &amp; TensorFlow Lite</string>
     <!-- HINWEIS: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" wird gemäß Aufgabenanweisungen
          absichtlich in SettingsScreen.kt fest kodiert. -->
 

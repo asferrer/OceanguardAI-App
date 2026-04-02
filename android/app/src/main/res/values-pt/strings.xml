@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% Offline\ne Privado</string>
     <string name="onboarding_page4_desc">Todo o processamento acontece no dispositivo. Sem necessidade de internet. Seus dados nunca saem do seu celular \u2014 perfeito para trabalho de campo remoto.</string>
 
+    <!-- Página 5 -->
+    <string name="onboarding_page5_title">Conquiste\nrecompensas</string>
+    <string name="onboarding_page5_desc">Desbloqueie emblemas escaneando com a câmera ou em tempo real. Uploads em lote não contam \u2014 vá ao campo para ganhar sua classificação!</string>
+
     <!-- Botões -->
     <string name="onboarding_btn_get_started">Começar</string>
     <string name="onboarding_btn_continue">Continuar</string>

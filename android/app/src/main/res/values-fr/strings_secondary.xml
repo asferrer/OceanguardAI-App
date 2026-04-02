@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Rapports</string>
     <string name="settings_label_report_language">Langue des rapports</string>
     <string name="settings_desc_report_language">Langue des rapports environnementaux générés par IA</string>
+    <string name="settings_label_report_audience">Audience du rapport</string>
+    <string name="settings_desc_report_audience">Adapte le ton, le vocabulaire et le style des rapports générés par IA</string>
+    <string name="audience_scientific">Scientifique</string>
+    <string name="audience_ngo">ONG / Gestionnaire</string>
+    <string name="audience_citizen">Citoyen</string>
 
     <!-- Section Affichage -->
     <string name="settings_section_display">Affichage</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Mode développeur activé !</string>
     <string name="settings_dev_mode_countdown">Encore %1$d appuis…</string>
     <string name="settings_dev_mode_disable">Désactiver le mode développeur</string>
+    <string name="settings_label_vlm_tier">Modèle de texte VLM</string>
+    <string name="settings_desc_vlm_tier">Modèle Qwen3.5 préféré pour la génération de rapports. Utilise le meilleur disponible si le choix n\'est pas téléchargé.</string>
+    <string name="settings_vlm_not_downloaded">non téléchargé</string>
 
     <!-- Section À propos -->
     <string name="settings_section_about">À propos</string>
     <string name="settings_cd_logo">Logo OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Détection hors ligne des déchets marins par IA. Protéger nos océans, un scan à la fois.</string>
-    <string name="settings_about_powered_by">Propulsé par MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Propulsé par llama.cpp &amp; TensorFlow Lite</string>
     <!-- REMARQUE : "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" est intentionnellement codé en dur
          dans SettingsScreen.kt conformément aux instructions de la tâche. -->
 

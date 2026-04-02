@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Informes</string>
     <string name="settings_label_report_language">Idioma de los informes</string>
     <string name="settings_desc_report_language">Idioma para los informes ambientales generados por IA</string>
+    <string name="settings_label_report_audience">Audiencia del informe</string>
+    <string name="settings_desc_report_audience">Ajusta el tono, vocabulario y estilo de los informes generados por IA</string>
+    <string name="audience_scientific">Científico</string>
+    <string name="audience_ngo">ONG / Gestor</string>
+    <string name="audience_citizen">Ciudadano</string>
 
     <!-- Sección de visualización -->
     <string name="settings_section_display">Visualización</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Modo desarrollador activado!</string>
     <string name="settings_dev_mode_countdown">%1$d toques más…</string>
     <string name="settings_dev_mode_disable">Desactivar modo desarrollador</string>
+    <string name="settings_label_vlm_tier">Modelo de texto VLM</string>
+    <string name="settings_desc_vlm_tier">Modelo Qwen3.5 preferido para generar informes. Usa el mejor disponible si el elegido no está descargado.</string>
+    <string name="settings_vlm_not_downloaded">no descargado</string>
 
     <!-- Sección Acerca de -->
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_cd_logo">Logo de OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Detección offline de residuos marinos con IA. Protegiendo nuestros océanos, un escaneo a la vez.</string>
-    <string name="settings_about_powered_by">Desarrollado con MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Desarrollado con llama.cpp &amp; TensorFlow Lite</string>
     <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" se mantiene intencionalmente
          en el código de SettingsScreen.kt según las instrucciones de la tarea. -->
 

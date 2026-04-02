@@ -84,6 +84,10 @@
     <string name="onboarding_page4_title">100% Offline\n&amp; Private</string>
     <string name="onboarding_page4_desc">All processing happens on-device. No internet required. Your data never leaves your phone \u2014 perfect for remote field work.</string>
 
+    <!-- Page 5 -->
+    <string name="onboarding_page5_title">Earn\nAchievements</string>
+    <string name="onboarding_page5_desc">Unlock badges by scanning with your camera or real-time mode. Batch uploads don\'t count \u2014 get out in the field to earn your rank!</string>
+
     <!-- Buttons -->
     <string name="onboarding_btn_get_started">Get Started</string>
     <string name="onboarding_btn_continue">Continue</string>

@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Reports</string>
     <string name="settings_label_report_language">Report Language</string>
     <string name="settings_desc_report_language">Language for AI-generated environmental reports</string>
+    <string name="settings_label_report_audience">Report Audience</string>
+    <string name="settings_desc_report_audience">Adjusts tone, vocabulary and style of AI-generated reports</string>
+    <string name="audience_scientific">Scientific</string>
+    <string name="audience_ngo">NGO / Manager</string>
+    <string name="audience_citizen">Citizen</string>
 
     <!-- Display section -->
     <string name="settings_section_display">Display</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Developer mode activated!</string>
     <string name="settings_dev_mode_countdown">%1$d taps to go…</string>
     <string name="settings_dev_mode_disable">Disable Developer Mode</string>
+    <string name="settings_label_vlm_tier">VLM Text Model</string>
+    <string name="settings_desc_vlm_tier">Preferred Qwen3.5 model for report generation. Falls back to best available if not downloaded.</string>
+    <string name="settings_vlm_not_downloaded">not downloaded</string>
 
     <!-- About section -->
     <string name="settings_section_about">About</string>
     <string name="settings_cd_logo">OceanGuard Logo</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Offline marine debris detection powered by AI. Protecting our oceans, one scan at a time.</string>
-    <string name="settings_about_powered_by">Powered by MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Powered by llama.cpp &amp; TensorFlow Lite</string>
 
     <!-- ================================================================== -->
     <!-- MarineDex Screen                                                     -->

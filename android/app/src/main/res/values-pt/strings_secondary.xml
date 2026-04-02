@@ -147,6 +147,11 @@
     <string name="settings_section_reports">Relatórios</string>
     <string name="settings_label_report_language">Idioma dos Relatórios</string>
     <string name="settings_desc_report_language">Idioma para relatórios ambientais gerados por IA</string>
+    <string name="settings_label_report_audience">Público do relatório</string>
+    <string name="settings_desc_report_audience">Ajusta o tom, vocabulário e estilo dos relatórios gerados por IA</string>
+    <string name="audience_scientific">Científico</string>
+    <string name="audience_ngo">ONG / Gestor</string>
+    <string name="audience_citizen">Cidadão</string>
 
     <!-- Seção de Exibição -->
     <string name="settings_section_display">Exibição</string>
@@ -172,13 +177,16 @@
     <string name="settings_dev_mode_activated">Modo programador ativado!</string>
     <string name="settings_dev_mode_countdown">Mais %1$d toques…</string>
     <string name="settings_dev_mode_disable">Desativar modo programador</string>
+    <string name="settings_label_vlm_tier">Modelo de texto VLM</string>
+    <string name="settings_desc_vlm_tier">Modelo Qwen3.5 preferido para geração de relatórios. Usa o melhor disponível se o escolhido não estiver descarregado.</string>
+    <string name="settings_vlm_not_downloaded">não descarregado</string>
 
     <!-- Seção Sobre -->
     <string name="settings_section_about">Sobre</string>
     <string name="settings_cd_logo">Logo do OceanGuard</string>
     <string name="settings_about_version">v1.0.0</string>
     <string name="settings_about_description">Deteção offline de resíduos marinhos com IA. Proteger os nossos oceanos, uma digitalização de cada vez.</string>
-    <string name="settings_about_powered_by">Desenvolvido com MediaPipe &amp; TensorFlow Lite</string>
+    <string name="settings_about_powered_by">Desenvolvido com llama.cpp &amp; TensorFlow Lite</string>
     <!-- NOTA: "Dual pipeline: RT-DETRv2 + Gemma 3n VLM" é mantido intencionalmente
          hardcoded em SettingsScreen.kt conforme instruções da tarefa. -->
 
