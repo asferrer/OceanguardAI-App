@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -37,6 +38,7 @@ class ReportGenerationService : LifecycleService() {
 
     private lateinit var app: OceanGuardApp
     private lateinit var notificationManager: NotificationManager
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -52,6 +54,13 @@ class ReportGenerationService : LifecycleService() {
             NOTIFICATION_ID,
             buildNotification(getString(R.string.report_notif_loading_model)),
         )
+
+        // Acquire wake lock to keep CPU running when screen is off or app is backgrounded
+        if (wakeLock?.isHeld != true) {
+            wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OceanGuard:ReportWakeLock")
+                .also { it.acquire(60 * 60 * 1000L) } // 60-min safety timeout
+        }
 
         lifecycleScope.launch {
             app.reportGenerationState.collectLatest { state ->
@@ -84,6 +93,11 @@ class ReportGenerationService : LifecycleService() {
         }
 
         return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        wakeLock?.let { if (it.isHeld) it.release() }
+        super.onDestroy()
     }
 
     private fun ensureNotificationChannel() {

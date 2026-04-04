@@ -51,8 +51,8 @@ import com.oceanguard.ai.data.Location
 import com.oceanguard.ai.data.LocationSource
 import com.oceanguard.ai.ui.screens.map.MapStyles
 import com.oceanguard.ai.utils.GeocodingResult
-import com.oceanguard.ai.utils.PhotonGeocoderClient
 import com.oceanguard.ai.utils.toPlaceLabel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
@@ -87,7 +87,7 @@ fun LocationPickerScreen(
     val context = LocalContext.current
     val app = context.applicationContext as OceanGuardApp
     val scope = rememberCoroutineScope()
-    val geocoder = remember { PhotonGeocoderClient() }
+    val geocoder = remember(app) { app.geocoder }
 
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<GeocodingResult>>(emptyList()) }
@@ -106,12 +106,16 @@ fun LocationPickerScreen(
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             searchResults = emptyList()
+            isSearching = false
             return@LaunchedEffect
         }
         delay(300)
         isSearching = true
-        searchResults = geocoder.search(searchQuery)
-        isSearching = false
+        try {
+            searchResults = geocoder.search(searchQuery)
+        } finally {
+            isSearching = false
+        }
     }
 
     val onConfirm = {
@@ -341,13 +345,18 @@ private fun LocationMap(
     LaunchedEffect(selectedLocation) {
         selectedLocation ?: return@LaunchedEffect
         val (lat, lon) = selectedLocation
-        cameraState.animateTo(
-            finalPosition = CameraPosition(
-                target = Position(longitude = lon, latitude = lat),
-                zoom = 12.0,
-            ),
-            duration = 0.8.seconds,
-        )
+        try {
+            cameraState.animateTo(
+                finalPosition = CameraPosition(
+                    target = Position(longitude = lon, latitude = lat),
+                    zoom = 12.0,
+                ),
+                duration = 0.8.seconds,
+            )
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            // Map not fully initialised yet — initial position will be used on first render
+        }
     }
 
     val pinGeoJson = remember(selectedLocation) {

@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -143,7 +144,17 @@ fun SpotlightOverlay(
                 overlayWindowOffset = coords.positionInWindow()
                 overlayHeight = coords.size.height
             }
-            .pointerInput(Unit) { /* Consume all touch events */ },
+            // Consume any touch event NOT already handled by child composables
+            // (tooltip buttons). This prevents drag gestures on the dark area
+            // from scrolling the content beneath the overlay.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Final)
+                        event.changes.filter { !it.isConsumed }.forEach { it.consume() }
+                    }
+                }
+            },
     ) {
         SpotlightCanvas(step = step, bounds = localBounds)
 

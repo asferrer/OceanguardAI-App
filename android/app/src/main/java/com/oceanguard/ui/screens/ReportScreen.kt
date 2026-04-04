@@ -127,7 +127,9 @@ fun ReportScreen(
     val sessions by viewModel.allSessions.collectAsStateWithLifecycle(initialValue = emptyList())
     val savedReports by app.database.generatedReportDao().getAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val generationState by app.reportGenerationState.collectAsStateWithLifecycle()
+    val generationState by app.reportGenerationState.collectAsStateWithLifecycle(
+        initialValue = ReportGenerationState.Idle,
+    )
 
     val persistedLanguage by viewModel.settingsRepository.language.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_LANGUAGE,
@@ -444,7 +446,8 @@ fun ReportScreen(
                 }
 
                 // Zone preview card
-                if (selectedZone != null && selectedZoneIndex!! < zoneNames.size) {
+                val zoneIdx = selectedZoneIndex
+                if (selectedZone != null && zoneIdx != null && zoneIdx < zoneNames.size) {
                     Box(modifier = Modifier.spotlightTarget("reports_preview", boundsMap)) {
                         ZonePreviewCard(
                             zone = selectedZone,

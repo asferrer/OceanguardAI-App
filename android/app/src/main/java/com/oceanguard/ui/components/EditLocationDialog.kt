@@ -74,9 +74,12 @@ fun EditLocationDialog(
             return@LaunchedEffect
         }
         isLoading = true
-        delay(500L)
-        results = geocoder.search(query, limit = 5)
-        isLoading = false
+        try {
+            delay(500L)
+            results = geocoder.search(query, limit = 5)
+        } finally {
+            isLoading = false
+        }
     }
 
     AlertDialog(
