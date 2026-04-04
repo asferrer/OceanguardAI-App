@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -47,6 +48,12 @@ class SettingsRepository(private val context: Context) {
         val SKIPPED_VERSION = stringPreferencesKey("skipped_update_version")
         val VLM_MODEL_TIER = stringPreferencesKey("vlm_model_tier")
         val REPORT_AUDIENCE = stringPreferencesKey("report_audience")
+
+        // Research contribution
+        val CONTRIBUTE_CONSENT_GIVEN = booleanPreferencesKey("contribute_consent_given")
+        val CONTRIBUTE_NAS_URL       = stringPreferencesKey("contribute_nas_url")
+        val CONTRIBUTE_WIFI_ONLY     = booleanPreferencesKey("contribute_wifi_only")
+        val CONTRIBUTE_DECLINE_COUNT = intPreferencesKey("contribute_decline_count")
     }
 
     companion object {
@@ -376,5 +383,50 @@ class SettingsRepository(private val context: Context) {
     fun getVlmModelTierSync(): String {
         val prefs = runBlocking { context.dataStore.data.first() }
         return prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
+    }
+
+    // -----------------------------------------------------------------------
+    // Research contribution
+    // -----------------------------------------------------------------------
+
+    /** True once the user has explicitly given consent to contribute images. */
+    val contributeConsentGiven: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONTRIBUTE_CONSENT_GIVEN] ?: false
+    }
+
+    /** WebDAV base URL of the NAS (e.g. https://yourname.synology.me:5006/oceanguard-dataset/). */
+    val contributeNasUrl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONTRIBUTE_NAS_URL] ?: ""
+    }
+
+    /** When true, uploads only occur on WiFi (UNMETERED) networks. Default: true. */
+    val contributeWifiOnly: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONTRIBUTE_WIFI_ONLY] ?: true
+    }
+
+    /**
+     * Number of times the user has dismissed the contribution prompt without consenting.
+     * The prompt stops showing once this reaches 3.
+     */
+    val contributeDeclineCount: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONTRIBUTE_DECLINE_COUNT] ?: 0
+    }
+
+    suspend fun setContributeConsentGiven(v: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_CONSENT_GIVEN] = v }
+    }
+
+    suspend fun setContributeNasUrl(url: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_NAS_URL] = url }
+    }
+
+    suspend fun setContributeWifiOnly(v: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_WIFI_ONLY] = v }
+    }
+
+    suspend fun incrementContributeDeclineCount() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CONTRIBUTE_DECLINE_COUNT] = (prefs[Keys.CONTRIBUTE_DECLINE_COUNT] ?: 0) + 1
+        }
     }
 }

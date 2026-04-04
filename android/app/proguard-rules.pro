@@ -44,3 +44,11 @@
 # Keep Compose
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
+
+# WorkManager + DataContributionWorker
+-keep class androidx.work.** { *; }
+-keep class com.oceanguard.ai.service.DataContributionWorker { *; }
+-keep class com.oceanguard.ai.data.contribution.** { *; }
+-keep class com.oceanguard.ai.utils.ContributionTokenStore { *; }
+-keep class com.oceanguard.ai.utils.CocoAnnotationSerializer { *; }
+-keep class com.oceanguard.ai.utils.WebDavUploadClient { *; }

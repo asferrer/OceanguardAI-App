@@ -88,6 +88,11 @@
     <string name="onboarding_page5_title">Conquista\ni premi</string>
     <string name="onboarding_page5_desc">Sblocca i badge scansionando con la fotocamera o in tempo reale. I caricamenti in batch non contano \u2014 esci sul campo per guadagnare il tuo rango!</string>
 
+    <!-- Pagina 6 – Contributo alla ricerca -->
+    <string name="onboarding_contribute_title">Migliorare il Rilevamento</string>
+    <string name="onboarding_contribute_body">Scegli di contribuire le tue immagini analizzate alla ricerca sul modello. Vengono condivisi solo i dati di rilevamento \u2014 nessuna posizione, nessuna informazione personale, completamente facoltativo.</string>
+    <string name="onboarding_contribute_toggle">Contribuisci le mie immagini</string>
+
     <!-- Pulsanti -->
     <string name="onboarding_btn_get_started">Inizia</string>
     <string name="onboarding_btn_continue">Continua</string>
@@ -274,4 +279,36 @@
     <!-- Selettori multimediali multipli nella schermata Home -->
     <string name="home_btn_gallery_multi">Galleria</string>
     <string name="home_btn_files_multi">File</string>
+
+    <!-- ================================================================== -->
+    <!-- Contributo alla Ricerca                                              -->
+    <!-- ================================================================== -->
+    <string name="contribute_section_title">Contributo alla Ricerca</string>
+    <string name="contribute_toggle_label">Contribuisci immagini per l\'addestramento del modello</string>
+    <string name="contribute_toggle_desc">Condividi le tue immagini analizzate con la ricerca OceanGuard</string>
+    <string name="contribute_consent_given_desc">Le immagini vengono accodate dopo ogni analisi</string>
+    <string name="contribute_nas_url_label">URL WebDAV NAS</string>
+    <string name="contribute_token_label">Token di accesso</string>
+    <string name="contribute_wifi_only_label">Carica solo con WiFi</string>
+    <string name="contribute_wifi_only_desc">Riserva i caricamenti al WiFi per risparmiare dati mobili</string>
+    <string name="contribute_pending_label">Caricamenti in sospeso: %d</string>
+    <string name="contribute_all_synced">Tutte le immagini sincronizzate ✓</string>
+    <string name="contribute_upload_now_btn">Carica ora</string>
+    <string name="contribute_consent_title">Contribuisci alla Ricerca</string>
+    <string name="contribute_consent_body">Le tue immagini ad alta risoluzione e i riquadri di rilevamento saranno inviati esclusivamente per migliorare il modello OceanGuard AI. Non vengono incluse coordinate GPS, note o identificatori personali. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni.</string>
+    <string name="contribute_consent_accept">Acconsento</string>
+    <string name="contribute_consent_dismiss">Annulla</string>
+    <string name="contribute_prompt_title">Aiuta a Migliorare OceanGuard AI</string>
+    <string name="contribute_prompt_body">Le tue immagini analizzate potrebbero aiutare a migliorare il rilevamento dei rifiuti marini. Vengono condivisi solo l\'immagine e gli oggetti rilevati \u2014 senza posizione, senza dati personali.</string>
+    <string name="contribute_prompt_wifi">Carica con WiFi</string>
+    <string name="contribute_prompt_now">Carica ora</string>
+    <string name="contribute_prompt_skip">Non ora</string>
+    <string name="contribute_queued_message">%d immagine/i in coda per upload WiFi</string>
+    <string name="contribute_upload_btn">Carica per la Ricerca</string>
+    <string name="contribute_status_pending">In coda per il caricamento</string>
+    <string name="contribute_status_done">Contribuito ✓</string>
+    <string name="contribute_status_failed">Riprova caricamento</string>
+    <string name="contribute_privacy_no_location">Nessuna coordinata GPS o dato di posizione</string>
+    <string name="contribute_privacy_no_personal">Nessun identificatore personale incluso</string>
+    <string name="contribute_privacy_research_only">Usato esclusivamente per la ricerca sul modello</string>
 </resources>

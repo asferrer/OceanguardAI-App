@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -82,6 +83,7 @@ class InferenceService : LifecycleService() {
     private lateinit var app: OceanGuardApp
     private lateinit var notificationManager: NotificationManager
     private var inferenceJob: Job? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private var videoProcessor: VideoProcessor? = null
     private val jobQueue = InferenceJobQueue()
 
@@ -107,6 +109,13 @@ class InferenceService : LifecycleService() {
 
         // Promote to foreground immediately
         startForeground(NOTIFICATION_ID, buildNotification("Preparing..."))
+
+        // Acquire wake lock to prevent CPU throttling when screen is off / app is backgrounded
+        if (wakeLock?.isHeld != true) {
+            wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OceanGuard:InferenceWakeLock")
+                .also { it.acquire(60 * 60 * 1000L) } // 60-min safety timeout
+        }
 
         // Parse intent into job(s) and enqueue
         enqueueFromIntent(mode, intent)
@@ -220,10 +229,16 @@ class InferenceService : LifecycleService() {
                     imageQuality = result.vlmAnalysis.imageQuality,
                     processingTimeMs = result.processingTimeMs,
                 )
-                app.repository.saveSession(session)
+                val sessionId = app.repository.saveSession(session)
+                val savedSession = session.copy(id = sessionId)
+                val contributionQueued = app.contributionRepository.maybeEnqueue(savedSession)
 
-                app.inferenceServiceState.value =
-                    InferenceServiceState.SingleComplete(job.uri, result)
+                app.inferenceServiceState.value = InferenceServiceState.SingleComplete(
+                    uri = job.uri,
+                    result = result,
+                    sessionId = sessionId,
+                    contributionQueued = contributionQueued,
+                )
                 updateNotification(
                     "Complete! ${result.totalDebrisCount} debris found.",
                     job.deepLinkRoute,
@@ -286,6 +301,7 @@ class InferenceService : LifecycleService() {
                         tags = "source:batch",
                     )
                     val sessionId = app.repository.saveSession(session)
+                    app.contributionRepository.maybeEnqueue(session.copy(id = sessionId))
                     results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri))
                 } catch (e: TimeoutCancellationException) {
                     results.add(BatchItemResult.Failed(uri, "Timed out"))
@@ -298,8 +314,10 @@ class InferenceService : LifecycleService() {
             }
 
             val successCount = results.count { it is BatchItemResult.Done }
+            val consentGiven = app.settingsRepository.contributeConsentGiven.first()
+            val contributionQueuedCount = if (consentGiven) successCount else 0
             app.inferenceServiceState.value =
-                InferenceServiceState.BatchComplete(job.uris, results)
+                InferenceServiceState.BatchComplete(job.uris, results, contributionQueuedCount)
             updateNotification(
                 "Batch done! $successCount/${job.uris.size} processed.",
                 job.deepLinkRoute,
@@ -398,6 +416,11 @@ class InferenceService : LifecycleService() {
                 processNextJob()
             }
         }
+    }
+
+    override fun onDestroy() {
+        wakeLock?.let { if (it.isHeld) it.release() }
+        super.onDestroy()
     }
 
     // -----------------------------------------------------------------------

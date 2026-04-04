@@ -107,6 +107,18 @@ class AchievementChecker(
     }
 
     /**
+     * Check research contribution achievements (called from DataContributionWorker
+     * after successful uploads).
+     */
+    suspend fun checkContributionCount(totalUploaded: Int) {
+        tryAdvance("contribute_1",   minOf(totalUploaded, 1))
+        tryAdvance("contribute_10",  totalUploaded)
+        tryAdvance("contribute_50",  totalUploaded)
+        tryAdvance("contribute_100", totalUploaded)
+        evaluateMetaAchievement()
+    }
+
+    /**
      * Check dex_favorite_3 achievement (called when user toggles favorite).
      */
     suspend fun checkFavoriteCount() {

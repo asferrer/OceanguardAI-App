@@ -88,6 +88,11 @@
     <string name="onboarding_page5_title">Gagnez des\nrécompenses</string>
     <string name="onboarding_page5_desc">Débloquez des badges en scannant avec la caméra ou en temps réel. Les imports par lot ne comptent pas \u2014 partez sur le terrain pour gravir les rangs\u00a0!</string>
 
+    <!-- Page 6 – Contribution à la recherche -->
+    <string name="onboarding_contribute_title">Améliorer la Détection</string>
+    <string name="onboarding_contribute_body">Optez pour contribuer vos images analysées à la recherche sur le modèle. Seules les données de détection sont partagées \u2014 sans localisation, sans informations personnelles, entièrement facultatif.</string>
+    <string name="onboarding_contribute_toggle">Contribuer mes images</string>
+
     <!-- Boutons -->
     <string name="onboarding_btn_get_started">Commencer</string>
     <string name="onboarding_btn_continue">Continuer</string>
@@ -274,4 +279,36 @@
     <!-- Sélecteurs multimédia multiples sur l'écran d'accueil -->
     <string name="home_btn_gallery_multi">Galerie</string>
     <string name="home_btn_files_multi">Fichiers</string>
+
+    <!-- ================================================================== -->
+    <!-- Contribution à la Recherche                                          -->
+    <!-- ================================================================== -->
+    <string name="contribute_section_title">Contribution à la Recherche</string>
+    <string name="contribute_toggle_label">Contribuer des images pour l\'entraînement du modèle</string>
+    <string name="contribute_toggle_desc">Partagez vos images analysées avec la recherche OceanGuard</string>
+    <string name="contribute_consent_given_desc">Les images sont mises en file d\'attente après chaque analyse</string>
+    <string name="contribute_nas_url_label">URL WebDAV du NAS</string>
+    <string name="contribute_token_label">Jeton d\'accès</string>
+    <string name="contribute_wifi_only_label">Envoyer uniquement en WiFi</string>
+    <string name="contribute_wifi_only_desc">Réservez les envois au WiFi pour économiser les données mobiles</string>
+    <string name="contribute_pending_label">Envois en attente : %d</string>
+    <string name="contribute_all_synced">Toutes les images synchronisées ✓</string>
+    <string name="contribute_upload_now_btn">Envoyer maintenant</string>
+    <string name="contribute_consent_title">Contribuer à la Recherche</string>
+    <string name="contribute_consent_body">Vos images haute résolution et les cadres de détection seront envoyés exclusivement pour améliorer le modèle OceanGuard AI. Aucune coordonnée GPS, note ou identifiant personnel n\'est inclus. Vous pouvez retirer votre consentement à tout moment depuis les Paramètres.</string>
+    <string name="contribute_consent_accept">Je consens</string>
+    <string name="contribute_consent_dismiss">Annuler</string>
+    <string name="contribute_prompt_title">Aider à Améliorer OceanGuard AI</string>
+    <string name="contribute_prompt_body">Vos images analysées pourraient aider à entraîner une meilleure détection des débris marins. Seules l\'image et les objets détectés sont partagés \u2014 sans localisation, sans données personnelles.</string>
+    <string name="contribute_prompt_wifi">Envoyer en WiFi</string>
+    <string name="contribute_prompt_now">Envoyer maintenant</string>
+    <string name="contribute_prompt_skip">Pas maintenant</string>
+    <string name="contribute_queued_message">%d image(s) en file pour envoi WiFi</string>
+    <string name="contribute_upload_btn">Envoyer à la Recherche</string>
+    <string name="contribute_status_pending">En file d\'attente</string>
+    <string name="contribute_status_done">Contribué ✓</string>
+    <string name="contribute_status_failed">Réessayer l\'envoi</string>
+    <string name="contribute_privacy_no_location">Aucune coordonnée GPS ni données de localisation</string>
+    <string name="contribute_privacy_no_personal">Aucun identifiant personnel inclus</string>
+    <string name="contribute_privacy_research_only">Utilisé exclusivement pour la recherche sur le modèle</string>
 </resources>

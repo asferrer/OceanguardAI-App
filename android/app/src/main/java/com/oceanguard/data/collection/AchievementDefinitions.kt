@@ -2,14 +2,17 @@ package com.oceanguard.ai.data.collection
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BurstMode
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.MilitaryTech
@@ -47,6 +50,7 @@ enum class AchievementCategory(@param:StringRes val labelRes: Int) {
     EXPLORER(R.string.achievement_category_explorer),
     COLLECTOR(R.string.achievement_category_collector),
     IMPACT(R.string.achievement_category_impact),
+    RESEARCH(R.string.achievement_category_research),
     ELITE(R.string.achievement_category_elite),
 }
 
@@ -81,8 +85,15 @@ val ALL_ACHIEVEMENTS: List<AchievementDef> = listOf(
     AchievementDef("debris_200", R.string.achievement_name_debris_200, R.string.achievement_desc_debris_200, 200, Icons.Filled.Rocket, AchievementCategory.IMPACT),
     AchievementDef("health_80", R.string.achievement_name_health_80, R.string.achievement_desc_health_80, 1, Icons.Filled.CalendarMonth, AchievementCategory.IMPACT),
 
+    // --- Research Contribution (4) ---
+    AchievementDef("contribute_1",   R.string.achievement_name_contribute_1,   R.string.achievement_desc_contribute_1,   1,   Icons.Filled.CloudUpload, AchievementCategory.RESEARCH),
+    AchievementDef("contribute_10",  R.string.achievement_name_contribute_10,  R.string.achievement_desc_contribute_10,  10,  Icons.Filled.Backup,      AchievementCategory.RESEARCH),
+    AchievementDef("contribute_50",  R.string.achievement_name_contribute_50,  R.string.achievement_desc_contribute_50,  50,  Icons.Filled.Hub,         AchievementCategory.RESEARCH),
+    AchievementDef("contribute_100", R.string.achievement_name_contribute_100, R.string.achievement_desc_contribute_100, 100, Icons.Filled.Rocket,      AchievementCategory.RESEARCH),
+
     // --- Elite (2) ---
-    AchievementDef("all_achievements", R.string.achievement_name_all_achievements, R.string.achievement_desc_all_achievements, 20, Icons.Filled.WorkspacePremium, AchievementCategory.ELITE),
+    // Target 24: 25 total achievements - 1 (all_achievements itself) = 24
+    AchievementDef("all_achievements", R.string.achievement_name_all_achievements, R.string.achievement_desc_all_achievements, 24, Icons.Filled.WorkspacePremium, AchievementCategory.ELITE),
     AchievementDef("report_10", R.string.achievement_name_report_10, R.string.achievement_desc_report_10, 10, Icons.Filled.EmojiEvents, AchievementCategory.ELITE),
 )
 

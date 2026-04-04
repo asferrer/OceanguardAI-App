@@ -28,6 +28,9 @@ sealed class InferenceServiceState {
     data class SingleComplete(
         val uri: Uri,
         val result: AnalysisResult,
+        val sessionId: Long = 0,
+        /** True when the image was automatically enqueued for contribution (consent given). */
+        val contributionQueued: Boolean = false,
     ) : InferenceServiceState()
 
     /** A batch of images is being processed sequentially. */
@@ -42,6 +45,8 @@ sealed class InferenceServiceState {
     data class BatchComplete(
         val allUris: List<Uri>,
         val results: List<BatchItemResult>,
+        /** Number of images automatically enqueued for contribution (consent given). */
+        val contributionQueuedCount: Int = 0,
     ) : InferenceServiceState()
 
     /** A video is being processed frame by frame. */

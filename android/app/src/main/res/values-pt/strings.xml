@@ -88,6 +88,11 @@
     <string name="onboarding_page5_title">Conquiste\nrecompensas</string>
     <string name="onboarding_page5_desc">Desbloqueie emblemas escaneando com a câmera ou em tempo real. Uploads em lote não contam \u2014 vá ao campo para ganhar sua classificação!</string>
 
+    <!-- Página 6 – Contribuição à Pesquisa -->
+    <string name="onboarding_contribute_title">Melhorar a Detecção</string>
+    <string name="onboarding_contribute_body">Opte por contribuir suas imagens analisadas para a pesquisa do modelo. Apenas dados de detecção são compartilhados \u2014 sem localização, sem informações pessoais, totalmente opcional.</string>
+    <string name="onboarding_contribute_toggle">Contribuir minhas imagens</string>
+
     <!-- Botões -->
     <string name="onboarding_btn_get_started">Começar</string>
     <string name="onboarding_btn_continue">Continuar</string>
@@ -274,4 +279,36 @@
     <!-- Seletores de mídia múltipla na tela inicial -->
     <string name="home_btn_gallery_multi">Galeria</string>
     <string name="home_btn_files_multi">Ficheiros</string>
+
+    <!-- ================================================================== -->
+    <!-- Contribuição à Pesquisa                                              -->
+    <!-- ================================================================== -->
+    <string name="contribute_section_title">Contribuição à Pesquisa</string>
+    <string name="contribute_toggle_label">Contribuir imagens para treinamento do modelo</string>
+    <string name="contribute_toggle_desc">Partilhe as suas imagens analisadas com a investigação OceanGuard</string>
+    <string name="contribute_consent_given_desc">As imagens são colocadas em fila após cada análise</string>
+    <string name="contribute_nas_url_label">URL WebDAV do NAS</string>
+    <string name="contribute_token_label">Token de acesso</string>
+    <string name="contribute_wifi_only_label">Enviar apenas com WiFi</string>
+    <string name="contribute_wifi_only_desc">Reserve os envios para WiFi para poupar dados móveis</string>
+    <string name="contribute_pending_label">Envios pendentes: %d</string>
+    <string name="contribute_all_synced">Todas as imagens sincronizadas ✓</string>
+    <string name="contribute_upload_now_btn">Enviar agora</string>
+    <string name="contribute_consent_title">Contribuir para a Pesquisa</string>
+    <string name="contribute_consent_body">Suas imagens em alta resolução e os retângulos de detecção serão enviados exclusivamente para melhorar o modelo OceanGuard AI. Nenhuma coordenada GPS, nota ou identificador pessoal é incluído. Você pode retirar o consentimento a qualquer momento nas Configurações.</string>
+    <string name="contribute_consent_accept">Consinto</string>
+    <string name="contribute_consent_dismiss">Cancelar</string>
+    <string name="contribute_prompt_title">Ajude a Melhorar OceanGuard AI</string>
+    <string name="contribute_prompt_body">Sua(s) imagem(ns) analisada(s) poderia(m) ajudar a treinar uma melhor detecção de resíduos marinhos. Apenas a imagem e os objetos detectados são compartilhados \u2014 sem localização, sem dados pessoais.</string>
+    <string name="contribute_prompt_wifi">Enviar por WiFi</string>
+    <string name="contribute_prompt_now">Enviar agora</string>
+    <string name="contribute_prompt_skip">Agora não</string>
+    <string name="contribute_queued_message">%d imagem(ns) na fila para upload WiFi</string>
+    <string name="contribute_upload_btn">Enviar para Pesquisa</string>
+    <string name="contribute_status_pending">Na fila para envio</string>
+    <string name="contribute_status_done">Contribuído ✓</string>
+    <string name="contribute_status_failed">Tentar envio novamente</string>
+    <string name="contribute_privacy_no_location">Sem coordenadas GPS ou dados de localização</string>
+    <string name="contribute_privacy_no_personal">Sem identificadores pessoais incluídos</string>
+    <string name="contribute_privacy_research_only">Usado exclusivamente para pesquisa do modelo</string>
 </resources>

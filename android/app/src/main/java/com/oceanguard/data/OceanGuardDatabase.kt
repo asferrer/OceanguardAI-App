@@ -11,6 +11,8 @@ import com.oceanguard.ai.data.collection.Achievement
 import com.oceanguard.ai.data.collection.AchievementDao
 import com.oceanguard.ai.data.collection.MarineDexDao
 import com.oceanguard.ai.data.collection.MarineDexEntry
+import com.oceanguard.ai.data.contribution.ContributionQueueDao
+import com.oceanguard.ai.data.contribution.ContributionQueueItem
 import com.oceanguard.ai.data.converters.DateConverter
 import com.oceanguard.ai.data.converters.DebrisListConverter
 import com.oceanguard.ai.data.converters.ImageQualityConverter
@@ -56,8 +58,9 @@ import com.oceanguard.ai.data.converters.LocationConverter
         MarineDexEntry::class,
         Achievement::class,
         VideoAnalysis::class,
+        ContributionQueueItem::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(
@@ -76,6 +79,7 @@ abstract class OceanGuardDatabase : RoomDatabase() {
     abstract fun marineDexDao(): MarineDexDao
     abstract fun achievementDao(): AchievementDao
     abstract fun videoAnalysisDao(): VideoAnalysisDao
+    abstract fun contributionQueueDao(): ContributionQueueDao
 
     // -----------------------------------------------------------------------
     // Singleton
@@ -207,13 +211,31 @@ abstract class OceanGuardDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `contribution_queue` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `sessionId` INTEGER NOT NULL,
+                        `imageUri` TEXT NOT NULL,
+                        `annotationsJson` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `retryCount` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                // Update all_achievements target: 21 original + 4 contribution - 1 (itself) = 24
+                db.execSQL("UPDATE achievements SET target = 24 WHERE id = 'all_achievements'")
+            }
+        }
+
         private fun buildDatabase(appContext: Context): OceanGuardDatabase {
             return Room.databaseBuilder(
                 appContext,
                 OceanGuardDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 // -----------------------------------------------------------------
                 // WAL mode
                 // -----------------------------------------------------------------

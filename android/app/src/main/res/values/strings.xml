@@ -88,6 +88,11 @@
     <string name="onboarding_page5_title">Earn\nAchievements</string>
     <string name="onboarding_page5_desc">Unlock badges by scanning with your camera or real-time mode. Batch uploads don\'t count \u2014 get out in the field to earn your rank!</string>
 
+    <!-- Page 6 – Research Contribution -->
+    <string name="onboarding_contribute_title">Help Improve Detection</string>
+    <string name="onboarding_contribute_body">Opt in to contribute your analyzed images to model research. Only detection data is shared \u2014 no location, no personal info, fully optional.</string>
+    <string name="onboarding_contribute_toggle">Contribute my images</string>
+
     <!-- Buttons -->
     <string name="onboarding_btn_get_started">Get Started</string>
     <string name="onboarding_btn_continue">Continue</string>
@@ -274,4 +279,48 @@
     <!-- Home screen multi-media pickers -->
     <string name="home_btn_gallery_multi">Gallery</string>
     <string name="home_btn_files_multi">Files</string>
+
+    <!-- ================================================================== -->
+    <!-- Research Contribution                                                -->
+    <!-- ================================================================== -->
+
+    <!-- Settings section -->
+    <string name="contribute_section_title">Research Contribution</string>
+    <string name="contribute_toggle_label">Contribute images for model training</string>
+    <string name="contribute_toggle_desc">Opt in to share your analyzed images with OceanGuard research</string>
+    <string name="contribute_consent_given_desc">Images are queued for upload after each analysis</string>
+    <string name="contribute_nas_url_label">NAS WebDAV URL</string>
+    <string name="contribute_token_label">Access token</string>
+    <string name="contribute_wifi_only_label">Upload on WiFi only</string>
+    <string name="contribute_wifi_only_desc">Queue uploads for WiFi to avoid mobile data usage</string>
+    <string name="contribute_pending_label">Pending uploads: %d</string>
+    <string name="contribute_all_synced">All images synced ✓</string>
+    <string name="contribute_upload_now_btn">Upload now</string>
+
+    <!-- Consent dialog -->
+    <string name="contribute_consent_title">Contribute to Research</string>
+    <string name="contribute_consent_body">Your full-resolution images and detection bounding boxes will be sent exclusively to improve the OceanGuard AI model. No GPS coordinates, notes, or personal identifiers are included. You can withdraw consent at any time from Settings.</string>
+    <string name="contribute_consent_accept">I Consent</string>
+    <string name="contribute_consent_dismiss">Cancel</string>
+
+    <!-- Post-analysis prompt (bottom sheet) -->
+    <string name="contribute_prompt_title">Help Improve OceanGuard AI</string>
+    <string name="contribute_prompt_body">Your analyzed image(s) could help train better marine debris detection. Only the image and detected objects are shared \u2014 no location, no personal data.</string>
+    <string name="contribute_prompt_wifi">Upload on WiFi</string>
+    <string name="contribute_prompt_now">Upload now</string>
+    <string name="contribute_prompt_skip">Not now</string>
+
+    <!-- Post-analysis info snackbar -->
+    <string name="contribute_queued_message">%d image(s) queued for WiFi upload</string>
+
+    <!-- SessionDetailScreen button states -->
+    <string name="contribute_upload_btn">Upload to Research</string>
+    <string name="contribute_status_pending">Queued for upload</string>
+    <string name="contribute_status_done">Contributed ✓</string>
+    <string name="contribute_status_failed">Retry upload</string>
+
+    <!-- Privacy bullets in bottom sheet -->
+    <string name="contribute_privacy_no_location">No GPS coordinates or location data</string>
+    <string name="contribute_privacy_no_personal">No personal identifiers included</string>
+    <string name="contribute_privacy_research_only">Used exclusively for model research</string>
 </resources>

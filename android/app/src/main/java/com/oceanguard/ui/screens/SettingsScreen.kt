@@ -1,16 +1,19 @@
 package com.oceanguard.ai.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Explore
@@ -18,6 +21,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +32,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,6 +95,20 @@ fun SettingsScreen(
         initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
 
+    // Research contribution settings
+    val contributeConsentGiven by settings.contributeConsentGiven.collectAsStateWithLifecycle(
+        initialValue = false
+    )
+    val contributeNasUrl by settings.contributeNasUrl.collectAsStateWithLifecycle(initialValue = "")
+    val contributeWifiOnly by settings.contributeWifiOnly.collectAsStateWithLifecycle(
+        initialValue = true
+    )
+    val contributePending by app.contributionRepository.getPendingCountFlow()
+        .collectAsStateWithLifecycle(initialValue = 0)
+    var showContributeConsentDialog by remember { mutableStateOf(false) }
+    var tokenValue by remember { mutableStateOf(app.contributionTokenStore.getToken()) }
+    var tokenVisible by remember { mutableStateOf(false) }
+
     val settingsScrollState = rememberScrollState()
     val boundsMap = rememberSpotlightBounds()
     val tourController = rememberSpotlightController(TourDefinitions.SETTINGS)
@@ -122,7 +144,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(settingsScrollState)
+                .verticalScroll(settingsScrollState, enabled = !tourController.isActive)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -147,19 +169,17 @@ fun SettingsScreen(
             }
 
             // ---------------------------------------------------------------
-            // App Language
+            // App Language + Report Language (grouped under single spotlight)
             // ---------------------------------------------------------------
-            Box(modifier = Modifier.spotlightTarget("settings_language", boundsMap)) {
-                AppLanguageSection(settings = settings, scope = scope)
-            }
-
-            // ---------------------------------------------------------------
-            // Report Language
-            // ---------------------------------------------------------------
-            SettingsSection(
-                title = stringResource(R.string.settings_section_reports),
-                icon = Icons.Filled.Language,
+            Column(
+                modifier = Modifier.spotlightTarget("settings_language", boundsMap),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                AppLanguageSection(settings = settings, scope = scope)
+                SettingsSection(
+                    title = stringResource(R.string.settings_section_reports),
+                    icon = Icons.Filled.Language,
+                ) {
                 Text(
                     text = stringResource(R.string.settings_label_report_language),
                     style = MaterialTheme.typography.titleSmall,
@@ -199,6 +219,7 @@ fun SettingsScreen(
                     onSelect = { scope.launch { settings.setReportAudience(it) } },
                 )
             }
+            } // end settings_language spotlight Column
 
             // ---------------------------------------------------------------
             // Display Settings
@@ -265,6 +286,112 @@ fun SettingsScreen(
                     scope = scope,
                     vlmModelManager = app.vlmModelManager,
                     onDownloadTier = { app.launchVlmDownload(it) },
+                )
+            }
+
+            // ---------------------------------------------------------------
+            // Research Contribution
+            // ---------------------------------------------------------------
+            SettingsSection(
+                title = stringResource(R.string.contribute_section_title),
+                icon = Icons.Filled.CloudUpload,
+                modifier = Modifier.spotlightTarget("settings_contribution", boundsMap),
+            ) {
+                SettingsToggleRow(
+                    title = stringResource(R.string.contribute_toggle_label),
+                    description = if (contributeConsentGiven)
+                        stringResource(R.string.contribute_consent_given_desc)
+                    else
+                        stringResource(R.string.contribute_toggle_desc),
+                    checked = contributeConsentGiven,
+                    onCheckedChange = { enabled ->
+                        if (enabled && !contributeConsentGiven) {
+                            showContributeConsentDialog = true
+                        } else {
+                            scope.launch { settings.setContributeConsentGiven(enabled) }
+                        }
+                    },
+                )
+                AnimatedVisibility(visible = contributeConsentGiven) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = contributeNasUrl,
+                            onValueChange = { scope.launch { settings.setContributeNasUrl(it) } },
+                            label = { Text(stringResource(R.string.contribute_nas_url_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        )
+                        OutlinedTextField(
+                            value = tokenValue,
+                            onValueChange = {
+                                tokenValue = it
+                                app.contributionTokenStore.setToken(it)
+                            },
+                            label = { Text(stringResource(R.string.contribute_token_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = if (tokenVisible) VisualTransformation.None
+                                                   else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            trailingIcon = {
+                                IconButton(onClick = { tokenVisible = !tokenVisible }) {
+                                    Icon(
+                                        imageVector = if (tokenVisible) Icons.Filled.VisibilityOff
+                                                      else Icons.Filled.Visibility,
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                        )
+                        SettingsToggleRow(
+                            title = stringResource(R.string.contribute_wifi_only_label),
+                            description = stringResource(R.string.contribute_wifi_only_desc),
+                            checked = contributeWifiOnly,
+                            onCheckedChange = { scope.launch { settings.setContributeWifiOnly(it) } },
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = if (contributePending > 0)
+                                    stringResource(R.string.contribute_pending_label, contributePending)
+                                else
+                                    stringResource(R.string.contribute_all_synced),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            if (contributePending > 0) {
+                                TextButton(
+                                    onClick = { app.contributionRepository.scheduleImmediateUpload() },
+                                ) {
+                                    Text(stringResource(R.string.contribute_upload_now_btn))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showContributeConsentDialog) {
+                AlertDialog(
+                    onDismissRequest = { showContributeConsentDialog = false },
+                    title = { Text(stringResource(R.string.contribute_consent_title)) },
+                    text = { Text(stringResource(R.string.contribute_consent_body)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            scope.launch { settings.setContributeConsentGiven(true) }
+                            showContributeConsentDialog = false
+                        }) { Text(stringResource(R.string.contribute_consent_accept)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showContributeConsentDialog = false }) {
+                            Text(stringResource(R.string.contribute_consent_dismiss))
+                        }
+                    },
                 )
             }
 

@@ -81,11 +81,17 @@ import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import coil3.compose.AsyncImage
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.inference.AnalysisResult
 import com.oceanguard.ai.service.BatchItemResult
 import com.oceanguard.ai.service.InferenceServiceState
 import com.oceanguard.ai.ui.MainViewModel
+import com.oceanguard.ai.ui.MainViewModel.ContributePromptState
+import com.oceanguard.ai.ui.components.ContributeBottomSheet
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.LottieEmptyState
 import com.oceanguard.ai.ui.theme.healthScoreColor
@@ -210,6 +216,28 @@ fun BatchResultsScreen(
     var currentIndex by remember { mutableIntStateOf(0) }
     var batchStartTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var isBatchRunning by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val contributePrompt by viewModel.contributePrompt.collectAsStateWithLifecycle()
+    var showContributeSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(contributePrompt) {
+        when (val prompt = contributePrompt) {
+            is ContributePromptState.ShowPrompt -> showContributeSheet = true
+            is ContributePromptState.ShowInfo -> {
+                val msg = context.getString(R.string.contribute_queued_message, prompt.count)
+                val result = snackbarHostState.showSnackbar(
+                    message = msg,
+                    actionLabel = context.getString(R.string.contribute_upload_now_btn),
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    launch { app.contributionRepository.scheduleImmediateUpload() }
+                }
+                viewModel.dismissContributePrompt()
+            }
+            else -> {}
+        }
+    }
 
     // Derived counts
     val totalCount = batchItems.size
@@ -297,6 +325,10 @@ fun BatchResultsScreen(
                         )
                     }
                 }
+                val sessionIds = state.results
+                    .filterIsInstance<BatchItemResult.Done>()
+                    .mapNotNull { if (it.sessionId > 0) it.sessionId else null }
+                viewModel.onAnalysisComplete(sessionIds, state.contributionQueuedCount > 0)
             }
             else -> {}
         }
@@ -336,6 +368,7 @@ fun BatchResultsScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
 
         when {
@@ -420,6 +453,32 @@ fun BatchResultsScreen(
                 }
             },
         )
+
+        if (showContributeSheet) {
+            val promptState = contributePrompt
+            val sessionIds = if (promptState is ContributePromptState.ShowPrompt) promptState.sessionIds else emptyList()
+            ContributeBottomSheet(
+                imageCount = sessionIds.size,
+                onUploadOnWifi = {
+                    showContributeSheet = false
+                    viewModel.enqueueSessions(sessionIds, wifiOnly = true)
+                },
+                onUploadNow = {
+                    showContributeSheet = false
+                    viewModel.enqueueSessions(sessionIds, wifiOnly = false)
+                },
+                onNotNow = {
+                    showContributeSheet = false
+                    scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
+                    viewModel.dismissContributePrompt()
+                },
+                onDismiss = {
+                    showContributeSheet = false
+                    scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
+                    viewModel.dismissContributePrompt()
+                },
+            )
+        }
     } // end Box
 }
 

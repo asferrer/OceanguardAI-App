@@ -25,6 +25,9 @@ import com.oceanguard.ai.inference.ZoneReportInput
 import com.oceanguard.ai.service.InferenceServiceState
 import com.oceanguard.ai.service.ReportGenerationService
 import com.oceanguard.ai.service.VlmDownloadService
+import com.oceanguard.ai.data.contribution.ContributionQueueDao
+import com.oceanguard.ai.data.contribution.ContributionRepository
+import com.oceanguard.ai.utils.ContributionTokenStore
 import com.oceanguard.ai.utils.ImagePreprocessor
 import com.oceanguard.ai.utils.LocationProvider
 import com.oceanguard.ai.utils.PhotonGeocoderClient
@@ -143,6 +146,13 @@ class OceanGuardApp : Application() {
     val vlmModelManager: VlmModelManager by lazy { VlmModelManager(this) }
 
     val imagePreprocessor: ImagePreprocessor by lazy { ImagePreprocessor(this) }
+
+    // Research contribution
+    val contributionTokenStore: ContributionTokenStore by lazy { ContributionTokenStore(this) }
+    val contributionQueueDao: ContributionQueueDao by lazy { database.contributionQueueDao() }
+    val contributionRepository: ContributionRepository by lazy {
+        ContributionRepository(contributionQueueDao, settingsRepository, contributionTokenStore, this)
+    }
 
     val tourDemoDataManager: TourDemoDataManager by lazy {
         TourDemoDataManager(

@@ -64,6 +64,8 @@ import com.oceanguard.ai.data.ZoneAggregator
 import com.oceanguard.ai.data.HealthScoreFactors
 import androidx.compose.ui.res.stringResource
 import com.oceanguard.ai.R
+import com.oceanguard.ai.ui.MainViewModel.ContributePromptState
+import com.oceanguard.ai.ui.components.ContributeBottomSheet
 import nl.dionsegijn.konfetti.compose.KonfettiView
 import nl.dionsegijn.konfetti.core.Party
 import nl.dionsegijn.konfetti.core.Position
@@ -123,6 +125,28 @@ fun ResultsScreen(
     LaunchedEffect(uiState) {
         if (uiState is UiState.AnalysisComplete && !sessionSaved) {
             sessionSaved = true
+        }
+    }
+
+    // Contribution prompt
+    val contributePrompt by viewModel.contributePrompt.collectAsStateWithLifecycle()
+    var showContributeSheet by remember { mutableStateOf(false) }
+    LaunchedEffect(contributePrompt) {
+        when (val prompt = contributePrompt) {
+            is ContributePromptState.ShowPrompt -> showContributeSheet = true
+            is ContributePromptState.ShowInfo -> {
+                val msg = context.getString(R.string.contribute_queued_message, prompt.count)
+                val result = snackbarHostState.showSnackbar(
+                    message = msg,
+                    actionLabel = context.getString(R.string.contribute_upload_now_btn),
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    scope.launch { app.contributionRepository.scheduleImmediateUpload() }
+                }
+                viewModel.dismissContributePrompt()
+            }
+            else -> {}
         }
     }
 
@@ -308,6 +332,32 @@ fun ResultsScreen(
                 }
             },
         )
+
+        if (showContributeSheet) {
+            val promptState = contributePrompt
+            val sessionIds = if (promptState is ContributePromptState.ShowPrompt) promptState.sessionIds else emptyList()
+            ContributeBottomSheet(
+                imageCount = sessionIds.size,
+                onUploadOnWifi = {
+                    showContributeSheet = false
+                    viewModel.enqueueSessions(sessionIds, wifiOnly = true)
+                },
+                onUploadNow = {
+                    showContributeSheet = false
+                    viewModel.enqueueSessions(sessionIds, wifiOnly = false)
+                },
+                onNotNow = {
+                    showContributeSheet = false
+                    scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
+                    viewModel.dismissContributePrompt()
+                },
+                onDismiss = {
+                    showContributeSheet = false
+                    scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
+                    viewModel.dismissContributePrompt()
+                },
+            )
+        }
     } // end Box
 }
 

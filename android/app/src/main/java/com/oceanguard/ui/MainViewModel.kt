@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.data.DetectionRepository
 import com.oceanguard.ai.data.DetectionSession
+import com.oceanguard.ai.data.contribution.ContributionRepository
 import com.oceanguard.ai.data.DetectionStatistics
 import com.oceanguard.ai.data.ImageQuality
 import com.oceanguard.ai.data.Location
@@ -167,6 +168,56 @@ class MainViewModel(
     }
 
     // -----------------------------------------------------------------------
+    // Research contribution prompt state
+    // -----------------------------------------------------------------------
+
+    sealed class ContributePromptState {
+        /** No prompt to show. */
+        data object None : ContributePromptState()
+        /** Ask user if they want to contribute (consent not yet given). */
+        data class ShowPrompt(val sessionIds: List<Long>, val count: Int) : ContributePromptState()
+        /** Inform user images were queued (consent already given). */
+        data class ShowInfo(val count: Int) : ContributePromptState()
+    }
+
+    private val _contributePrompt = MutableStateFlow<ContributePromptState>(ContributePromptState.None)
+    val contributePrompt: StateFlow<ContributePromptState> = _contributePrompt.asStateFlow()
+
+    fun dismissContributePrompt() {
+        _contributePrompt.value = ContributePromptState.None
+    }
+
+    /** Enqueue sessions for contribution upload by ID. Grants consent and optionally triggers immediate upload. */
+    fun enqueueSessions(sessionIds: List<Long>, wifiOnly: Boolean, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            settingsRepository.setContributeConsentGiven(true)
+            sessionIds.forEach { id ->
+                repository.getSession(id)?.let { session ->
+                    app.contributionRepository.enqueueSession(session)
+                }
+            }
+            if (!wifiOnly) {
+                app.contributionRepository.scheduleImmediateUpload()
+            }
+            dismissContributePrompt()
+            onComplete()
+        }
+    }
+
+    fun onAnalysisComplete(sessionIds: List<Long>, contributionQueued: Boolean) {
+        viewModelScope.launch {
+            if (contributionQueued) {
+                _contributePrompt.value = ContributePromptState.ShowInfo(sessionIds.size)
+            } else {
+                val declineCount = settingsRepository.contributeDeclineCount.first()
+                if (declineCount < 3) {
+                    _contributePrompt.value = ContributePromptState.ShowPrompt(sessionIds, sessionIds.size)
+                }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // State observation — reconnects UI to in-progress or completed work
     // -----------------------------------------------------------------------
 
@@ -199,6 +250,10 @@ class MainViewModel(
                     is InferenceServiceState.SingleComplete -> {
                         _capturedImageUri.value = serviceState.uri
                         _uiState.value = UiState.AnalysisComplete(serviceState.result)
+                        onAnalysisComplete(
+                            sessionIds = if (serviceState.sessionId > 0) listOf(serviceState.sessionId) else emptyList(),
+                            contributionQueued = serviceState.contributionQueued,
+                        )
                     }
                     is InferenceServiceState.Error -> {
                         _uiState.value = UiState.Error(serviceState.message)

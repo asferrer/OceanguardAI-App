@@ -234,6 +234,12 @@ dependencies {
     // Konfetti - celebration particle effects
     implementation("nl.dionsegijn:konfetti-compose:2.0.4")
 
+    // WorkManager — background upload scheduling
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // EncryptedSharedPreferences — secure token storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

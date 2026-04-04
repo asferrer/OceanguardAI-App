@@ -88,6 +88,11 @@
     <string name="onboarding_page5_title">Erfolge\nfreischalten</string>
     <string name="onboarding_page5_desc">Verdienen Sie Abzeichen durch Aufnahmen mit der Kamera oder im Echtzeitmodus. Batch-Uploads zählen nicht \u2014 raus ins Feld, um Ihren Rang zu erringen!</string>
 
+    <!-- Seite 6 – Forschungsbeitrag -->
+    <string name="onboarding_contribute_title">Erkennung verbessern</string>
+    <string name="onboarding_contribute_body">Tragen Sie Ihre analysierten Bilder zur Modellforschung bei. Nur Erkennungsdaten werden geteilt \u2014 kein Standort, keine persönlichen Daten, vollständig optional.</string>
+    <string name="onboarding_contribute_toggle">Meine Bilder beitragen</string>
+
     <!-- Schaltflächen -->
     <string name="onboarding_btn_get_started">Loslegen</string>
     <string name="onboarding_btn_continue">Weiter</string>
@@ -274,4 +279,36 @@
     <!-- Mehrfach-Medienpicker auf dem Startbildschirm -->
     <string name="home_btn_gallery_multi">Galerie</string>
     <string name="home_btn_files_multi">Dateien</string>
+
+    <!-- ================================================================== -->
+    <!-- Forschungsbeitrag                                                    -->
+    <!-- ================================================================== -->
+    <string name="contribute_section_title">Forschungsbeitrag</string>
+    <string name="contribute_toggle_label">Bilder für Modelltraining beitragen</string>
+    <string name="contribute_toggle_desc">Teilen Sie Ihre analysierten Bilder mit der OceanGuard-Forschung</string>
+    <string name="contribute_consent_given_desc">Bilder werden nach jeder Analyse in die Warteschlange gestellt</string>
+    <string name="contribute_nas_url_label">NAS WebDAV-URL</string>
+    <string name="contribute_token_label">Zugriffstoken</string>
+    <string name="contribute_wifi_only_label">Nur über WLAN hochladen</string>
+    <string name="contribute_wifi_only_desc">Uploads für WLAN zurückstellen, um mobile Daten zu sparen</string>
+    <string name="contribute_pending_label">Ausstehende Uploads: %d</string>
+    <string name="contribute_all_synced">Alle Bilder synchronisiert ✓</string>
+    <string name="contribute_upload_now_btn">Jetzt hochladen</string>
+    <string name="contribute_consent_title">Zur Forschung beitragen</string>
+    <string name="contribute_consent_body">Ihre hochauflösenden Bilder und Erkennungsrahmen werden ausschließlich zur Verbesserung des OceanGuard AI-Modells gesendet. Keine GPS-Koordinaten, Notizen oder persönliche Identifikatoren werden eingeschlossen. Sie können Ihre Einwilligung jederzeit in den Einstellungen widerrufen.</string>
+    <string name="contribute_consent_accept">Ich stimme zu</string>
+    <string name="contribute_consent_dismiss">Abbrechen</string>
+    <string name="contribute_prompt_title">OceanGuard AI verbessern</string>
+    <string name="contribute_prompt_body">Ihre analysierten Bilder könnten helfen, die Erkennung von Meeresmüll zu verbessern. Nur das Bild und erkannte Objekte werden geteilt \u2014 ohne Standort, ohne persönliche Daten.</string>
+    <string name="contribute_prompt_wifi">Über WLAN hochladen</string>
+    <string name="contribute_prompt_now">Jetzt hochladen</string>
+    <string name="contribute_prompt_skip">Nicht jetzt</string>
+    <string name="contribute_queued_message">%d Bild(er) für WLAN-Upload eingereiht</string>
+    <string name="contribute_upload_btn">Zur Forschung hochladen</string>
+    <string name="contribute_status_pending">In der Upload-Warteschlange</string>
+    <string name="contribute_status_done">Beigetragen ✓</string>
+    <string name="contribute_status_failed">Upload wiederholen</string>
+    <string name="contribute_privacy_no_location">Keine GPS-Koordinaten oder Standortdaten</string>
+    <string name="contribute_privacy_no_personal">Keine persönlichen Identifikatoren enthalten</string>
+    <string name="contribute_privacy_research_only">Ausschließlich für Modellforschung verwendet</string>
 </resources>

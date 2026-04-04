@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.WaterDrop
@@ -40,11 +41,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.oceanguard.ai.OceanGuardApp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,6 +83,7 @@ private data class OnboardingPage(
     val title: String,
     val description: String,
     val accentColor: Color,
+    val showContributeToggle: Boolean = false,
 )
 
 /**
@@ -88,6 +94,11 @@ private data class OnboardingPage(
 fun OnboardingScreen(
     onComplete: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val app = remember(context) { context.applicationContext as OceanGuardApp }
+    val contributeEnabled by app.settingsRepository.contributeConsentGiven
+        .collectAsStateWithLifecycle(initialValue = false)
+
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Filled.WaterDrop,
@@ -119,6 +130,13 @@ fun OnboardingScreen(
             description = stringResource(R.string.onboarding_page5_desc),
             accentColor = OceanGreen,
         ),
+        OnboardingPage(
+            icon = Icons.Filled.Science,
+            title = stringResource(R.string.onboarding_contribute_title),
+            description = stringResource(R.string.onboarding_contribute_body),
+            accentColor = BioluminescentCyan,
+            showContributeToggle = true,
+        ),
     )
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
@@ -130,7 +148,13 @@ fun OnboardingScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
         ) { page ->
-            OnboardingPageContent(page = pages[page])
+            OnboardingPageContent(
+                page = pages[page],
+                contributeEnabled = contributeEnabled,
+                onContributeToggle = { enabled ->
+                    scope.launch { app.settingsRepository.setContributeConsentGiven(enabled) }
+                },
+            )
         }
 
         // Bottom controls
@@ -220,7 +244,11 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingPageContent(page: OnboardingPage) {
+private fun OnboardingPageContent(
+    page: OnboardingPage,
+    contributeEnabled: Boolean = false,
+    onContributeToggle: (Boolean) -> Unit = {},
+) {
     // Content entry animation per page
     val contentAlpha = remember(page.title) { Animatable(0f) }
     val contentOffsetY = remember(page.title) { Animatable(30f) }
@@ -314,6 +342,25 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                 color = Color(0xFF94A3B8), // landing --text-secondary
                 textAlign = TextAlign.Center,
             )
+
+            if (page.showContributeToggle) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_contribute_toggle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                    )
+                    Switch(
+                        checked = contributeEnabled,
+                        onCheckedChange = onContributeToggle,
+                    )
+                }
+            }
         }
     }
 }
