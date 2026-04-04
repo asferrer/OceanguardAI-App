@@ -11,7 +11,7 @@ import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.service.DataContributionWorker
 import com.oceanguard.ai.utils.CocoAnnotationSerializer
-import com.oceanguard.ai.utils.ContributionTokenStore
+import com.oceanguard.ai.utils.WebDavUploadClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
@@ -19,17 +19,16 @@ import java.util.concurrent.TimeUnit
 class ContributionRepository(
     private val dao: ContributionQueueDao,
     private val settings: SettingsRepository,
-    private val tokenStore: ContributionTokenStore,
     private val context: Context,
 ) {
     /**
      * Called by InferenceService after saving a session.
-     * Returns true if enqueued (consent + config present), false if UI should prompt user.
+     * Returns true if enqueued (consent given + NAS configured at build time),
+     * false if UI should prompt user.
      */
     suspend fun maybeEnqueue(session: DetectionSession): Boolean {
         if (!settings.contributeConsentGiven.first()) return false
-        val nasUrl = settings.contributeNasUrl.first().trim()
-        if (nasUrl.isEmpty() || tokenStore.getToken().isEmpty()) return false
+        if (!WebDavUploadClient.isConfigured) return false
         enqueueSession(session)
         return true
     }

@@ -287,8 +287,6 @@
     <string name="contribute_toggle_label">Contribuir imagens para treinamento do modelo</string>
     <string name="contribute_toggle_desc">Partilhe as suas imagens analisadas com a investigação OceanGuard</string>
     <string name="contribute_consent_given_desc">As imagens são colocadas em fila após cada análise</string>
-    <string name="contribute_nas_url_label">URL WebDAV do NAS</string>
-    <string name="contribute_token_label">Token de acesso</string>
     <string name="contribute_wifi_only_label">Enviar apenas com WiFi</string>
     <string name="contribute_wifi_only_desc">Reserve os envios para WiFi para poupar dados móveis</string>
     <string name="contribute_pending_label">Envios pendentes: %d</string>

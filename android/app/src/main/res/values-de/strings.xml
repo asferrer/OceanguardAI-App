@@ -287,8 +287,6 @@
     <string name="contribute_toggle_label">Bilder für Modelltraining beitragen</string>
     <string name="contribute_toggle_desc">Teilen Sie Ihre analysierten Bilder mit der OceanGuard-Forschung</string>
     <string name="contribute_consent_given_desc">Bilder werden nach jeder Analyse in die Warteschlange gestellt</string>
-    <string name="contribute_nas_url_label">NAS WebDAV-URL</string>
-    <string name="contribute_token_label">Zugriffstoken</string>
     <string name="contribute_wifi_only_label">Nur über WLAN hochladen</string>
     <string name="contribute_wifi_only_desc">Uploads für WLAN zurückstellen, um mobile Daten zu sparen</string>
     <string name="contribute_pending_label">Ausstehende Uploads: %d</string>

@@ -289,8 +289,6 @@
     <string name="contribute_toggle_label">Contribute images for model training</string>
     <string name="contribute_toggle_desc">Opt in to share your analyzed images with OceanGuard research</string>
     <string name="contribute_consent_given_desc">Images are queued for upload after each analysis</string>
-    <string name="contribute_nas_url_label">NAS WebDAV URL</string>
-    <string name="contribute_token_label">Access token</string>
     <string name="contribute_wifi_only_label">Upload on WiFi only</string>
     <string name="contribute_wifi_only_desc">Queue uploads for WiFi to avoid mobile data usage</string>
     <string name="contribute_pending_label">Pending uploads: %d</string>

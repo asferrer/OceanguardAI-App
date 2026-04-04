@@ -287,8 +287,6 @@
     <string name="contribute_toggle_label">Contribuisci immagini per l\'addestramento del modello</string>
     <string name="contribute_toggle_desc">Condividi le tue immagini analizzate con la ricerca OceanGuard</string>
     <string name="contribute_consent_given_desc">Le immagini vengono accodate dopo ogni analisi</string>
-    <string name="contribute_nas_url_label">URL WebDAV NAS</string>
-    <string name="contribute_token_label">Token di accesso</string>
     <string name="contribute_wifi_only_label">Carica solo con WiFi</string>
     <string name="contribute_wifi_only_desc">Riserva i caricamenti al WiFi per risparmiare dati mobili</string>
     <string name="contribute_pending_label">Caricamenti in sospeso: %d</string>

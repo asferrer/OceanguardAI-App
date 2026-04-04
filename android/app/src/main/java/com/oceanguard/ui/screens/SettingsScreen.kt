@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,8 +20,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,9 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -99,15 +93,12 @@ fun SettingsScreen(
     val contributeConsentGiven by settings.contributeConsentGiven.collectAsStateWithLifecycle(
         initialValue = false
     )
-    val contributeNasUrl by settings.contributeNasUrl.collectAsStateWithLifecycle(initialValue = "")
     val contributeWifiOnly by settings.contributeWifiOnly.collectAsStateWithLifecycle(
         initialValue = true
     )
     val contributePending by app.contributionRepository.getPendingCountFlow()
         .collectAsStateWithLifecycle(initialValue = 0)
     var showContributeConsentDialog by remember { mutableStateOf(false) }
-    var tokenValue by remember { mutableStateOf(app.contributionTokenStore.getToken()) }
-    var tokenVisible by remember { mutableStateOf(false) }
 
     val settingsScrollState = rememberScrollState()
     val boundsMap = rememberSpotlightBounds()
@@ -315,36 +306,6 @@ fun SettingsScreen(
                 AnimatedVisibility(visible = contributeConsentGiven) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = contributeNasUrl,
-                            onValueChange = { scope.launch { settings.setContributeNasUrl(it) } },
-                            label = { Text(stringResource(R.string.contribute_nas_url_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        )
-                        OutlinedTextField(
-                            value = tokenValue,
-                            onValueChange = {
-                                tokenValue = it
-                                app.contributionTokenStore.setToken(it)
-                            },
-                            label = { Text(stringResource(R.string.contribute_token_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            visualTransformation = if (tokenVisible) VisualTransformation.None
-                                                   else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            trailingIcon = {
-                                IconButton(onClick = { tokenVisible = !tokenVisible }) {
-                                    Icon(
-                                        imageVector = if (tokenVisible) Icons.Filled.VisibilityOff
-                                                      else Icons.Filled.Visibility,
-                                        contentDescription = null,
-                                    )
-                                }
-                            },
-                        )
                         SettingsToggleRow(
                             title = stringResource(R.string.contribute_wifi_only_label),
                             description = stringResource(R.string.contribute_wifi_only_desc),

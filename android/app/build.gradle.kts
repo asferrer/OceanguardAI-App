@@ -1,8 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+
+// Research contribution: NAS credentials injected from local.properties (never committed)
+val contribProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
 }
 
 /**
@@ -75,6 +83,11 @@ android {
         versionName = gitVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Research contribution: WebDAV credentials (read from local.properties)
+        buildConfigField("String", "CONTRIB_URL",  "\"${contribProps.getProperty("CONTRIBUTION_WEBDAV_URL", "")}\"")
+        buildConfigField("String", "CONTRIB_USER", "\"${contribProps.getProperty("CONTRIBUTION_WEBDAV_USER", "")}\"")
+        buildConfigField("String", "CONTRIB_PASS", "\"${contribProps.getProperty("CONTRIBUTION_WEBDAV_PASS", "")}\"")
 
         vectorDrawables {
             useSupportLibrary = true
@@ -236,9 +249,6 @@ dependencies {
 
     // WorkManager — background upload scheduling
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-
-    // EncryptedSharedPreferences — secure token storage
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

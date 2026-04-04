@@ -287,8 +287,6 @@
     <string name="contribute_toggle_label">Contribuir imágenes para el entrenamiento del modelo</string>
     <string name="contribute_toggle_desc">Comparte tus imágenes analizadas con la investigación de OceanGuard</string>
     <string name="contribute_consent_given_desc">Las imágenes se ponen en cola tras cada análisis</string>
-    <string name="contribute_nas_url_label">URL WebDAV del NAS</string>
-    <string name="contribute_token_label">Token de acceso</string>
     <string name="contribute_wifi_only_label">Subir solo con WiFi</string>
     <string name="contribute_wifi_only_desc">Reserva las subidas para WiFi y ahorra datos móviles</string>
     <string name="contribute_pending_label">Subidas pendientes: %d</string>

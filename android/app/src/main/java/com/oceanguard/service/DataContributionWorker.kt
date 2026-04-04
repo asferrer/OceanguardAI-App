@@ -5,7 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.utils.WebDavUploadClient
-import kotlinx.coroutines.flow.first
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -13,7 +12,7 @@ import java.util.Locale
 
 /**
  * WorkManager CoroutineWorker that uploads pending contribution images to the NAS.
- * Triggered by ContributionRepository.scheduleWorker() after enqueueing new items.
+ * Uses build-time credentials from BuildConfig via [WebDavUploadClient].
  *
  * On failure: WorkManager retries with exponential backoff (configured at enqueue time).
  */
@@ -23,14 +22,9 @@ class DataContributionWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        if (!WebDavUploadClient.isConfigured) return Result.failure()
+
         val app = applicationContext as OceanGuardApp
-        val nasUrl = app.settingsRepository.contributeNasUrl.first().trim()
-            .let { if (it.endsWith("/")) it else "$it/" }
-        val token = app.contributionTokenStore.getToken()
-
-        if (nasUrl.isEmpty() || token.isEmpty()) return Result.failure()
-
-        val client = WebDavUploadClient(nasUrl, token)
         val pending = app.contributionQueueDao.getPending()
         if (pending.isEmpty()) return Result.success()
 
@@ -44,7 +38,7 @@ class DataContributionWorker(
                 continue
             }
             val yearMonth = monthFmt.format(Date(item.createdAt))
-            val ok = client.upload(
+            val ok = WebDavUploadClient.upload(
                 yearMonth = yearMonth,
                 fileName = imageFile.name,
                 imageBytes = imageFile.readBytes(),

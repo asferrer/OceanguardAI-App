@@ -51,7 +51,6 @@ class SettingsRepository(private val context: Context) {
 
         // Research contribution
         val CONTRIBUTE_CONSENT_GIVEN = booleanPreferencesKey("contribute_consent_given")
-        val CONTRIBUTE_NAS_URL       = stringPreferencesKey("contribute_nas_url")
         val CONTRIBUTE_WIFI_ONLY     = booleanPreferencesKey("contribute_wifi_only")
         val CONTRIBUTE_DECLINE_COUNT = intPreferencesKey("contribute_decline_count")
     }
@@ -394,11 +393,6 @@ class SettingsRepository(private val context: Context) {
         prefs[Keys.CONTRIBUTE_CONSENT_GIVEN] ?: false
     }
 
-    /** WebDAV base URL of the NAS (e.g. https://yourname.synology.me:5006/oceanguard-dataset/). */
-    val contributeNasUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[Keys.CONTRIBUTE_NAS_URL] ?: ""
-    }
-
     /** When true, uploads only occur on WiFi (UNMETERED) networks. Default: true. */
     val contributeWifiOnly: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[Keys.CONTRIBUTE_WIFI_ONLY] ?: true
@@ -414,10 +408,6 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setContributeConsentGiven(v: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_CONSENT_GIVEN] = v }
-    }
-
-    suspend fun setContributeNasUrl(url: String) {
-        context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_NAS_URL] = url }
     }
 
     suspend fun setContributeWifiOnly(v: Boolean) {
