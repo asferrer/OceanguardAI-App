@@ -54,7 +54,7 @@ object TourDefinitions {
     val SESSION_DETAIL = listOf(
         SpotlightStep("detail_image", R.string.tour_session_detail_image_title, R.string.tour_session_detail_image_desc),
         SpotlightStep("detail_health", R.string.tour_session_detail_health_title, R.string.tour_session_detail_health_desc),
-        SpotlightStep("detail_location", R.string.tour_session_detail_location_title, R.string.tour_session_detail_location_desc),
+        SpotlightStep("detail_location", R.string.tour_session_detail_edit_title, R.string.tour_session_detail_edit_desc),
     )
 
     val MAP = listOf(
@@ -77,6 +77,7 @@ object TourDefinitions {
         SpotlightStep("settings_theme", R.string.tour_settings_theme_title, R.string.tour_settings_theme_desc),
         SpotlightStep("settings_data", R.string.tour_settings_data_title, R.string.tour_settings_data_desc),
         SpotlightStep("settings_tours", R.string.tour_settings_tours_title, R.string.tour_settings_tours_desc),
+        SpotlightStep("settings_contribution", R.string.tour_settings_contribution_title, R.string.tour_settings_contribution_desc),
     )
 
     val MARINEDEX = listOf(

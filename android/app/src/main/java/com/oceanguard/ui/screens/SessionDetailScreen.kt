@@ -13,10 +13,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,6 +78,7 @@ fun SessionDetailScreen(
     var session by remember { mutableStateOf<DetectionSession?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val detailContext = LocalContext.current
     val app = remember(detailContext) { detailContext.applicationContext as OceanGuardApp }
@@ -96,6 +101,41 @@ fun SessionDetailScreen(
     LaunchedEffect(sessionId) {
         session = viewModel.getSession(sessionId)
         isLoading = false
+    }
+
+    // Date picker dialog
+    if (showDatePicker && session != null) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = session!!.timestamp.time,
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) {
+                            val tzOffset = java.util.TimeZone.getDefault().getOffset(millis).toLong()
+                            val updated = session!!.copy(
+                                timestamp = java.util.Date(millis + tzOffset),
+                            )
+                            detailScope.launch {
+                                app.repository.updateSession(updated)
+                                session = updated
+                            }
+                        }
+                        showDatePicker = false
+                    },
+                ) { Text(stringResource(R.string.location_picker_btn_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     // Delete confirmation dialog
@@ -188,6 +228,7 @@ fun SessionDetailScreen(
                     modifier = Modifier.padding(paddingValues),
                     session = session!!,
                     onEditLocation = { onNavigateToLocationPicker(sessionId) },
+                    onEditDate = { showDatePicker = true },
                     boundsMap = boundsMap,
                     listState = detailListState,
                 )
@@ -252,6 +293,7 @@ private fun SessionDetailContent(
     modifier: Modifier,
     session: DetectionSession,
     onEditLocation: () -> Unit = {},
+    onEditDate: () -> Unit = {},
     boundsMap: MutableMap<String, androidx.compose.ui.geometry.Rect> = mutableMapOf(),
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -288,6 +330,10 @@ private fun SessionDetailContent(
         item {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
+            val app = remember(context) { context.applicationContext as OceanGuardApp }
+            val uploadStatus by app.contributionRepository
+                .getStatusFlowForUri(session.imageUri)
+                .collectAsStateWithLifecycle(initialValue = null)
             val imageToSave = session.thumbnailUri ?: session.imageUri
 
             Box(
@@ -350,6 +396,46 @@ private fun SessionDetailContent(
                         )
                     }
                 }
+
+                // Upload to research button
+                FilledTonalIconButton(
+                    enabled = uploadStatus == null || uploadStatus == "FAILED",
+                    onClick = {
+                        if (uploadStatus == null || uploadStatus == "FAILED") {
+                            scope.launch { app.contributionRepository.enqueueSession(session) }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    ),
+                ) {
+                    when (uploadStatus) {
+                        "PENDING" -> Icon(
+                            imageVector = Icons.Filled.Sync,
+                            contentDescription = stringResource(R.string.contribute_status_pending),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        "DONE" -> Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = stringResource(R.string.contribute_status_done),
+                            tint = OceanGreen,
+                        )
+                        "FAILED" -> Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.contribute_status_failed),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        else -> Icon(
+                            imageVector = Icons.Filled.CloudUpload,
+                            contentDescription = stringResource(R.string.contribute_upload_btn),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
 
@@ -362,11 +448,24 @@ private fun SessionDetailContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = dateFormat.format(session.timestamp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = dateFormat.format(session.timestamp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    IconButton(onClick = onEditDate, modifier = Modifier.size(24.dp)) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = stringResource(R.string.session_detail_cd_edit_date),
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 SessionLocationRow(
                     location = session.location,
                     onEditLocation = onEditLocation,

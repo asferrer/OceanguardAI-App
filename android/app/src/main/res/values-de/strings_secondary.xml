@@ -20,6 +20,7 @@
     <string name="session_detail_section_detected_objects">Erkannte Objekte</string>
     <string name="session_detail_location_add">Standort hinzufügen</string>
     <string name="session_detail_cd_edit_location_inline">Standort bearbeiten</string>
+    <string name="session_detail_cd_edit_date">Analysedatum bearbeiten</string>
 
     <!-- ================================================================== -->
     <!-- Kartenbildschirm                                                     -->
@@ -292,6 +293,17 @@
     <string name="achievement_desc_all_achievements">Alle anderen Errungenschaften freischalten</string>
     <string name="achievement_desc_report_10">10 KI-Berichte erstellen</string>
 
+    <!-- Forschungsbeitrags-Errungenschaften -->
+    <string name="achievement_category_research">Forschung</string>
+    <string name="achievement_name_contribute_1">Erster Beitragender</string>
+    <string name="achievement_name_contribute_10">Daten-Beitragender</string>
+    <string name="achievement_name_contribute_50">Forschungspartner</string>
+    <string name="achievement_name_contribute_100">Wissenschaftschampion</string>
+    <string name="achievement_desc_contribute_1">Teile dein erstes Bild, um die Erkennung zu verbessern</string>
+    <string name="achievement_desc_contribute_10">Teile 10 Bilder mit dem Forschungsteam</string>
+    <string name="achievement_desc_contribute_50">Teile 50 Bilder für das Modelltraining</string>
+    <string name="achievement_desc_contribute_100">Teile 100 Bilder \u2014 ein wahrer Champion der Ozeanwissenschaft</string>
+
     <!-- ================================================================== -->
     <!-- Standortauswahl-Bildschirm                                           -->
     <!-- ================================================================== -->
@@ -393,8 +405,8 @@
     <string name="tour_session_detail_image_desc">Ihr aufgenommenes Bild mit erkanntem Meeresmüll, markiert durch Begrenzungsrahmen.</string>
     <string name="tour_session_detail_health_title">Gesundheitsbewertung</string>
     <string name="tour_session_detail_health_desc">Detaillierte Aufschlüsselung des Ökosystem-Gesundheitswerts für diese Analyse.</string>
-    <string name="tour_session_detail_location_title">Standort</string>
-    <string name="tour_session_detail_location_desc">GPS-Koordinaten, an denen dieses Bild aufgenommen wurde. Tippen Sie auf Bearbeiten, um zu korrigieren.</string>
+    <string name="tour_session_detail_edit_title">Standort und Datum</string>
+    <string name="tour_session_detail_edit_desc">Tippen Sie auf das Stift-Symbol neben dem Datum, um es zu korrigieren. Tippen Sie auf das Pin-Symbol, um den GPS-Standort auf der Karte zu bearbeiten.</string>
 
     <!-- Karten-Tour -->
     <string name="tour_map_view_title">Erkennungskarte</string>
@@ -418,17 +430,19 @@
 
     <!-- Einstellungs-Tour -->
     <string name="tour_settings_confidence_title">Erkennungseinstellungen</string>
-    <string name="tour_settings_confidence_desc">Aktivieren oder deaktivieren Sie die KI-Tiefenanalyse und wählen Sie, ob Fotos vor der Erkennung in der Vorschau angezeigt werden sollen.</string>
+    <string name="tour_settings_confidence_desc">Wählen Sie, ob Fotos vor der Analyse in der Vorschau angezeigt werden sollen. Erweiterte Optionen (Konfidenzschwelle, Modellgenauigkeit) sind im Entwicklermodus verfügbar.</string>
     <string name="tour_settings_deep_analysis_title">Tiefenanalyse</string>
     <string name="tour_settings_deep_analysis_desc">Aktivieren Sie die VLM-Tiefenanalyse für detailliertere Umweltinformationen und KI-generierte Berichte.</string>
     <string name="tour_settings_theme_title">Dunkelmodus</string>
     <string name="tour_settings_theme_desc">Wechseln Sie zwischen dunklem und hellem Design für bessere Unterwasser-Sichtbarkeit.</string>
     <string name="tour_settings_language_title">Sprachen</string>
-    <string name="tour_settings_language_desc">Stellen Sie die App-Sprache und die Standardsprache für KI-generierte Berichte ein.</string>
+    <string name="tour_settings_language_desc">Stellen Sie die App-Sprache, die Standardsprache für KI-Berichte und die Berichtszielgruppe (wissenschaftlich, NGO oder Bürger) ein.</string>
     <string name="tour_settings_data_title">Datenverwaltung</string>
     <string name="tour_settings_data_desc">Setzen Sie alle Daten zurück — entfernt alle Analysen, MarineDex-Einträge und Erfolge.</string>
     <string name="tour_settings_tours_title">Geführte Touren</string>
     <string name="tour_settings_tours_desc">Spielen Sie die geführten Touren jederzeit erneut ab, um alle App-Funktionen zu erkunden.</string>
+    <string name="tour_settings_contribution_title">Forschungsbeitrag</string>
+    <string name="tour_settings_contribution_desc">Teilen Sie Ihre analysierten Bilder mit dem OceanGuard-Forschungsteam über Ihren eigenen NAS-Server. Keine GPS-Daten oder persönliche Informationen — nur das Bild und die Erkennungen.</string>
 
     <!-- MarineDex-Tour -->
     <string name="tour_marinedex_progress_title">Sammelfortschritt</string>

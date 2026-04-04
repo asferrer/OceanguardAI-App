@@ -20,6 +20,7 @@
     <string name="session_detail_section_detected_objects">Objets détectés</string>
     <string name="session_detail_location_add">Ajouter un emplacement</string>
     <string name="session_detail_cd_edit_location_inline">Modifier l\'emplacement</string>
+    <string name="session_detail_cd_edit_date">Modifier la date de l\'analyse</string>
 
     <!-- ================================================================== -->
     <!-- Écran Carte                                                          -->
@@ -292,6 +293,17 @@
     <string name="achievement_desc_all_achievements">Débloquez tous les autres succès</string>
     <string name="achievement_desc_report_10">Générez 10 rapports IA</string>
 
+    <!-- Succès de contribution à la recherche -->
+    <string name="achievement_category_research">Recherche</string>
+    <string name="achievement_name_contribute_1">Premier Contributeur</string>
+    <string name="achievement_name_contribute_10">Contributeur de Données</string>
+    <string name="achievement_name_contribute_50">Partenaire de Recherche</string>
+    <string name="achievement_name_contribute_100">Champion des Sciences</string>
+    <string name="achievement_desc_contribute_1">Partagez votre première image pour améliorer la détection</string>
+    <string name="achievement_desc_contribute_10">Partagez 10 images avec l\'équipe de recherche</string>
+    <string name="achievement_desc_contribute_50">Partagez 50 images pour l\'entraînement du modèle</string>
+    <string name="achievement_desc_contribute_100">Partagez 100 images \u2014 un vrai champion de la science océanique</string>
+
     <!-- ================================================================== -->
     <!-- Écran Sélecteur d\'emplacement                                       -->
     <!-- ================================================================== -->
@@ -395,6 +407,8 @@
     <string name="tour_session_detail_health_desc">Analyse détaillée du score de santé de l\'écosystème pour cette analyse.</string>
     <string name="tour_session_detail_location_title">Emplacement</string>
     <string name="tour_session_detail_location_desc">Coordonnées GPS où cette image a été capturée. Appuyez sur modifier pour corriger.</string>
+    <string name="tour_session_detail_edit_title">Emplacement et date</string>
+    <string name="tour_session_detail_edit_desc">Appuyez sur l\'icône crayon à côté de la date pour la corriger. Appuyez sur l\'icône pin pour modifier la position GPS sur la carte.</string>
 
     <!-- Visite de la carte -->
     <string name="tour_map_view_title">Carte de détection</string>
@@ -418,17 +432,19 @@
 
     <!-- Visite des paramètres -->
     <string name="tour_settings_confidence_title">Paramètres de Détection</string>
-    <string name="tour_settings_confidence_desc">Activez ou désactivez l\'analyse approfondie par IA, et choisissez si vous souhaitez prévisualiser les photos avant détection.</string>
+    <string name="tour_settings_confidence_desc">Choisissez si vous souhaitez prévisualiser les photos avant l\'analyse. Les options avancées sont disponibles en Mode Développeur.</string>
     <string name="tour_settings_deep_analysis_title">Analyse approfondie</string>
     <string name="tour_settings_deep_analysis_desc">Activez le moteur VLM pour des analyses environnementales plus riches et des rapports générés par l\'IA.</string>
     <string name="tour_settings_theme_title">Mode sombre</string>
     <string name="tour_settings_theme_desc">Basculez entre thème sombre et clair pour une meilleure visibilité sous-marine.</string>
     <string name="tour_settings_language_title">Langues</string>
-    <string name="tour_settings_language_desc">Définissez la langue de l\'interface et la langue par défaut des rapports générés par l\'IA.</string>
+    <string name="tour_settings_language_desc">Définissez la langue de l\'interface, la langue des rapports IA et le public cible (scientifique, ONG ou citoyen).</string>
     <string name="tour_settings_data_title">Gestion des Données</string>
     <string name="tour_settings_data_desc">Réinitialisez toutes les données pour repartir à zéro — supprime analyses, entrées MarineDex et succès.</string>
     <string name="tour_settings_tours_title">Visites Guidées</string>
     <string name="tour_settings_tours_desc">Rejouez les visites guidées à tout moment pour revoir toutes les fonctionnalités.</string>
+    <string name="tour_settings_contribution_title">Contribution à la Recherche</string>
+    <string name="tour_settings_contribution_desc">Partagez vos images analysées avec l\'équipe OceanGuard via votre NAS. Sans GPS ni données personnelles — uniquement l\'image et les détections.</string>
 
     <!-- Visite du MarineDex -->
     <string name="tour_marinedex_progress_title">Progression de la collection</string>
