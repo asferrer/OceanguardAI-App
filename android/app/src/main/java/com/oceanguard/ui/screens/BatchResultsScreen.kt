@@ -217,6 +217,25 @@ fun BatchResultsScreen(
     var batchStartTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var isBatchRunning by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Contribution upload completion snackbar
+    val uploadResult by app.contributionUploadResult.collectAsStateWithLifecycle()
+    LaunchedEffect(uploadResult) {
+        uploadResult?.let { result ->
+            val msg = when {
+                result.hadFailures && result.uploadedCount > 0 ->
+                    context.getString(R.string.contribute_upload_partial, result.uploadedCount)
+                result.hadFailures ->
+                    context.getString(R.string.contribute_upload_failed)
+                result.uploadedCount > 0 ->
+                    context.getString(R.string.contribute_upload_success, result.uploadedCount)
+                else -> null
+            }
+            msg?.let { snackbarHostState.showSnackbar(it) }
+            app.contributionUploadResult.value = null
+        }
+    }
+
     val contributePrompt by viewModel.contributePrompt.collectAsStateWithLifecycle()
     var showContributeSheet by remember { mutableStateOf(false) }
 

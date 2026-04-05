@@ -151,6 +151,8 @@ class OceanGuardApp : Application() {
     val contributionRepository: ContributionRepository by lazy {
         ContributionRepository(contributionQueueDao, settingsRepository, this)
     }
+    /** Emitted by [DataContributionWorker] after an upload cycle. Consumed once by the UI. */
+    val contributionUploadResult = MutableStateFlow<com.oceanguard.ai.service.ContributionUploadResult?>(null)
 
     val tourDemoDataManager: TourDemoDataManager by lazy {
         TourDemoDataManager(
@@ -369,6 +371,7 @@ class OceanGuardApp : Application() {
                         language     = language,
                         sessionCount = sessions.size,
                         usedAi       = true,
+                        audience     = audience.name.lowercase(),
                     )
                     val id = database.generatedReportDao().insert(report)
                     reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
@@ -386,6 +389,7 @@ class OceanGuardApp : Application() {
                         language     = language,
                         sessionCount = sessions.size,
                         usedAi       = true,
+                        audience     = audience.name.lowercase(),
                     )
                     val id = database.generatedReportDao().insert(report)
                     reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
@@ -435,6 +439,7 @@ class OceanGuardApp : Application() {
                     centroidLon      = input.centroidLon,
                     dateRangeStartMs = input.dateRangeStartMs,
                     dateRangeEndMs   = input.dateRangeEndMs,
+                    audience         = audience.name.lowercase(),
                 )
                 val id = database.generatedReportDao().insert(report)
                 reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
@@ -511,6 +516,7 @@ class OceanGuardApp : Application() {
                     centroidLon      = input.centroidLon,
                     dateRangeStartMs = input.dateRangeStartMs,
                     dateRangeEndMs   = input.dateRangeEndMs,
+                    audience         = audience.name.lowercase(),
                 )
                 val id = database.generatedReportDao().insert(report)
                 reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))

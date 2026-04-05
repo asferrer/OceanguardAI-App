@@ -331,9 +331,11 @@ private fun SessionDetailContent(
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             val app = remember(context) { context.applicationContext as OceanGuardApp }
+            // initialValue = "LOADING" keeps the button disabled while the DB query resolves,
+            // preventing a brief flash of the enabled CloudUpload icon before the real status arrives.
             val uploadStatus by app.contributionRepository
                 .getStatusFlowForUri(session.imageUri)
-                .collectAsStateWithLifecycle(initialValue = null)
+                .collectAsStateWithLifecycle(initialValue = "LOADING")
             val imageToSave = session.thumbnailUri ?: session.imageUri
 
             Box(
@@ -402,7 +404,16 @@ private fun SessionDetailContent(
                     enabled = uploadStatus == null || uploadStatus == "FAILED",
                     onClick = {
                         if (uploadStatus == null || uploadStatus == "FAILED") {
-                            scope.launch { app.contributionRepository.enqueueSession(session) }
+                            scope.launch {
+                                val ok = app.contributionRepository.enqueueSession(session)
+                                if (!ok) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.contribute_enqueue_error),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
                         }
                     },
                     modifier = Modifier

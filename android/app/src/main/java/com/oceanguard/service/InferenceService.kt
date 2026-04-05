@@ -301,8 +301,8 @@ class InferenceService : LifecycleService() {
                         tags = "source:batch",
                     )
                     val sessionId = app.repository.saveSession(session)
-                    app.contributionRepository.maybeEnqueue(session.copy(id = sessionId))
-                    results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri))
+                    val queued = app.contributionRepository.maybeEnqueue(session.copy(id = sessionId))
+                    results.add(BatchItemResult.Done(uri, result, sessionId, annotatedUri, queued))
                 } catch (e: TimeoutCancellationException) {
                     results.add(BatchItemResult.Failed(uri, "Timed out"))
                 } catch (e: CancellationException) {
@@ -314,8 +314,9 @@ class InferenceService : LifecycleService() {
             }
 
             val successCount = results.count { it is BatchItemResult.Done }
-            val consentGiven = app.settingsRepository.contributeConsentGiven.first()
-            val contributionQueuedCount = if (consentGiven) successCount else 0
+            val contributionQueuedCount = results.count {
+                it is BatchItemResult.Done && it.contributionQueued
+            }
             app.inferenceServiceState.value =
                 InferenceServiceState.BatchComplete(job.uris, results, contributionQueuedCount)
             updateNotification(

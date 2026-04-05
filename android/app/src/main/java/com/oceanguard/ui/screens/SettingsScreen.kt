@@ -98,6 +98,10 @@ fun SettingsScreen(
     )
     val contributePending by app.contributionRepository.getPendingCountFlow()
         .collectAsStateWithLifecycle(initialValue = 0)
+    val contributeDone by app.contributionRepository.getDoneCountFlow()
+        .collectAsStateWithLifecycle(initialValue = 0)
+    val contributeFailed by app.contributionRepository.getFailedCountFlow()
+        .collectAsStateWithLifecycle(initialValue = 0)
     var showContributeConsentDialog by remember { mutableStateOf(false) }
 
     val settingsScrollState = rememberScrollState()
@@ -299,7 +303,10 @@ fun SettingsScreen(
                         if (enabled && !contributeConsentGiven) {
                             showContributeConsentDialog = true
                         } else {
-                            scope.launch { settings.setContributeConsentGiven(enabled) }
+                            scope.launch {
+                                settings.setContributeConsentGiven(enabled)
+                                if (!enabled) app.contributionRepository.clearPendingQueue()
+                            }
                         }
                     },
                 )
@@ -312,24 +319,48 @@ fun SettingsScreen(
                             checked = contributeWifiOnly,
                             onCheckedChange = { scope.launch { settings.setContributeWifiOnly(it) } },
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = if (contributePending > 0)
-                                    stringResource(R.string.contribute_pending_label, contributePending)
-                                else
-                                    stringResource(R.string.contribute_all_synced),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            if (contributePending > 0) {
-                                TextButton(
-                                    onClick = { app.contributionRepository.scheduleImmediateUpload() },
-                                ) {
-                                    Text(stringResource(R.string.contribute_upload_now_btn))
+                        // Upload status summary
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column {
+                                    if (contributeDone > 0 || contributePending > 0 || contributeFailed > 0) {
+                                        Text(
+                                            text = stringResource(R.string.contribute_stats_uploaded, contributeDone),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                        if (contributePending > 0) {
+                                            Text(
+                                                text = stringResource(R.string.contribute_stats_pending, contributePending),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        if (contributeFailed > 0) {
+                                            Text(
+                                                text = stringResource(R.string.contribute_stats_failed, contributeFailed),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = stringResource(R.string.contribute_all_synced),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                if (contributePending > 0) {
+                                    TextButton(
+                                        onClick = { app.contributionRepository.scheduleImmediateUpload() },
+                                    ) {
+                                        Text(stringResource(R.string.contribute_upload_now_btn))
+                                    }
                                 }
                             }
                         }

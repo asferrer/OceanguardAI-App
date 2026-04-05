@@ -93,6 +93,7 @@ sealed class BatchItemResult {
         val result: AnalysisResult,
         val sessionId: Long = 0,
         val annotatedUri: String? = null,
+        val contributionQueued: Boolean = false,
     ) : BatchItemResult()
 
     data class Failed(

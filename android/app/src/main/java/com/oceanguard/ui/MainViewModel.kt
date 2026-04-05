@@ -2,6 +2,8 @@ package com.oceanguard.ai.ui
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.lifecycle.ViewModel
@@ -122,6 +124,9 @@ sealed class UiState {
  * app-scoped [InferenceServiceState] and [AnalysisState] to keep the UI
  * in sync with the service's progress.
  */
+private const val MAX_IMAGE_FILE_SIZE = 100L * 1024 * 1024  // 100 MB
+private const val MAX_VIDEO_FILE_SIZE = 2L * 1024 * 1024 * 1024  // 2 GB
+
 class MainViewModel(
     private val appContext: Context,
     private val orchestrator: DetectionOrchestrator,
@@ -365,11 +370,31 @@ class MainViewModel(
      */
     fun analyzeMedia(context: Context, uris: List<Uri>, navController: NavController) {
         val contentResolver = context.contentResolver
+
+        fun fileSizeBytes(uri: Uri): Long = try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getLong(0) else -1L
+                } ?: -1L
+        } catch (_: Exception) { -1L }
+
         val imageUris = uris.filter { uri ->
-            contentResolver.getType(uri)?.startsWith("image/") == true
+            val isImage = contentResolver.getType(uri)?.startsWith("image/") == true
+            if (isImage) {
+                val size = fileSizeBytes(uri)
+                val withinLimit = size in 1..MAX_IMAGE_FILE_SIZE
+                if (!withinLimit) Log.w("MainViewModel", "Image skipped: ${size / 1024}KB exceeds limit")
+                withinLimit
+            } else false
         }
         val videoUris = uris.filter { uri ->
-            contentResolver.getType(uri)?.startsWith("video/") == true
+            val isVideo = contentResolver.getType(uri)?.startsWith("video/") == true
+            if (isVideo) {
+                val size = fileSizeBytes(uri)
+                val withinLimit = size in 1..MAX_VIDEO_FILE_SIZE
+                if (!withinLimit) Log.w("MainViewModel", "Video skipped: ${size / (1024 * 1024)}MB exceeds limit")
+                withinLimit
+            } else false
         }
 
         // Reset state to Idle so the LaunchedEffect guard in BatchResultsScreen
@@ -543,6 +568,7 @@ class MainViewModel(
         viewModelScope.launch {
             repository.clearAllSessions()
             app.collectionRepository.resetAll()
+            app.contributionRepository.clearAll()
             settingsRepository.setDexBackfillComplete(false)
         }
     }
