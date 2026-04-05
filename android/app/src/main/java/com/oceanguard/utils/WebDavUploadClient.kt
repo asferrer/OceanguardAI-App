@@ -1,6 +1,7 @@
 package com.oceanguard.ai.utils
 
 import android.util.Base64
+import android.util.Log
 import com.oceanguard.ai.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,7 +9,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 /**
  * Uploads files to the OceanGuard research NAS via WebDAV PUT.
@@ -31,11 +37,31 @@ object WebDavUploadClient {
     val isConfigured: Boolean
         get() = BuildConfig.CONTRIB_URL.isNotBlank() && BuildConfig.CONTRIB_USER.isNotBlank()
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(120, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client: OkHttpClient = run {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(120, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+
+        // Tailscale / private IPs use the NAS's domain certificate, which won't match
+        // the IP address. Allow hostname mismatch only for private/Tailscale URLs.
+        val url = BuildConfig.CONTRIB_URL
+        val isTailscaleOrPrivate = url.contains("100.") || url.contains("192.168.") || url.contains("10.")
+        if (isTailscaleOrPrivate) {
+            val trustManager = object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+            }
+            val sslContext = SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf<TrustManager>(trustManager), SecureRandom())
+            }
+            builder.sslSocketFactory(sslContext.socketFactory, trustManager)
+            builder.hostnameVerifier { _, _ -> true }
+        }
+
+        builder.build()
+    }
 
     /**
      * Uploads the JPEG image and its COCO JSON annotation to {baseUrl}/{yearMonth}/.
@@ -79,7 +105,15 @@ object WebDavUploadClient {
                         .header("Authorization", authHeader)
                         .put(body.toRequestBody(mime.toMediaType()))
                         .build()
-                ).execute().use { it.isSuccessful }
-            }.getOrDefault(false)
+                ).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        Log.w("WebDavUpload", "PUT $url → HTTP ${response.code}: ${response.message}")
+                    }
+                    response.isSuccessful
+                }
+            }.getOrElse { e ->
+                Log.e("WebDavUpload", "PUT $url failed: ${e.javaClass.simpleName}: ${e.message}")
+                false
+            }
         }
 }

@@ -29,18 +29,18 @@ class ContributionRepository(
     suspend fun maybeEnqueue(session: DetectionSession): Boolean {
         if (!settings.contributeConsentGiven.first()) return false
         if (!WebDavUploadClient.isConfigured) return false
-        enqueueSession(session)
-        return true
+        return enqueueSession(session)
     }
 
     /**
      * Direct enqueue — called when user accepts the contribution prompt or taps the
      * upload button in SessionDetailScreen. Duplicate-safe.
+     * Returns false if COCO serialization fails (missing image, invalid dimensions).
      */
-    suspend fun enqueueSession(session: DetectionSession) {
+    suspend fun enqueueSession(session: DetectionSession): Boolean {
         val existing = dao.getStatusForUri(session.imageUri)
-        if (existing == ContributionStatus.PENDING.name || existing == ContributionStatus.DONE.name) return
-        val json = CocoAnnotationSerializer.build(context, session)
+        if (existing == ContributionStatus.PENDING.name || existing == ContributionStatus.DONE.name) return true
+        val json = CocoAnnotationSerializer.build(context, session) ?: return false
         dao.insert(
             ContributionQueueItem(
                 sessionId = session.id,
@@ -50,9 +50,22 @@ class ContributionRepository(
             )
         )
         scheduleWorker()
+        return true
+    }
+
+    /** Clear all pending items (called when user revokes contribution consent). */
+    suspend fun clearPendingQueue() {
+        dao.deletePending()
+    }
+
+    /** Clear entire queue (called by reset all data). */
+    suspend fun clearAll() {
+        dao.deleteAll()
     }
 
     fun getPendingCountFlow(): Flow<Int> = dao.getPendingCountFlow()
+    fun getDoneCountFlow(): Flow<Int> = dao.getDoneCountFlow()
+    fun getFailedCountFlow(): Flow<Int> = dao.getFailedCountFlow()
 
     fun getStatusFlowForUri(uri: String): Flow<String?> = dao.getStatusFlowForUri(uri)
 
