@@ -1,6 +1,7 @@
 package com.oceanguard.ai.utils
 
 import android.content.Context
+import android.media.ExifInterface
 import android.net.Uri
 import android.util.Log
 import java.io.File
@@ -50,6 +51,9 @@ object ImagePersistence {
                 return uriString
             }
 
+            // Preserve EXIF metadata (GPS, orientation, date, camera info)
+            copyExifData(context, sourceUri, dest)
+
             val localUri = Uri.fromFile(dest).toString()
             Log.i(TAG, "Persisted image: $localUri (${dest.length() / 1024}KB)")
             localUri
@@ -58,4 +62,35 @@ object ImagePersistence {
             uriString
         }
     }
+
+    /** Copy key EXIF tags from source URI to the persisted file. */
+    private fun copyExifData(context: Context, sourceUri: Uri, dest: File) {
+        try {
+            val srcExif = context.contentResolver.openInputStream(sourceUri)?.use { ExifInterface(it) }
+                ?: return
+            val dstExif = ExifInterface(dest)
+            for (tag in EXIF_TAGS_TO_COPY) {
+                srcExif.getAttribute(tag)?.let { dstExif.setAttribute(tag, it) }
+            }
+            dstExif.saveAttributes()
+        } catch (e: Exception) {
+            Log.w(TAG, "EXIF copy failed (non-fatal)", e)
+        }
+    }
+
+    private val EXIF_TAGS_TO_COPY = arrayOf(
+        ExifInterface.TAG_ORIENTATION,
+        ExifInterface.TAG_DATETIME,
+        ExifInterface.TAG_DATETIME_ORIGINAL,
+        ExifInterface.TAG_GPS_LATITUDE,
+        ExifInterface.TAG_GPS_LATITUDE_REF,
+        ExifInterface.TAG_GPS_LONGITUDE,
+        ExifInterface.TAG_GPS_LONGITUDE_REF,
+        ExifInterface.TAG_GPS_ALTITUDE,
+        ExifInterface.TAG_GPS_ALTITUDE_REF,
+        ExifInterface.TAG_MAKE,
+        ExifInterface.TAG_MODEL,
+        ExifInterface.TAG_IMAGE_WIDTH,
+        ExifInterface.TAG_IMAGE_LENGTH,
+    )
 }

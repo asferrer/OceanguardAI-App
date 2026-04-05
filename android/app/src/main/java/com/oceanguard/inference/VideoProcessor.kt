@@ -65,8 +65,18 @@ class VideoProcessor(
         var outputFile: File? = null
 
         try {
-            retriever.setDataSource(context, videoUri)
+            try {
+                retriever.setDataSource(context, videoUri)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Cannot open video: file may be corrupted or unsupported", e)
+            }
             val (durationMs, frameRate, outputW, outputH) = probeVideo(retriever)
+            if (durationMs <= 0L) {
+                throw IllegalArgumentException("Invalid video: duration is $durationMs ms")
+            }
+            if (outputW <= 0 || outputH <= 0) {
+                throw IllegalArgumentException("Invalid video dimensions: ${outputW}x${outputH}")
+            }
             val totalFrames = ((durationMs * frameRate) / 1000L).toInt().coerceAtLeast(1)
             val intervalUs = 1_000_000L / frameRate
 
@@ -88,7 +98,10 @@ class VideoProcessor(
 
                 val timeUs = frameIdx * intervalUs
                 val rawBitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-                    ?: continue
+                if (rawBitmap == null) {
+                    Log.w(TAG, "Frame $frameIdx skipped: getFrameAtTime returned null at ${timeUs}us")
+                    continue
+                }
 
                 val t0 = System.currentTimeMillis()
                 val detections = detector.detect(rawBitmap, confidenceThreshold)
