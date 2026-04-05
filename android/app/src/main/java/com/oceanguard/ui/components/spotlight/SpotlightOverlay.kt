@@ -103,18 +103,26 @@ fun SpotlightOverlay(
     LaunchedEffect(controller.currentIndex) {
         val targetId = controller.currentStep?.targetId ?: return@LaunchedEffect
 
-        // Wait for layout to settle after step change.
-        delay(200)
-
-        // Phase 1: If the target is not yet composed (e.g. off-screen in a
-        // LazyColumn), ask the host screen to scroll it into view first.
-        if (targetBounds[targetId] == null && onScrollToTarget != null) {
-            onScrollToTarget(targetId)
-            delay(400)
+        // Phase 1: if the target is not in the bounds map it is off-screen.
+        // Give layout one frame (≈16 ms) to populate bounds before deciding to scroll.
+        if (targetBounds[targetId] == null) {
+            delay(100)
+            if (targetBounds[targetId] == null && onScrollToTarget != null) {
+                // animateScrollToItem is suspending — it returns only after the
+                // animation completes, so no extra delay is needed here.
+                onScrollToTarget(targetId)
+                // One extra frame for post-scroll layout re-measure.
+                delay(100)
+            }
+            if (targetBounds[targetId] == null) return@LaunchedEffect
         }
 
-        // Phase 2: Always scroll so the target is centred at ~35 % from the
-        // top of the viewport, leaving room for the tooltip underneath.
+        // Phase 2: fine-tune vertical centering for Column+verticalScroll screens only.
+        // For LazyColumn screens (onScrollToTarget), animateScrollToItem already positions
+        // the item correctly — calling onScrollToTarget a second time would start a
+        // redundant second animation and block the UI for another ~500 ms.
+        if (scrollState == null) return@LaunchedEffect
+
         val wb = targetBounds[targetId] ?: return@LaunchedEffect
         val localTop = wb.top - overlayWindowOffset.y
         val localBottom = wb.bottom - overlayWindowOffset.y
@@ -125,16 +133,12 @@ fun SpotlightOverlay(
         val idealY = viewH * 0.35f
         val delta = targetCenter - idealY
 
-        // Skip negligible adjustments (< 20 px).
-        if (kotlin.math.abs(delta) < 20f) return@LaunchedEffect
+        // Skip negligible adjustments (< 40 px avoids micro-scroll jitter).
+        if (kotlin.math.abs(delta) < 40f) return@LaunchedEffect
 
-        if (scrollState != null) {
-            scrollState.animateScrollTo(
-                (scrollState.value + delta.toInt()).coerceIn(0, scrollState.maxValue),
-            )
-        } else if (onScrollToTarget != null) {
-            onScrollToTarget(targetId)
-        }
+        scrollState.animateScrollTo(
+            (scrollState.value + delta.toInt()).coerceIn(0, scrollState.maxValue),
+        )
     }
 
     Box(
