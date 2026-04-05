@@ -220,15 +220,38 @@ internal fun ReportHeader(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(
-                    text = if (report.usedAi) {
-                        stringResource(R.string.report_header_ai_generated)
-                    } else {
-                        stringResource(R.string.report_header_template)
-                    },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = if (report.usedAi) {
+                            stringResource(R.string.report_header_ai_generated)
+                        } else {
+                            stringResource(R.string.report_header_template)
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    report.audience?.let { key ->
+                        val label = when (key) {
+                            "ngo_manager" -> stringResource(R.string.audience_ngo)
+                            "citizen" -> stringResource(R.string.audience_citizen)
+                            else -> stringResource(R.string.audience_scientific)
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = if (report.sessionCount != 1) stringResource(R.string.report_card_meta_plural, report.sessionCount, report.language.uppercase(), dateFormat.format(report.timestamp))
                            else stringResource(R.string.report_card_meta_singular, report.sessionCount, report.language.uppercase(), dateFormat.format(report.timestamp)),

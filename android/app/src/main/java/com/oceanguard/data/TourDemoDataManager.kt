@@ -243,6 +243,7 @@ Start scanning real coastal images to discover all 11 debris types in your **Mar
                 language = "en",
                 sessionCount = 1,
                 usedAi = false,
+                audience = "scientific",
             )
         )
     }

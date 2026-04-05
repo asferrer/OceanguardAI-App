@@ -260,6 +260,8 @@ data class GeneratedReport(
     val centroidLon: Double? = null,
     val dateRangeStartMs: Long? = null,
     val dateRangeEndMs: Long? = null,
+    // v7: audience used for report generation (nullable for backward compat)
+    val audience: String? = null,
 )
 
 /**
