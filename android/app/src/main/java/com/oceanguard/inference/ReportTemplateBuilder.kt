@@ -28,6 +28,7 @@ internal object ReportTemplateBuilder {
     fun buildTemplateReport(
         sessions: List<DetectionSession>,
         language: String,
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): String {
         val totalDebris = sessions.sumOf { it.totalCount }
         val avgHealth = sessions.map { it.healthScore }.average()
@@ -58,8 +59,14 @@ internal object ReportTemplateBuilder {
             "No high-risk items were identified in this survey period."
         }
 
+        val title = when (audience) {
+            ReportAudience.SCIENTIFIC -> "Marine Debris Survey Report"
+            ReportAudience.NGO_MANAGER -> "Marine Debris Field Assessment"
+            ReportAudience.CITIZEN -> "Ocean Health Report"
+        }
+
         return buildString {
-            appendLine("# OceanGuard AI — Marine Debris Survey Report")
+            appendLine("# OceanGuard AI — $title")
             appendLine()
             appendLine("**Survey period:** $dateRange")
             appendLine("**Sessions analysed:** $sessionCount")
@@ -105,7 +112,7 @@ internal object ReportTemplateBuilder {
             appendLine()
             appendLine("## Recommendations")
             appendLine()
-            val recs = buildRecommendations(dominantMaterial?.key, avgHealth, highRiskCount)
+            val recs = buildRecommendations(dominantMaterial?.key, avgHealth, highRiskCount, audience)
             recs.forEachIndexed { i, rec -> appendLine("${i + 1}. $rec") }
             appendLine()
             appendLine("---")
@@ -122,6 +129,7 @@ internal object ReportTemplateBuilder {
     fun buildZoneTemplateReport(
         input: ZoneReportInput,
         language: String,
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): String {
         val totalDebris = input.sessions.sumOf { it.totalCount }
         val avgHealth = input.sessions.map { it.healthScore }.average()
@@ -133,8 +141,14 @@ internal object ReportTemplateBuilder {
         val trendLabel = trendLabel(input.trend)
         val sortedDays = input.dayGroups.sortedBy { it.date }
 
+        val title = when (audience) {
+            ReportAudience.SCIENTIFIC -> "Zone Environmental Report"
+            ReportAudience.NGO_MANAGER -> "Zone Field Assessment"
+            ReportAudience.CITIZEN -> "Zone Ocean Health Report"
+        }
+
         return buildString {
-            appendLine("# OceanGuard AI — Zone Environmental Report")
+            appendLine("# OceanGuard AI — $title")
             appendLine()
             appendLine("**Location:** ${input.locationName}")
             appendLine("**Survey period:** $dateRange")
@@ -173,7 +187,7 @@ internal object ReportTemplateBuilder {
             appendLine()
             appendLine("## Recommendations")
             appendLine()
-            val recs = buildRecommendations(dominantMaterial?.key, avgHealth, highRiskCount)
+            val recs = buildRecommendations(dominantMaterial?.key, avgHealth, highRiskCount, audience)
             recs.forEachIndexed { i, rec -> appendLine("${i + 1}. $rec") }
             appendLine()
             appendLine("---")
@@ -360,51 +374,122 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         dominantMaterial: DebrisMaterial?,
         avgHealth: Double,
         highRiskCount: Int,
+        audience: ReportAudience = ReportAudience.SCIENTIFIC,
     ): List<String> {
         val recs = mutableListOf<String>()
-        recs.add(when (dominantMaterial) {
-            DebrisMaterial.PLASTIC, null ->
-                "Launch a targeted plastic-retrieval dive operation in the surveyed area, " +
-                "prioritising single-use items (bottles, bags, packaging) which have the highest " +
-                "ingestion risk for sea turtles and seabirds."
-            DebrisMaterial.FISHING_NET, DebrisMaterial.FABRIC ->
-                "Coordinate with local fishing cooperatives to establish a ghost-gear retrieval " +
-                "programme. Derelict nets represent the greatest entanglement risk to marine megafauna."
-            DebrisMaterial.METAL ->
-                "Partner with dive clubs and port authorities to organise a heavy-debris removal " +
-                "operation. Metal debris causes localised habitat destruction and can leach toxins."
-            DebrisMaterial.RUBBER ->
-                "Identify the source of rubber debris (tyres, seals, equipment) and engage with " +
-                "upstream industries to enforce responsible disposal."
-            DebrisMaterial.GLASS ->
-                "Schedule a fine-debris sweep of the surveyed area to collect glass fragments, " +
-                "which pose acute injury risk to benthic species and divers alike."
-            DebrisMaterial.OTHER ->
-                "Conduct a detailed debris characterisation study to identify the dominant materials " +
-                "present before designing a tailored removal strategy."
+        recs.add(when (audience) {
+            ReportAudience.CITIZEN -> when (dominantMaterial) {
+                DebrisMaterial.PLASTIC, null ->
+                    "Organise a beach or dive cleanup with friends — even picking up a few plastic " +
+                    "bottles and bags makes a real difference for sea turtles and seabirds."
+                DebrisMaterial.FISHING_NET, DebrisMaterial.FABRIC ->
+                    "Report abandoned nets to your local coastguard or fishing authority — they can " +
+                    "trap dolphins and turtles if left in the water."
+                DebrisMaterial.METAL ->
+                    "Join a local dive-club cleanup event to help remove heavy metal debris that " +
+                    "damages the seabed and can leach harmful chemicals."
+                DebrisMaterial.RUBBER ->
+                    "Help identify where rubber waste (old tyres, seals) enters the water and " +
+                    "report it to your municipality for proper disposal."
+                DebrisMaterial.GLASS ->
+                    "Wear gloves and collect glass fragments carefully — broken glass injures " +
+                    "marine life and divers alike."
+                DebrisMaterial.OTHER ->
+                    "Take photos of unusual debris and share them with a marine conservation group " +
+                    "to help scientists understand what ends up in the ocean."
+            }
+            ReportAudience.NGO_MANAGER -> when (dominantMaterial) {
+                DebrisMaterial.PLASTIC, null ->
+                    "IMMEDIATE: Deploy a targeted plastic-retrieval operation, prioritising " +
+                    "single-use items. Engage local waste-management authorities for upstream prevention."
+                DebrisMaterial.FISHING_NET, DebrisMaterial.FABRIC ->
+                    "IMMEDIATE: Coordinate with fishing cooperatives for ghost-gear retrieval. " +
+                    "SHORT-TERM: Advocate for mandatory gear-marking regulations."
+                DebrisMaterial.METAL ->
+                    "IMMEDIATE: Partner with dive clubs and port authorities for heavy-debris removal. " +
+                    "SHORT-TERM: Audit nearby industrial discharge points."
+                DebrisMaterial.RUBBER ->
+                    "SHORT-TERM: Identify rubber debris sources (tyres, industrial seals) and " +
+                    "engage upstream industries to enforce responsible disposal."
+                DebrisMaterial.GLASS ->
+                    "IMMEDIATE: Schedule a fine-debris sweep. SHORT-TERM: Install collection points " +
+                    "at nearby access points to prevent glass entering the water."
+                DebrisMaterial.OTHER ->
+                    "SHORT-TERM: Commission a detailed debris characterisation study before " +
+                    "designing a tailored removal strategy."
+            }
+            ReportAudience.SCIENTIFIC -> when (dominantMaterial) {
+                DebrisMaterial.PLASTIC, null ->
+                    "Launch a targeted plastic-retrieval dive operation in the surveyed area, " +
+                    "prioritising single-use items (bottles, bags, packaging) which have the highest " +
+                    "ingestion risk for sea turtles and seabirds."
+                DebrisMaterial.FISHING_NET, DebrisMaterial.FABRIC ->
+                    "Coordinate with local fishing cooperatives to establish a ghost-gear retrieval " +
+                    "programme. Derelict nets represent the greatest entanglement risk to marine megafauna."
+                DebrisMaterial.METAL ->
+                    "Partner with dive clubs and port authorities to organise a heavy-debris removal " +
+                    "operation. Metal debris causes localised habitat destruction and can leach toxins."
+                DebrisMaterial.RUBBER ->
+                    "Identify the source of rubber debris (tyres, seals, equipment) and engage with " +
+                    "upstream industries to enforce responsible disposal."
+                DebrisMaterial.GLASS ->
+                    "Schedule a fine-debris sweep of the surveyed area to collect glass fragments, " +
+                    "which pose acute injury risk to benthic species and divers alike."
+                DebrisMaterial.OTHER ->
+                    "Conduct a detailed debris characterisation study to identify the dominant materials " +
+                    "present before designing a tailored removal strategy."
+            }
         })
         if (avgHealth < 60) {
-            recs.add(
-                "Establish a long-term monitoring programme with monthly survey sessions at this " +
-                "location to track remediation progress. Set a target health score of 70/100 within " +
-                "12 months and adjust intervention intensity accordingly."
-            )
+            recs.add(when (audience) {
+                ReportAudience.CITIZEN ->
+                    "This area needs help! Consider visiting monthly to track improvements — your " +
+                    "photos and observations are valuable data for scientists."
+                ReportAudience.NGO_MANAGER ->
+                    "LONG-TERM: Establish monthly monitoring at this location. Set a target health " +
+                    "score of 70/100 within 12 months and adjust intervention intensity accordingly."
+                ReportAudience.SCIENTIFIC ->
+                    "Establish a long-term monitoring programme with monthly survey sessions at this " +
+                    "location to track remediation progress. Set a target health score of 70/100 within " +
+                    "12 months and adjust intervention intensity accordingly."
+            })
         } else {
-            recs.add(
-                "Maintain the current monitoring frequency and share survey results with regional " +
-                "environmental agencies to contribute to national marine pollution databases."
-            )
+            recs.add(when (audience) {
+                ReportAudience.CITIZEN ->
+                    "Great news — this area is in decent shape! Keep visiting and sharing your " +
+                    "observations to help maintain it."
+                ReportAudience.NGO_MANAGER ->
+                    "Maintain current monitoring frequency. Share results with regional environmental " +
+                    "agencies to contribute to national marine pollution databases."
+                ReportAudience.SCIENTIFIC ->
+                    "Maintain the current monitoring frequency and share survey results with regional " +
+                    "environmental agencies to contribute to national marine pollution databases."
+            })
         }
         if (highRiskCount > 0) {
-            recs.add(
-                "Prioritise the removal of the $highRiskCount high-risk item(s) identified in this " +
-                "survey (risk score 4–5). These objects should be collected before the next tidal cycle."
-            )
+            recs.add(when (audience) {
+                ReportAudience.CITIZEN ->
+                    "There are $highRiskCount dangerous items that could harm marine life — if you " +
+                    "spot them, alert local authorities or a dive team for safe removal."
+                ReportAudience.NGO_MANAGER ->
+                    "IMMEDIATE: Prioritise removal of $highRiskCount high-risk items (risk 4–5). " +
+                    "Schedule collection before the next tidal cycle."
+                ReportAudience.SCIENTIFIC ->
+                    "Prioritise the removal of the $highRiskCount high-risk item(s) identified in this " +
+                    "survey (risk score 4–5). These objects should be collected before the next tidal cycle."
+            })
         } else {
-            recs.add(
-                "Engage the local community through citizen science dive events to maintain debris " +
-                "levels and raise awareness of the impact of land-based pollution on coastal ecosystems."
-            )
+            recs.add(when (audience) {
+                ReportAudience.CITIZEN ->
+                    "No dangerous items were found — spread the word and invite others to help keep " +
+                    "our oceans clean through community dive events!"
+                ReportAudience.NGO_MANAGER ->
+                    "Engage the local community through citizen science events to maintain low debris " +
+                    "levels and raise public awareness."
+                ReportAudience.SCIENTIFIC ->
+                    "Engage the local community through citizen science dive events to maintain debris " +
+                    "levels and raise awareness of the impact of land-based pollution on coastal ecosystems."
+            })
         }
         return recs
     }

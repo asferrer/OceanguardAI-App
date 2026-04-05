@@ -39,7 +39,7 @@ enum class TextModelTier(
         filename     = "Qwen3.5-0.8B-Q4_K_M.gguf",
         sizeLabel    = "~533 MB",
         displayName  = "Fast (0.8B)",
-        nCtx         = 4096,   // No thinking — standard context is sufficient
+        nCtx         = 8192,   // Raised from 4096 — gives ~6400 output tokens after prompt overhead
         temperature  = 0.3f,
         topK         = 20,
         formatter    = QwenPromptFormatter,

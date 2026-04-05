@@ -134,7 +134,7 @@ class ReportGenerator(
         val firstHeading = FIRST_HEADING[language] ?: "## Executive Summary"
         val response = inference.generateText(
             prompt = prompt,
-            maxTokens = 4096,
+            maxTokens = 6144,
             systemMessage = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
@@ -159,7 +159,7 @@ class ReportGenerator(
         val firstHeading = FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
         val response = inference.generateText(
             prompt = prompt,
-            maxTokens = 4096,
+            maxTokens = 6144,
             systemMessage = buildSystemMessage(languageName, audience),
             assistantPrefill = firstHeading,
         ) { partial ->
@@ -558,57 +558,67 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
     ): String {
         val persona = when (audience) {
             ReportAudience.SCIENTIFIC ->
-                "You are a professional marine conservation scientist authoring a peer-reviewed " +
+                "You are a senior marine conservation scientist authoring a comprehensive, peer-reviewed " +
                 "field assessment report. Use scientific nomenclature, cite ecological mechanisms " +
-                "by name, and maintain methodological rigor."
+                "by name, provide quantitative analysis, and maintain full methodological rigor throughout."
             ReportAudience.NGO_MANAGER ->
-                "You are an environmental consultant preparing an operational marine debris " +
-                "assessment for a coastal conservation organization. Balance technical accuracy " +
-                "with practical, action-oriented language suited for field managers."
+                "You are a senior environmental consultant preparing a detailed operational marine debris " +
+                "assessment for a coastal conservation organization. Provide thorough technical analysis " +
+                "combined with concrete, prioritized action plans suited for field managers and funders."
             ReportAudience.CITIZEN ->
-                "You are a marine environment educator writing for citizen scientists and " +
-                "recreational divers. Use clear, jargon-free language. Motivate action by " +
-                "connecting findings to tangible marine impacts."
+                "You are an experienced marine environment educator writing a detailed, engaging report " +
+                "for citizen scientists, recreational divers, and the general public. Use vivid, " +
+                "accessible language with relatable analogies. Motivate action with specific, clear guidance."
         }
         val styleRules = when (audience) {
             ReportAudience.SCIENTIFIC ->
-                "Style rules:\n" +
-                "- Passive voice for methodology; active voice for findings.\n" +
-                "- Hedge appropriately: 'indicates', 'suggests', 'consistent with'.\n" +
-                "- Species: binomial Latin name (e.g. Caretta caretta) + common name in parentheses on first mention.\n" +
-                "- Tense: present for findings, conditional ('should', 'would') for recommendations.\n" +
-                "- Bullet points are complete sentences ending with a period."
+                "Style:\n" +
+                "- Passive voice for methodology; active voice for findings and conclusions.\n" +
+                "- Hedge appropriately: 'indicates', 'suggests', 'consistent with', 'preliminary data suggest'.\n" +
+                "- Species: binomial Latin name (e.g. Caretta caretta) + common name on first mention.\n" +
+                "- Tense: present for findings, conditional for recommendations.\n" +
+                "- All bullet points are complete sentences ending with a period.\n" +
+                "- Include specific numeric values and percentages in every key claim."
             ReportAudience.NGO_MANAGER ->
-                "Style rules:\n" +
-                "- Active voice, imperative mood for recommendations.\n" +
-                "- Label each intervention as IMMEDIATE (<48 h) / SHORT-TERM (<30 days) / LONG-TERM.\n" +
-                "- Species: common name first, Latin in parentheses only if helpful.\n" +
-                "- Tense: present for findings, imperative for recommendations.\n" +
-                "- Name specific local actors: municipality, port authority, fishing community, coast guard."
+                "Style:\n" +
+                "- Active voice, imperative mood for all recommendations.\n" +
+                "- Label every intervention: IMMEDIATE (<48 h) / SHORT-TERM (<30 days) / LONG-TERM.\n" +
+                "- Name specific local actors: municipality, port authority, fishing community, coast guard.\n" +
+                "- Include rough effort estimates (person-hours, equipment, cost range) where applicable.\n" +
+                "- Tense: present for findings, imperative for recommendations."
             ReportAudience.CITIZEN ->
-                "Style rules:\n" +
-                "- Active voice, warm and motivating tone — never condescending.\n" +
-                "- Convert abstract metrics to relatable analogies (e.g. 450 years ≈ 6 human lifetimes).\n" +
-                "- Explain jargon on first use: 'microplastics (tiny plastic particles smaller than 5 mm)'.\n" +
-                "- Species: common names only, no Latin binomials.\n" +
-                "- Recommendations: mix personal actions (what you can do) with community and civic actions."
+                "Style:\n" +
+                "- Warm, motivating, active voice — never condescending or alarmist.\n" +
+                "- Convert every abstract metric into a relatable analogy (e.g. '450 years ≈ 6 human lifetimes').\n" +
+                "- Explain jargon the first time it appears: 'microplastics (tiny plastic fragments under 5 mm)'.\n" +
+                "- Use common names for animals, no Latin binomials.\n" +
+                "- Recommendations: personal actions + community actions + civic/policy actions."
         }
+        val comprehensivenessDirective =
+            "COMPREHENSIVENESS MANDATE: This is a formal assessment document, NOT a summary. " +
+            "Write at minimum 1200 words of body content. Every section must contain multiple full paragraphs " +
+            "OR a detailed table with ≥4 data rows. Do NOT end the report prematurely — write ALL sections completely. " +
+            "If a section has little data, note the limitation and expand adjacent analysis instead.\n\n" +
+            "VISUAL ELEMENTS (mandatory):\n" +
+            "- Include at least one ASCII bar chart using ██ blocks (e.g. for debris type distribution).\n" +
+            "- If collection_waypoints is non-empty, include a text-based spatial map in a code block.\n" +
+            "- Include a detailed collection itinerary table with waypoint IDs, coordinates, priority, and method.\n\n"
         return "OUTPUT LANGUAGE: $languageName. Every word of your response must be in " +
-            "$languageName. Do not write a single sentence in English unless a scientific " +
-            "Latin term has no equivalent. Section headings (##) must also be in $languageName.\n\n" +
+            "$languageName. Do not write a single sentence in English unless a Latin scientific " +
+            "term has no equivalent. All ## section headings must be in $languageName.\n\n" +
             "$persona\n\n" +
             "$styleRules\n\n" +
-            "Consistency rules: use present tense for findings throughout; " +
-            "always refer to data points as 'analyzed images', never 'samples', 'photos', or 'sessions'; " +
-            "keep terminology uniform — do not alternate between synonyms.\n\n" +
-            "Generate the report using ONLY the data provided in the JSON. " +
+            comprehensivenessDirective +
+            "Consistency: present tense for findings throughout; refer to data points as 'analyzed images' " +
+            "not 'samples', 'photos', or 'sessions'; keep terminology uniform.\n\n" +
             "GROUNDING RULES — mandatory, no exceptions:\n" +
-            "1. Only mention debris types, materials, and species that correspond to entries in the JSON.\n" +
-            "2. Percentages must match the JSON counts exactly (round to 1 decimal).\n" +
+            "1. Only mention debris types, materials, and species derivable from the JSON.\n" +
+            "2. Percentages must match JSON counts exactly (round to 1 decimal place).\n" +
             "3. Dates must fall within date_range in the JSON.\n" +
-            "4. If health_score > 75: the site is in good condition — do not describe it as contaminated.\n" +
-            "5. Do not invent GPS coordinates, species names, or ecological pathways not supported by the data.\n" +
-            "Format: ## headings, bullet points, markdown tables with | separators."
+            "4. health_score > 75 means good condition — do not describe it as contaminated.\n" +
+            "5. Do not invent GPS coordinates, species names, or ecological pathways not in the data.\n" +
+            "6. collection_waypoints in the JSON are the ONLY GPS points you may cite for the itinerary.\n" +
+            "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |), code blocks for maps."
     }
 
     private suspend fun runTextInference(
@@ -695,18 +705,65 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
     private fun buildSessionDetail(session: DetectionSession): JSONObject {
         val allDebris = session.debrisList
         val typeMap = mutableMapOf<String, Int>()
-        allDebris.forEach { d -> typeMap[d.type.name] = (typeMap[d.type.name] ?: 0) + 1 }
+        val materialMap = mutableMapOf<String, Int>()
+        allDebris.forEach { d ->
+            typeMap[d.type.name] = (typeMap[d.type.name] ?: 0) + 1
+            materialMap[d.material.name] = (materialMap[d.material.name] ?: 0) + 1
+        }
+        val dominantType = typeMap.maxByOrNull { it.value }?.key ?: "N/A"
+        val priority = when {
+            session.totalCount >= 8 || session.healthScore < 30 -> "HIGH"
+            session.totalCount >= 4 || session.healthScore < 60 -> "MEDIUM"
+            else -> "LOW"
+        }
         return JSONObject().apply {
-            put("id", session.id)   // needed for VLM verification lookup
+            put("id", session.id)
             put("timestamp", DATE_FORMAT.format(session.timestamp))
             put("debris_count", session.totalCount)
             put("health_score", session.healthScore)
             put("image_quality", session.imageQuality.name)
             put("type_breakdown", JSONObject(typeMap as Map<*, *>))
+            put("material_breakdown", JSONObject(materialMap as Map<*, *>))
+            put("dominant_type", dominantType)
+            put("collection_priority", priority)
             if (session.location != null) {
-                put("lat", String.format("%.4f", session.location.latitude))
-                put("lon", String.format("%.4f", session.location.longitude))
+                put("lat", String.format("%.5f", session.location.latitude))
+                put("lon", String.format("%.5f", session.location.longitude))
             }
+        }
+    }
+
+    /** Builds a prioritized, GPS-ordered list of collection waypoints from sessions with location data. */
+    private fun buildCollectionWaypoints(sessions: List<DetectionSession>): JSONArray {
+        return JSONArray().also { arr ->
+            sessions
+                .filter { it.location != null }
+                .sortedByDescending { it.totalCount }
+                .forEachIndexed { idx, session ->
+                    val materialMap = mutableMapOf<String, Int>()
+                    session.debrisList.forEach { d ->
+                        materialMap[d.material.name] = (materialMap[d.material.name] ?: 0) + 1
+                    }
+                    val dominantMaterial = materialMap.maxByOrNull { it.value }?.key ?: "N/A"
+                    val dominantType = session.debrisList
+                        .groupingBy { it.type.name }.eachCount()
+                        .maxByOrNull { it.value }?.key ?: "N/A"
+                    arr.put(JSONObject().apply {
+                        put("waypoint_id", "WP-${String.format("%02d", idx + 1)}")
+                        put("lat", String.format("%.5f", session.location!!.latitude))
+                        put("lon", String.format("%.5f", session.location.longitude))
+                        put("debris_count", session.totalCount)
+                        put("health_score", session.healthScore)
+                        put("dominant_type", dominantType)
+                        put("dominant_material", dominantMaterial)
+                        put("timestamp", DATE_FORMAT.format(session.timestamp))
+                        put("collection_priority", when {
+                            session.totalCount >= 8 || session.healthScore < 30 -> "HIGH"
+                            session.totalCount >= 4 || session.healthScore < 60 -> "MEDIUM"
+                            else -> "LOW"
+                        })
+                    })
+                }
         }
     }
 
@@ -742,68 +799,111 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
             put("risk_breakdown", buildRiskBreakdown(allDebris))
             put("image_quality", buildQualityDistribution(sessions))
             put("locations", locationSummary)
+            put("collection_waypoints", buildCollectionWaypoints(sessions))
             put("sessions", sessionDetails)
         }.toString(2)
     }
 
     private fun buildVlmPrompt(languageName: String, jsonSummary: String, language: String = "en"): String = """
-Generate a marine debris environmental assessment report using ONLY the JSON data below.
-STRICT GROUNDING: every species, percentage, and ecological claim must be directly derivable from the JSON. If a debris type is not in type_breakdown, do not mention its impacts.
-Rules: no invented data; ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative with exact numbers and percentages.
-TRANSLATE ALL SECTION HEADINGS to $languageName: "Executive Summary", "Survey Overview", "Debris Composition", "Environmental Impact Assessment", "Risk Assessment", "Location and Spatial Context", "Conservation Recommendations".
+Generate a comprehensive marine debris environmental assessment report using ONLY the JSON data below.
+STRICT GROUNDING: all species, percentages, coordinates, and ecological claims must be derivable from the JSON.
+Rules: never invent data; ## section headings; ### subsection headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be precise and quantitative.
+TRANSLATE ALL SECTION HEADINGS to $languageName.
 
-## Executive Summary (write in $languageName)
-Lead with the most critical finding. Do NOT start with "This report presents..." or similar filler.
-- Sentence 1: Open with urgency — state the health category (Critical <30 / High 30–50 / Moderate 50–70 / Good >70) + total debris count across N analyzed images.
-- Sentence 2: Name the dominant threat — highest-count debris type, its exact % of total, and its primary ecological risk in this marine context.
-- Sentence 3: Spatial/temporal scope — date range and location (if GPS available, otherwise "unspecified location").
-- Sentence 4: Recommended action priority — Immediate cleanup / Short-term monitoring / Routine surveillance, justified by the health score.
+## Executive Summary
+Open directly with the most critical finding — NO preamble phrases like "This report presents...".
+- Paragraph 1 (3–4 sentences): State the health category (Critical <30 / High 30–50 / Moderate 50–70 / Good >70), exact debris count, survey scope (date range + location or "unspecified location"), and recommended action urgency (Immediate / Short-term / Routine).
+- Paragraph 2 (2–3 sentences): Name the dominant debris type (with its exact % of total) and the dominant material, and explain their primary combined ecological risk.
 
-## Survey Overview (write in $languageName)
-- Date range, total analyzed images, average debris items per image
-- Image quality breakdown (from image_quality field): count per quality tier
-- Detection confidence range: min / avg / max from confidence_range
-- Risk profile summary: high_risk / medium_risk / low_risk item counts
+## Methodology & Survey Overview
+- Survey parameters: date range (first to last analyzed image), total analyzed images, total debris items detected, average items per image.
+- Image quality distribution table (all column headers in $languageName):
+  | Quality Tier | Analyzed Images | % of Total |
+- Detection confidence statistics: minimum / average / maximum confidence score from confidence_range.
+- Risk profile overview: high_risk / medium_risk / low_risk item counts from risk_breakdown.
+- Paragraph explaining survey limitations (image quality, GPS availability, single vs. multi-day coverage).
 
-## Debris Composition (write in $languageName)
+## Spatial Distribution & Collection Waypoints
+If collection_waypoints is non-empty:
 
-Table 1 — by material (calculate % from total_debris_items; all column headers in $languageName):
-| Material | Count | % of Total | Estimated Marine Persistence | Risk Level |
+### Site Map
+Using the waypoint coordinates, generate a text-based spatial map in a code block showing the relative geographic positions of all waypoints.
+Mark each point with its waypoint_id. Add a compass rose (N/S/E/W) and approximate scale.
+```
+[Insert ASCII spatial map here using relative positions of waypoints]
+```
 
-Table 2 — by detection type (all column headers in $languageName):
-| Debris Type | Count | % of Total | Primary Marine Hazard |
+### Collection Route Itinerary
+Generate a prioritized collection itinerary. Sort waypoints by collection_priority (HIGH first), then by debris_count descending.
+Table (all column headers in $languageName):
+| Waypoint | Latitude | Longitude | Debris Count | Health Score | Dominant Type | Priority | Recommended Method |
+For "Recommended Method": suggest boat/on-foot/diving/drone based on debris type and location context.
+After the table, write 2–3 sentences describing the recommended collection route sequence.
 
-## Environmental Impact Assessment (write in $languageName)
-Base EVERY claim on the materials and types present in material_breakdown and type_breakdown.
-For each debris category actually found in the data (and ONLY those):
-- Name one specific threatened species + threat mechanism (entanglement / ingestion / habitat alteration)
-- If the material generates microplastics: state estimated fragmentation timeline
-Maximum 4 bullet points. Do NOT mention species, habitats, or pathways for debris types absent from the data.
+If collection_waypoints is empty: write a 2-sentence note on the importance of GPS georeferencing for cleanup operations.
 
-## Risk Assessment (write in $languageName)
-- High-risk items (exact count from data): identify which types, why critical in marine context
-- Medium-risk items (exact count): describe ecological concern
-- Low-risk items (exact count): describe
-- **Overall site risk rating**: Critical / High / Moderate / Low — justify using health_score and dominant_material
+## Debris Composition
 
-## Location and Spatial Context (write in $languageName)
-If GPS data available: describe coordinate extent, identify likely marine zone (coastal/estuary/open water/pelagic). If no GPS: note limitation, recommend systematic georeferencing for future surveys.
+### Material Analysis
+ASCII bar chart (use ██ blocks, scale to the highest count = 20 blocks):
+```
+[Insert material distribution bar chart]
+Example format: Material ████████████ XX% (count: N)
+```
+Detailed table (all column headers in $languageName):
+| Material | Count | % of Total | Marine Persistence (years) | Microplastic Risk | Primary Threat Pathway | Risk Level |
 
-## Conservation Recommendations (write in $languageName)
-6 specific, prioritized, actionable interventions referencing the actual debris found:
-1. Immediate removal (within 48h): specify the most hazardous debris type and the exact collection method
-2. Cleanup methodology best suited to the dominant material and site type
-3. Source tracing: most probable debris origin pathways to address at root
-4. Monitoring plan: specific survey frequency based on contamination level
-5. Community and stakeholder engagement protocols
-6. Long-term prevention and habitat restoration
+### Type Analysis
+Detailed table (all column headers in $languageName):
+| Debris Type | Count | % of Total | Primary Marine Hazard | Secondary Hazard | Most Vulnerable Taxa | Estimated Cleanup Effort |
+
+## Per-Type Ecological Impact Analysis
+For EACH debris type present in type_breakdown (no omissions, no "maximum N" limit):
+Write a dedicated paragraph (4–6 sentences) covering: (1) quantity and proportion found; (2) specific threatened species + threat mechanism (entanglement / ingestion / habitat alteration / chemical leaching); (3) microplastic fragmentation timeline if applicable; (4) ecological pathway in this specific marine context.
+
+## Risk Assessment
+
+### Risk Matrix
+Table (all column headers in $languageName):
+| Debris Type | Risk Score | Count | Primary Risk Driver | Affected Marine Zone | Urgency |
+
+### Site Risk Summary
+- High-risk items: exact count, which types, and why they are critical in a marine context.
+- Medium-risk items: exact count and ecological concern.
+- Low-risk items: exact count and description.
+- **Overall site risk rating**: Critical / High / Moderate / Low — justify with health_score, dominant_material, and risk_breakdown counts.
+
+## Statistical Analysis
+- Full per-image analysis table (all column headers in $languageName):
+  | Image # | Timestamp | Debris Count | Health Score | Image Quality | Dominant Type | GPS |
+  (use "No GPS" if lat/lon absent; include collection_priority)
+- Detection confidence interpretation: what do the min/avg/max values imply about detection reliability?
+- Quality assessment: correlation between image_quality tiers and debris count.
+
+## Conservation Recommendations
+Write 8 specific, prioritized, actionable interventions referencing the ACTUAL debris types and materials found. Number each item and label the timeframe:
+
+1. [IMMEDIATE — <48 h] Target the highest-priority waypoints: specify exact type, collection method, and team size.
+2. [IMMEDIATE — <48 h] Emergency containment for the most hazardous item type (entanglement/ingestion risk).
+3. [SHORT-TERM — <2 weeks] Full-site cleanup methodology adapted to dominant material and site access.
+4. [SHORT-TERM — <30 days] Source tracing: identify the most probable origin pathways and engage upstream stakeholders.
+5. [SHORT-TERM — <30 days] Community mobilization: specific volunteer engagement protocols.
+6. [MEDIUM-TERM — 3 months] Monitoring plan: survey frequency, KPIs, data collection protocol.
+7. [LONG-TERM — 6–12 months] Prevention: policy/regulatory interventions targeting the dominant debris source.
+8. [LONG-TERM] Habitat restoration: actions for any affected ecosystems identified in the ecological impact analysis.
+
+## Monitoring Protocol
+- Recommended survey frequency based on contamination level (health_score-derived).
+- Key performance indicators (KPIs) to track between surveys: debris density trend, health score evolution, species indicators.
+- Data collection requirements for the next survey: minimum image count, GPS requirement, quality threshold.
+- Trigger conditions for escalating to emergency response.
 
 ---
-Detection data (read only — do not copy into report):
+Detection data (read only — do not reproduce in the report):
 $jsonSummary
 ---
-Before writing: confirm that (1) every ## heading will be in $languageName, not English; (2) no complete sentence will be in English; (3) all table column headers will be in $languageName.
-Write the full report now in $languageName. Start directly with ${FIRST_HEADING[language] ?: "## Executive Summary"}:""".trimIndent()
+Before writing: (1) confirm all ## headings will be in $languageName; (2) confirm no sentence will be in English; (3) confirm all table headers will be in $languageName; (4) confirm you will write ALL sections completely without truncating.
+Write the full comprehensive report now in $languageName. Start directly with ${FIRST_HEADING[language] ?: "## Executive Summary"}:""".trimIndent()
 
     // -----------------------------------------------------------------
     // Zone JSON + prompt
@@ -874,6 +974,7 @@ Write the full report now in $languageName. Start directly with ${FIRST_HEADING[
             })
             put("survey_days", surveyDays)
             put("overall", overall)
+            put("collection_waypoints", buildCollectionWaypoints(input.sessions))
             if (trendDelta != null) put("trend_delta", trendDelta)
         }.toString(2)
     }
@@ -890,59 +991,104 @@ Write the full report now in $languageName. Start directly with ${FIRST_HEADING[
         } else ""
 
         return """
-Generate a marine debris environmental assessment for $locationName using ONLY the JSON data below.
-${periodLine}STRICT GROUNDING: every species, percentage, and ecological claim must be directly derivable from the JSON. If a debris type is not in type_breakdown, do not mention its impacts.
-Rules: never invent data; ## headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be quantitative.
-TRANSLATE ALL SECTION HEADINGS to $languageName: "Zone Profile", "Survey Timeline", "Debris Composition", "Environmental Impact Assessment", "Contamination Trend", "Recommended Actions".
+Generate a comprehensive marine debris environmental assessment for $locationName using ONLY the JSON data below.
+${periodLine}STRICT GROUNDING: all species, percentages, coordinates, and ecological claims must be derivable from the JSON.
+Rules: never invent data; ## section headings; ### subsection headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be precise and quantitative.
+TRANSLATE ALL SECTION HEADINGS to $languageName.
 
-## Zone Profile (write in $languageName)
-- Site name and coordinates (lat/lon from JSON); classify the marine zone (coastal/estuary/open water/port)
-- Survey coverage: number of survey days, date range, total analyzed images, total debris items
-- Site health: interpret overall avg_health_score (0=critically contaminated, 50=moderately contaminated, 100=pristine)
+## Zone Profile
+- Site name: $locationName. Coordinates from JSON (centroid lat/lon). Classify the marine zone: coastal / estuary / open water / port / reef — based on coordinate context.
+- Survey coverage: total survey days, date range, total analyzed images, total debris items, average debris per image.
+- Paragraph (3–4 sentences): Interpret the overall health score (Critical <30 / High 30–50 / Moderate 50–70 / Good >70), the dominant material and type, and their combined significance for this specific marine zone.
 
-## Survey Timeline (write in $languageName)
-If survey_days has 2 or more entries, show temporal evolution (all column headers in $languageName):
-| Date | Images | Debris Items | Health Score | Dominant Material | Change vs Prior |
+## Survey Timeline & Spatial Coverage
 
-If only 1 survey day: state that temporal trend analysis requires multiple survey visits.
+### Survey-Day Evolution Table
+If survey_days has 2+ entries, show full temporal evolution (all column headers in $languageName):
+| Date | Analyzed Images | Debris Items | Health Score | Dominant Material | Dominant Type | Change vs Prior |
+After the table, write a paragraph characterizing the temporal pattern.
+If only 1 survey day: write a paragraph noting the single-day baseline and recommending a revisit schedule.
 
-## Debris Composition (write in $languageName)
+### Site Map
+If collection_waypoints is non-empty, generate a text-based spatial map in a code block showing waypoint positions:
+```
+[Insert ASCII spatial map with waypoint labels, compass rose, and approximate scale]
+```
 
-Table 1 — by material (calculate % from total_debris_items; all column headers in $languageName):
-| Material | Count | % of Total | Marine Persistence | Risk Level |
+### Collection Route Itinerary
+Generate a prioritized cleanup itinerary sorted by collection_priority (HIGH first), then debris_count descending.
+Table (all column headers in $languageName):
+| Waypoint | Latitude | Longitude | Debris Count | Health Score | Dominant Type | Priority | Recommended Method | Est. Time |
+After the table, write a 2–3 sentence route narrative describing the recommended sequence and access logistics.
 
-Table 2 — by detection type (all column headers in $languageName):
-| Debris Type | Count | % of Total | Primary Marine Hazard |
+## Debris Composition
 
-## Environmental Impact Assessment (write in $languageName)
-Base EVERY claim on the materials and types present in material_breakdown and type_breakdown.
-For each debris category actually found in the data (and ONLY those):
-- Name one specific threatened species + threat mechanism (entanglement / ingestion / habitat alteration)
-- If the material generates microplastics: state estimated fragmentation timeline
-Maximum 4 bullet points. Do NOT mention species, habitats, or pathways for debris types absent from the data.
+### Material Analysis
+ASCII bar chart of material distribution (scale: highest count = 20 ██ blocks):
+```
+[Insert material distribution bar chart]
+```
+Detailed table (all column headers in $languageName):
+| Material | Count | % of Total | Marine Persistence (years) | Microplastic Risk | Primary Threat Pathway | Risk Level |
 
-## Contamination Trend (write in $languageName)
-Use the trend_delta field if present (2+ survey days):
-- Health score: from [health_score_first] to [health_score_last] = [health_score_change] points (positive = improvement / negative = degradation)
-- Debris count: from [debris_count_first] to [debris_count_last] = [debris_count_change] items
-- Characterize trajectory: IMPROVING (health_score_change > 0 AND debris_count_change < 0) / DEGRADING / MIXED / STABLE — use the exact numbers, do not paraphrase
-- If trend_delta is absent (single survey day): state that temporal trend requires multiple visits; recommend revisit interval based on contamination severity.
+### Type Analysis
+Detailed table (all column headers in $languageName):
+| Debris Type | Count | % of Total | Primary Marine Hazard | Secondary Hazard | Most Vulnerable Taxa | Est. Cleanup Effort |
 
-## Recommended Actions for $locationName (write in $languageName)
-6 prioritized, site-specific, actionable interventions:
-1. Immediate removal target: name the most hazardous debris type present and the specific collection method for this site
-2. Cleanup methodology adapted to site type and dominant debris material
-3. Source tracing: identify the most probable pollution origin pathways (river discharge, fishing vessels, coastal urbanization)
-4. Monitoring schedule: survey frequency based on contamination trend and severity
-5. Stakeholder coordination: relevant local actors (fishing community, port authority, municipality, NGOs)
-6. Long-term prevention targeting the dominant debris source at origin
+## Per-Type Ecological Impact Analysis
+For EACH debris type present in overall.type_breakdown (no omissions):
+Write a dedicated paragraph (4–6 sentences): quantity and proportion; specific threatened species + threat mechanism; microplastic fragmentation timeline if applicable; ecological pathway in this marine zone.
+
+## Contamination Trend Analysis
+If trend_delta is present (2+ survey days):
+- Health score evolution: from [health_score_first] to [health_score_last] = [change] points.
+- Debris count evolution: from [debris_count_first] to [debris_count_last] = [change] items.
+- Trajectory classification: IMPROVING (health ↑ AND debris ↓) / DEGRADING / MIXED / STABLE — justify with exact numbers.
+- Trend interpretation paragraph (3–4 sentences): causation hypotheses, seasonal factors, effectiveness of any prior interventions.
+- Projection: if trend continues unchanged, describe the likely site condition in 6 and 12 months.
+If trend_delta absent: write that temporal analysis requires ≥2 survey visits; recommend specific revisit interval based on health score.
+
+## Risk Assessment
+
+### Risk Matrix
+Table (all column headers in $languageName):
+| Debris Type | Risk Score | Count | Primary Risk Driver | Affected Marine Zone | Urgency |
+
+### Overall Risk Rating
+- **Site risk rating**: Critical / High / Moderate / Low — justify with health_score, dominant_material, high_risk count.
+- Paragraph (3–4 sentences): synthesize the risk profile for $locationName, naming the most immediate biological threats and the most vulnerable ecosystem components.
+
+## Statistical Analysis
+Per-image summary table (all column headers in $languageName):
+| Image # | Timestamp | Debris Count | Health Score | Image Quality | Dominant Type | GPS |
+(use "No GPS" if coordinates absent)
+- Confidence interpretation: what min/avg/max values imply about detection reliability at this site.
+- Quality-debris correlation: note any relationship between image_quality tier and debris density.
+
+## Conservation Recommendations for $locationName
+8 specific, prioritized, actionable interventions referencing actual debris types and materials found:
+
+1. [IMMEDIATE — <48 h] Highest-priority waypoints: specify WP IDs, debris types, collection team and equipment.
+2. [IMMEDIATE — <48 h] Emergency containment for the highest-entanglement/ingestion-risk item.
+3. [SHORT-TERM — <2 weeks] Complete site cleanup plan: methodology adapted to dominant material, site access, and tidal conditions.
+4. [SHORT-TERM — <30 days] Source tracing: most probable pollution pathways (river discharge, fishing vessels, coastal urbanization, stormwater runoff).
+5. [SHORT-TERM — <30 days] Community and stakeholder engagement: specific local actors, roles, and coordination protocol.
+6. [MEDIUM-TERM — 3 months] Monitoring schedule: survey frequency, minimum image count per visit, GPS coverage requirements.
+7. [LONG-TERM — 6–12 months] Policy and regulatory interventions targeting the dominant debris source at origin.
+8. [LONG-TERM] Habitat restoration: specific actions for affected ecosystems identified in the ecological analysis.
+
+## Monitoring Protocol
+- Recommended survey frequency for $locationName derived from health score and trend.
+- KPIs to track between surveys: debris density, health score, dominant type ratio, new type appearances.
+- Data requirements for next survey: minimum analyzed images, mandatory GPS, image quality threshold.
+- Alert thresholds: define debris count or health score values that trigger emergency response.
 
 ---
-Detection data (read only — do not copy into report):
+Detection data (read only — do not reproduce in the report):
 $jsonSummary
 ---
-Before writing: confirm that (1) every ## heading will be in $languageName, not English; (2) no complete sentence will be in English; (3) all table column headers will be in $languageName.
-Write the full report now in $languageName for $locationName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
+Before writing: (1) all ## headings in $languageName; (2) no sentences in English; (3) all table headers in $languageName; (4) write ALL sections completely.
+Write the full comprehensive report now in $languageName for $locationName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
     }
 
     // -----------------------------------------------------------------
