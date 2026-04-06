@@ -39,7 +39,9 @@ enum class TextModelTier(
         filename     = "Qwen3.5-0.8B-Q4_K_M.gguf",
         sizeLabel    = "~533 MB",
         displayName  = "Fast (0.8B)",
-        nCtx         = 8192,   // Raised from 4096 — gives ~6400 output tokens after prompt overhead
+        // 12288 = prompt ceiling (~3500 tok, data-capped) + maxTokens 6144 + margin.
+        // KV cache at 12288: ~670 MB + 533 MB model ≈ 1.2 GB on S22 Ultra.
+        nCtx         = 12288,
         temperature  = 0.3f,
         topK         = 20,
         formatter    = QwenPromptFormatter,
@@ -49,7 +51,9 @@ enum class TextModelTier(
         filename     = "Qwen3.5-2B-Q4_K_M.gguf",
         sizeLabel    = "~1.1 GB",
         displayName  = "Balanced (2B)",
-        nCtx         = 8192,   // Thinking generates 500-2000 extra reasoning tokens
+        // 12288 accommodates prompt + 6144 output + thinking tokens (500-2000 extra).
+        // KV cache: ~700 MB + 1.1 GB model ≈ 1.8 GB on S22 Ultra.
+        nCtx         = 12288,
         temperature  = 1.0f,   // Recommended by Qwen3.5 docs for thinking mode
         topK         = 20,
         formatter    = QwenPromptFormatter,
@@ -58,7 +62,8 @@ enum class TextModelTier(
         filename     = "Qwen3.5-4B-Q4_K_M.gguf",
         sizeLabel    = "~2.74 GB",
         displayName  = "Quality (4B)",
-        nCtx         = 8192,
+        // KV cache: ~900 MB + 2.74 GB model ≈ 3.6 GB on S22 Ultra.
+        nCtx         = 12288,
         temperature  = 1.0f,
         topK         = 20,
         formatter    = QwenPromptFormatter,
@@ -178,7 +183,17 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
             assistantPrefill = assistantPrefill ?: "",
             thinkingEnabled  = thinkingEnabled,
         )
-        Log.d(TAG, "Generating [${tier.displayName}] maxTokens=$maxTokens thinking=$thinkingEnabled prefill=${prefill.length}b")
+        // Estimate prompt token count conservatively (3 chars/token).
+        // Reserve space for thinking tokens (BALANCED/QUALITY emit 500-2000 reasoning tokens
+        // that count against the KV cache even though they don't appear in the final output).
+        // This prevents ggml_abort("failed to find KV cache slot") in llama_context::decode.
+        val estimatedPromptTokens = formatted.length / 3
+        val thinkingReserve = if (thinkingEnabled) 1500 else 0
+        val safeMaxTokens = (tier.nCtx - estimatedPromptTokens - thinkingReserve - 256)
+            .coerceAtLeast(256)
+            .coerceAtMost(maxTokens)
+        Log.d(TAG, "Generating [${tier.displayName}] prompt=${formatted.length}ch (~${estimatedPromptTokens}tok) " +
+            "nCtx=${tier.nCtx} thinkingReserve=$thinkingReserve maxTokens=$maxTokens→$safeMaxTokens")
 
         // Start with prefill so callers see the heading immediately on first token.
         // Native generates ONLY tokens after the formatted prompt (prefill is input, not output).
@@ -197,7 +212,7 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
         }
 
         val raw = LlamaCppBridge.nativeGenerateText(
-            handle, formatted, maxTokens, tier.temperature, tier.topK, callback
+            handle, formatted, safeMaxTokens, tier.temperature, tier.topK, callback
         )
         val result = prefill + tier.formatter.sanitizeOutput(raw)
         Log.d(TAG, "Generation complete [${tier.displayName}] ${result.length} chars")
