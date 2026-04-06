@@ -45,8 +45,14 @@ Java_com_oceanguard_ai_inference_LlamaCppBridge_nativeInitTextModel(
     }
 
     llama_context_params cparams = llama_context_default_params();
-    cparams.n_ctx         = static_cast<uint32_t>(nCtx);
-    cparams.n_threads     = static_cast<uint32_t>(nThreads);
+    cparams.n_ctx           = static_cast<uint32_t>(nCtx);
+    // n_batch must be >= any single llama_decode call's token count.
+    // Default is 2048; prompts after commit 886259d exceed that (~3000-6000 tok).
+    // Setting n_batch = n_ctx ensures any in-context prompt fits in one batch.
+    // Internally llama.cpp still processes in n_ubatch (512) chunks, so memory
+    // overhead is minimal — only the computation graph structure is larger.
+    cparams.n_batch         = static_cast<uint32_t>(nCtx);
+    cparams.n_threads       = static_cast<uint32_t>(nThreads);
     cparams.n_threads_batch = static_cast<uint32_t>(nThreadsBatch);
 
     llama_context* ctx = llama_init_from_model(model, cparams);

@@ -21,7 +21,7 @@ class LlamaVisionEngine : VlmVisionEngine {
     companion object {
         private const val TAG = "LlamaVisionEngine"
 
-        private const val N_CTX = 4096
+        private const val N_CTX = 8192   // raised from 4096 — new prompts reach 3700-5000 tok
         private const val N_THREADS = 4
         private const val N_THREADS_BATCH = 6
         private const val TEMPERATURE = 0.3f
@@ -116,6 +116,12 @@ class LlamaVisionEngine : VlmVisionEngine {
             assistantPrefill = assistantPrefill ?: "",
             thinkingEnabled  = thinkingEnabled,
         )
+        val estimatedPromptTokens = formatted.length / 3
+        val safeMaxTokens = (N_CTX - estimatedPromptTokens - 256)
+            .coerceAtLeast(256)
+            .coerceAtMost(maxTokens)
+        Log.d(TAG, "generateText prompt=${formatted.length}ch (~${estimatedPromptTokens}tok) maxTokens=$maxTokens→$safeMaxTokens")
+
         val accumulated = StringBuilder(prefill)
         var lastPartialMs = 0L
         val callback = object : TokenStreamCallback {
@@ -129,7 +135,7 @@ class LlamaVisionEngine : VlmVisionEngine {
             }
         }
         val raw = LlamaCppBridge.nativeGenerateText(
-            handle, formatted, maxTokens, TEMPERATURE, TOP_K, callback
+            handle, formatted, safeMaxTokens, TEMPERATURE, TOP_K, callback
         )
         prefill + QwenPromptFormatter.sanitizeOutput(raw)
     }
