@@ -274,8 +274,11 @@ internal fun SavedReportCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                val previewSnippet = remember(report.id) {
+                    stripMarkdownForPreview(report.text).take(140) + "\u2026"
+                }
                 Text(
-                    text = stripMarkdownForPreview(report.text).take(140) + "\u2026",
+                    text = previewSnippet,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
