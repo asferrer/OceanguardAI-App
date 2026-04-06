@@ -147,20 +147,27 @@ fun SpotlightOverlay(
             .onGloballyPositioned { coords ->
                 overlayWindowOffset = coords.positionInWindow()
                 overlayHeight = coords.size.height
-            }
-            // Consume any touch event NOT already handled by child composables
-            // (tooltip buttons). This prevents drag gestures on the dark area
-            // from scrolling the content beneath the overlay.
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Final)
-                        event.changes.filter { !it.isConsumed }.forEach { it.consume() }
-                    }
-                }
             },
     ) {
         SpotlightCanvas(step = step, bounds = localBounds)
+
+        // Touch-blocking layer: a full-screen sibling placed BEFORE the tooltip
+        // (lower Z-order). In Main pass, siblings dispatch last→first (higher Z
+        // first), so tooltip buttons process clicks before this layer consumes
+        // remaining events. This blocks scroll-through on the dark area without
+        // interfering with button taps.
+        Spacer(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            event.changes.filter { !it.isConsumed }.forEach { it.consume() }
+                        }
+                    }
+                },
+        )
 
         SpotlightTooltip(
             step = step,
