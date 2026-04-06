@@ -20,10 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import android.util.Log
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.AnnotatedString
@@ -53,7 +58,33 @@ fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    val blocks = remember(text) { parseMarkdownBlocks(text) }
+    // Parse on Default dispatcher — large reports (25K chars) block the main thread >10s
+    // if parsed synchronously (ANR). produceState offloads it; loading indicator shown while
+    // blocks are empty so the user knows content is coming (not a blank broken screen).
+    val blocks by produceState(initialValue = emptyList<MdBlock>(), text) {
+        value = try {
+            withContext(Dispatchers.Default) { parseMarkdownBlocks(text) }
+        } catch (e: Exception) {
+            Log.w("MarkdownText", "Markdown parse failed, rendering raw text", e)
+            listOf(MdBlock.Paragraph(text))
+        }
+    }
+
+    if (blocks.isEmpty()) {
+        if (text.isEmpty()) return
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                strokeWidth = 2.dp,
+            )
+        }
+        return
+    }
 
     Column(
         modifier = modifier,
@@ -312,6 +343,7 @@ private sealed class MdBlock {
     data object Gap : MdBlock()
 }
 
+private val HORIZONTAL_RULE_REGEX = Regex("""^-{3,}\s*$""")
 private val ORDERED_LIST_REGEX = Regex("""^(\d+)\.\s+(.+)""")
 private val UNORDERED_LIST_REGEX = Regex("""^[-*+]\s+(.+)""")
 private val TABLE_ROW_REGEX = Regex("""^\|(.+)\|$""")
@@ -320,7 +352,6 @@ private val TABLE_SEPARATOR_REGEX = Regex("""^\|[\s:?-]+(\|[\s:?-]+)+\|$""")
 private fun parseMarkdownBlocks(text: String): List<MdBlock> {
     val blocks = mutableListOf<MdBlock>()
     val lines = text.lines()
-
     var i = 0
     while (i < lines.size) {
         val line = lines[i].trimEnd()
@@ -336,8 +367,14 @@ private fun parseMarkdownBlocks(text: String): List<MdBlock> {
             }
 
             // Horizontal rule
-            line.matches(Regex("""^-{3,}\s*$""")) -> {
+            HORIZONTAL_RULE_REGEX.matches(line) -> {
                 blocks.add(MdBlock.Divider)
+                i++
+            }
+
+            // H4+ (####, #####, …) — render as H3 since we don't have deeper styles
+            line.startsWith("#### ") -> {
+                blocks.add(MdBlock.H3(line.trimStart('#').trim()))
                 i++
             }
 
@@ -437,7 +474,12 @@ private fun parseMarkdownBlocks(text: String): List<MdBlock> {
                     paragraphLines.add(nextLine)
                     i++
                 }
-                blocks.add(MdBlock.Paragraph(paragraphLines.joinToString(" ")))
+                if (paragraphLines.isEmpty()) {
+                    // Safety: unrecognised syntax — skip the line to avoid infinite loop
+                    i++
+                } else {
+                    blocks.add(MdBlock.Paragraph(paragraphLines.joinToString(" ")))
+                }
             }
         }
     }
