@@ -39,6 +39,13 @@ class ReportGenerator(
     companion object {
         private const val TAG = "ReportGenerator"
 
+        // JSON data caps — prevents prompt overflow with large datasets.
+        // Template alone (~2250 tok) + data + maxTokens(6144) must fit in nCtx(12288).
+        // Budget for JSON data: 12288 - 6144 - 2250 - 300 (system) ≈ 3600 tokens.
+        private const val MAX_WAYPOINTS = 20      // top-priority GPS waypoints (~50 tok each)
+        private const val MAX_SESSION_DETAILS = 25 // most recent sessions in generic JSON (~75 tok each)
+        private const val MAX_ZONE_DAYS = 30       // most recent survey days in zone JSON (~50 tok each)
+
         // Native + English name — models respond more reliably to native-language names.
         private val LANGUAGE_NAMES = mapOf(
             "en" to "English",
@@ -77,6 +84,12 @@ class ReportGenerator(
         private const val MEDIUM_RISK_THRESHOLD = 3
     }
 
+    /**
+     * Distinguishes report types for section template selection.
+     * NONE is used for vision-based reports whose user prompt provides its own structure.
+     */
+    private enum class ReportType { GENERIC, ZONE, NONE }
+
     // -----------------------------------------------------------------
     // Public API — Generic report
     // -----------------------------------------------------------------
@@ -111,7 +124,7 @@ class ReportGenerator(
         Log.i(TAG, "Generating zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
         val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language)
-        val response = runTextInference(prompt, language, languageName, audience)
+        val response = runTextInference(prompt, language, languageName, audience, ReportType.ZONE)
         Log.i(TAG, "Zone VLM report generated (${response.length} chars)")
         QwenPromptFormatter.sanitizeOutput(response)
     }
@@ -135,7 +148,7 @@ class ReportGenerator(
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 6144,
-            systemMessage = buildSystemMessage(languageName, audience),
+            systemMessage = buildSystemMessage(languageName, audience, ReportType.GENERIC),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -160,7 +173,7 @@ class ReportGenerator(
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 6144,
-            systemMessage = buildSystemMessage(languageName, audience),
+            systemMessage = buildSystemMessage(languageName, audience, ReportType.ZONE),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -360,8 +373,8 @@ Rules:
 
         val response = inference.generateText(
             prompt           = prompt,
-            maxTokens        = 4096,
-            systemMessage    = buildSystemMessage(languageName, audience),
+            maxTokens        = 6144,
+            systemMessage    = buildSystemMessage(languageName, audience, ReportType.ZONE),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -394,27 +407,15 @@ Rules:
             "\nNOTE: Some sessions have material_issues — flag uncertain material classifications."
         else ""
 
-        val prompt = """
-Generate a marine debris environmental assessment using ONLY the JSON data below.
-The JSON includes RT-DETRv2 detections enriched with visual verification from a multimodal AI
-that inspected $verifiedCount field photographs. Each verified session has a "vlm_verification"
-field with confirmed detections, false positives, material_issues, site conditions, and debris state.$fpNote$matNote
-
-STRICT GROUNDING: every species, percentage, and ecological claim must be derivable from the JSON.
-Rules: never invent data; ## headings; markdown tables with | separators; bullet lists;
-"analyzed images" not "sessions"; be quantitative; prefer confirmed detections over raw when available.
-TRANSLATE ALL SECTION HEADINGS to $languageName (do not write any ## heading in English).
-
-${buildVlmPrompt(languageName, enrichedJson, language)
-    .lines()
-    .dropWhile { !it.startsWith("## Executive Summary") }
-    .joinToString("\n")}
-""".trimIndent()
+        val verifiedNote = "The JSON includes RT-DETRv2 detections enriched with VLM visual verification " +
+            "of $verifiedCount field photographs. Each verified session has a 'vlm_verification' field. " +
+            "Prefer confirmed detections over raw counts when available.$fpNote$matNote"
+        val prompt = "$verifiedNote\n${buildVlmPrompt(languageName, enrichedJson, language)}"
 
         val response = inference.generateText(
             prompt           = prompt,
-            maxTokens        = 4096,
-            systemMessage    = buildSystemMessage(languageName, audience),
+            maxTokens        = 6144,
+            systemMessage    = buildSystemMessage(languageName, audience, ReportType.GENERIC),
             assistantPrefill = firstHeading,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
@@ -440,7 +441,7 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
         baseJson.put("vlm_false_positives_summary", JSONObject(allFalsePositives as Map<*, *>))
         baseJson.put("vlm_material_issues_summary", JSONObject(allMaterialIssues as Map<*, *>))
 
-        val sessionsArr = baseJson.optJSONArray("sessions") ?: return baseJson.toString(2)
+        val sessionsArr = baseJson.optJSONArray("sessions") ?: return baseJson.toString()
         for (i in 0 until sessionsArr.length()) {
             val sessionObj = sessionsArr.getJSONObject(i)
             val sessionId = sessionObj.optLong("id", -1L)
@@ -456,7 +457,7 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
                 })
             }
         }
-        return baseJson.toString(2)
+        return baseJson.toString()
     }
 
     /**
@@ -482,7 +483,7 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
         baseJson.put("vlm_site_conditions_samples", JSONArray(siteConditionsSamples))
 
         // Annotate each session detail with its verification result
-        val sessions = baseJson.optJSONArray("sessions") ?: return baseJson.toString(2)
+        val sessions = baseJson.optJSONArray("sessions") ?: return baseJson.toString()
         for (i in 0 until sessions.length()) {
             val sessionObj = sessions.getJSONObject(i)
             val sessionId = sessionObj.optLong("id", -1L)
@@ -499,7 +500,7 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
             }
         }
 
-        return baseJson.toString(2)
+        return baseJson.toString()
     }
 
     private fun buildVerifiedZoneVlmPrompt(
@@ -510,9 +511,6 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
         language: String,
         verifications: List<VlmVerificationResult>,
     ): String {
-        val periodLine = if (dateRangeLabel != null) {
-            "REPORTING PERIOD: $dateRangeLabel\n"
-        } else ""
         val verifiedCount = verifications.size
         val fpNote = if (verifications.any { it.falsePositives.isNotEmpty() })
             "\nNOTE: Some sessions have vlm_false_positives in the data — exclude those from counts and analysis."
@@ -520,26 +518,13 @@ ${buildVlmPrompt(languageName, enrichedJson, language)
         val matNote = if (verifications.any { it.materialIssues.isNotEmpty() })
             "\nNOTE: Some sessions have vlm_verification.material_issues — flag these classes as having uncertain material classification in the report."
         else ""
-        return """
-LANGUAGE REQUIREMENT: Write this entire report in $languageName. Every heading, sentence, and table cell must be in $languageName.
-
-You are generating a marine debris environmental assessment for $locationName.
-${periodLine}The JSON data includes automated RT-DETRv2 detections enriched with visual verification
-from a multimodal AI that inspected $verifiedCount field photographs.
-Each verified session has a "vlm_verification" field with confirmed detections,
-false positives to exclude, material_issues (classes where assigned material is visually inconsistent),
-site conditions, and debris degradation state.$fpNote$matNote
-
-Rules: use only the JSON data; never invent; ## headings; markdown tables with | separators;
-bullet lists; "analyzed images" not "sessions"; be quantitative with exact numbers and percentages.
-When vlm_verification is present for a session, prefer the confirmed list over raw detections.
-When material_issues are present, note the uncertainty in the material classification.
-
-${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, language)
-    .lines()
-    .dropWhile { !it.startsWith("## Zone Profile") }
-    .joinToString("\n")}
-""".trimIndent()
+        val verifiedNote = "The JSON includes RT-DETRv2 detections enriched with VLM visual verification " +
+            "of $verifiedCount field photographs. Each verified session has a 'vlm_verification' field " +
+            "with confirmed detections, false positives, material_issues, site conditions, and debris state. " +
+            "Prefer confirmed detections over raw counts when available." +
+            fpNote + matNote
+        return buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, language)
+            .let { base -> "$verifiedNote\n$base" }
     }
 
     // -----------------------------------------------------------------
@@ -555,6 +540,7 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
     private fun buildSystemMessage(
         languageName: String,
         audience: ReportAudience = ReportAudience.SCIENTIFIC,
+        reportType: ReportType = ReportType.GENERIC,
     ): String {
         val persona = when (audience) {
             ReportAudience.SCIENTIFIC ->
@@ -618,7 +604,10 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
             "4. health_score > 75 means good condition — do not describe it as contaminated.\n" +
             "5. Do not invent GPS coordinates, species names, or ecological pathways not in the data.\n" +
             "6. collection_waypoints in the JSON are the ONLY GPS points you may cite for the itinerary.\n" +
-            "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |), code blocks for maps."
+            "7. If a section cannot be substantiated by the JSON data, write exactly: " +
+            "'[Insufficient data for this section]' and proceed — never fabricate content to fill sections.\n" +
+            "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |), code blocks for maps." +
+            "\n\n" + buildSectionTemplate(languageName, reportType)
     }
 
     private suspend fun runTextInference(
@@ -626,10 +615,15 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
         language: String = "en",
         languageName: String = "English",
         audience: ReportAudience = ReportAudience.SCIENTIFIC,
+        reportType: ReportType = ReportType.GENERIC,
     ): String = inference.generateText(
         prompt = prompt,
-        systemMessage = buildSystemMessage(languageName, audience),
-        assistantPrefill = FIRST_HEADING[language] ?: "## Executive Summary",
+        systemMessage = buildSystemMessage(languageName, audience, reportType),
+        assistantPrefill = if (reportType == ReportType.ZONE) {
+            FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
+        } else {
+            FIRST_HEADING[language] ?: "## Executive Summary"
+        },
     )
 
     // -----------------------------------------------------------------
@@ -733,12 +727,14 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
         }
     }
 
-    /** Builds a prioritized, GPS-ordered list of collection waypoints from sessions with location data. */
+    /** Builds a prioritized, GPS-ordered list of collection waypoints from sessions with location data.
+     *  Capped at [MAX_WAYPOINTS] to prevent prompt token overflow with large datasets. */
     private fun buildCollectionWaypoints(sessions: List<DetectionSession>): JSONArray {
         return JSONArray().also { arr ->
             sessions
                 .filter { it.location != null }
                 .sortedByDescending { it.totalCount }
+                .take(MAX_WAYPOINTS)
                 .forEachIndexed { idx, session ->
                     val materialMap = mutableMapOf<String, Int>()
                     session.debrisList.forEach { d ->
@@ -784,11 +780,15 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
         } else {
             JSONObject().apply { put("count", 0); put("note", "No GPS data recorded") }
         }
+        // Cap session details to avoid prompt overflow; aggregates above still use all sessions.
+        val cappedSessions = if (sorted.size > MAX_SESSION_DETAILS) sorted.takeLast(MAX_SESSION_DETAILS) else sorted
         val sessionDetails = JSONArray()
-        sorted.forEach { sessionDetails.put(buildSessionDetail(it)) }
+        cappedSessions.forEach { sessionDetails.put(buildSessionDetail(it)) }
 
         return JSONObject().apply {
             put("analyzed_images", sessions.size)
+            if (sorted.size > MAX_SESSION_DETAILS)
+                put("sessions_note", "Showing ${MAX_SESSION_DETAILS} most recent of ${sessions.size} total")
             put("total_debris_items", sessions.sumOf { it.totalCount })
             put("average_health_score", String.format("%.1f", sessions.map { it.healthScore }.average()))
             put("dominant_material", materialMap.maxByOrNull { it.value }?.key ?: "N/A")
@@ -801,14 +801,19 @@ ${buildZoneVlmPrompt(languageName, enrichedJson, locationName, dateRangeLabel, l
             put("locations", locationSummary)
             put("collection_waypoints", buildCollectionWaypoints(sessions))
             put("sessions", sessionDetails)
-        }.toString(2)
+        }.toString()
     }
 
-    private fun buildVlmPrompt(languageName: String, jsonSummary: String, language: String = "en"): String = """
-Generate a comprehensive marine debris environmental assessment report using ONLY the JSON data below.
-STRICT GROUNDING: all species, percentages, coordinates, and ecological claims must be derivable from the JSON.
-Rules: never invent data; ## section headings; ### subsection headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be precise and quantitative.
-TRANSLATE ALL SECTION HEADINGS to $languageName.
+    /**
+     * Section structure templates for GENERIC and ZONE reports.
+     * Lives in the system prompt so the KV cache prefix can be reused across consecutive
+     * reports generated with the same language + audience combination.
+     * NONE returns an empty string — used when the user prompt provides its own structure.
+     */
+    private fun buildSectionTemplate(languageName: String, reportType: ReportType): String = when (reportType) {
+        ReportType.NONE -> ""
+        ReportType.GENERIC -> """
+REPORT STRUCTURE — Write ALL sections completely in this exact order:
 
 ## Executive Summary
 Open directly with the most critical finding — NO preamble phrases like "This report presents...".
@@ -896,108 +901,13 @@ Write 8 specific, prioritized, actionable interventions referencing the ACTUAL d
 - Recommended survey frequency based on contamination level (health_score-derived).
 - Key performance indicators (KPIs) to track between surveys: debris density trend, health score evolution, species indicators.
 - Data collection requirements for the next survey: minimum image count, GPS requirement, quality threshold.
-- Trigger conditions for escalating to emergency response.
+- Trigger conditions for escalating to emergency response.""".trimIndent()
 
----
-Detection data (read only — do not reproduce in the report):
-$jsonSummary
----
-Before writing: (1) confirm all ## headings will be in $languageName; (2) confirm no sentence will be in English; (3) confirm all table headers will be in $languageName; (4) confirm you will write ALL sections completely without truncating.
-Write the full comprehensive report now in $languageName. Start directly with ${FIRST_HEADING[language] ?: "## Executive Summary"}:""".trimIndent()
-
-    // -----------------------------------------------------------------
-    // Zone JSON + prompt
-    // -----------------------------------------------------------------
-
-    private fun buildDayEntry(day: DayGroup): JSONObject {
-        val allDebris = day.sessions.flatMap { it.debrisList }
-        val materialMap = mutableMapOf<String, Int>()
-        val typeMap = mutableMapOf<String, Int>()
-        allDebris.forEach { d ->
-            materialMap[d.material.name] = (materialMap[d.material.name] ?: 0) + 1
-            typeMap[d.type.name] = (typeMap[d.type.name] ?: 0) + 1
-        }
-        return JSONObject().apply {
-            put("date", DAY_FORMAT.format(day.date))
-            put("analyzed_images", day.sessions.size)
-            put("total_debris", day.totalDebris)
-            put("health_score", day.avgHealthScore)
-            put("material_breakdown", JSONObject(materialMap as Map<*, *>))
-            put("type_breakdown", JSONObject(typeMap as Map<*, *>))
-            put("confidence_range", buildConfidenceStats(allDebris))
-        }
-    }
-
-    internal fun buildZoneJsonSummary(input: ZoneReportInput): String {
-        val allDebris = input.sessions.flatMap { it.debrisList }
-        val materialCounts = mutableMapOf<String, Int>()
-        allDebris.forEach { d -> materialCounts[d.material.name] = (materialCounts[d.material.name] ?: 0) + 1 }
-
-        val surveyDays = JSONArray()
-        input.dayGroups.sortedBy { it.date }.forEach { surveyDays.put(buildDayEntry(it)) }
-
-        val overall = JSONObject().apply {
-            put("total_analyzed_images", input.sessions.size)
-            put("total_debris_items", input.sessions.sumOf { it.totalCount })
-            put("average_health_score", String.format("%.1f", input.sessions.map { it.healthScore }.average()))
-            put("dominant_material", materialCounts.maxByOrNull { it.value }?.key ?: "N/A")
-            put("high_risk_items", allDebris.count { it.getRiskScore() >= HIGH_RISK_THRESHOLD })
-            put("trend", input.trend.name)
-            put("type_breakdown", buildTypeBreakdown(allDebris))
-            put("confidence_range", buildConfidenceStats(allDebris))
-            put("risk_breakdown", buildRiskBreakdown(allDebris))
-            put("image_quality", buildQualityDistribution(input.sessions))
-            put("material_breakdown", JSONObject(materialCounts as Map<*, *>))
-        }
-
-        val trendDelta = if (input.dayGroups.size >= 2) {
-            val sorted = input.dayGroups.sortedBy { it.date }
-            val first = sorted.first()
-            val last = sorted.last()
-            JSONObject().apply {
-                put("first_day", DAY_FORMAT.format(first.date))
-                put("last_day", DAY_FORMAT.format(last.date))
-                put("health_score_first", first.avgHealthScore)
-                put("health_score_last", last.avgHealthScore)
-                put("health_score_change", last.avgHealthScore - first.avgHealthScore)
-                put("debris_count_first", first.totalDebris)
-                put("debris_count_last", last.totalDebris)
-                put("debris_count_change", last.totalDebris - first.totalDebris)
-            }
-        } else null
-
-        return JSONObject().apply {
-            put("location", input.locationName)
-            put("coordinates", JSONObject().apply {
-                put("lat", String.format("%.4f", input.centroidLat))
-                put("lon", String.format("%.4f", input.centroidLon))
-            })
-            put("survey_days", surveyDays)
-            put("overall", overall)
-            put("collection_waypoints", buildCollectionWaypoints(input.sessions))
-            if (trendDelta != null) put("trend_delta", trendDelta)
-        }.toString(2)
-    }
-
-    private fun buildZoneVlmPrompt(
-        languageName: String,
-        jsonSummary: String,
-        locationName: String,
-        dateRangeLabel: String?,
-        language: String = "en",
-    ): String {
-        val periodLine = if (dateRangeLabel != null) {
-            "REPORTING PERIOD: $dateRangeLabel (only analyzed images within this range are included)\n"
-        } else ""
-
-        return """
-Generate a comprehensive marine debris environmental assessment for $locationName using ONLY the JSON data below.
-${periodLine}STRICT GROUNDING: all species, percentages, coordinates, and ecological claims must be derivable from the JSON.
-Rules: never invent data; ## section headings; ### subsection headings; markdown tables with | separators; bullet lists; say "analyzed images" not "sessions"; be precise and quantitative.
-TRANSLATE ALL SECTION HEADINGS to $languageName.
+        ReportType.ZONE -> """
+REPORT STRUCTURE — Write ALL sections completely in this exact order:
 
 ## Zone Profile
-- Site name: $locationName. Coordinates from JSON (centroid lat/lon). Classify the marine zone: coastal / estuary / open water / port / reef — based on coordinate context.
+- Site name: use the "location" field from the JSON. Coordinates from JSON (centroid lat/lon). Classify the marine zone: coastal / estuary / open water / port / reef — based on coordinate context.
 - Survey coverage: total survey days, date range, total analyzed images, total debris items, average debris per image.
 - Paragraph (3–4 sentences): Interpret the overall health score (Critical <30 / High 30–50 / Moderate 50–70 / Good >70), the dominant material and type, and their combined significance for this specific marine zone.
 
@@ -1056,7 +966,7 @@ Table (all column headers in $languageName):
 
 ### Overall Risk Rating
 - **Site risk rating**: Critical / High / Moderate / Low — justify with health_score, dominant_material, high_risk count.
-- Paragraph (3–4 sentences): synthesize the risk profile for $locationName, naming the most immediate biological threats and the most vulnerable ecosystem components.
+- Paragraph (3–4 sentences): synthesize the risk profile for this site, naming the most immediate biological threats and the most vulnerable ecosystem components.
 
 ## Statistical Analysis
 Per-image summary table (all column headers in $languageName):
@@ -1065,7 +975,7 @@ Per-image summary table (all column headers in $languageName):
 - Confidence interpretation: what min/avg/max values imply about detection reliability at this site.
 - Quality-debris correlation: note any relationship between image_quality tier and debris density.
 
-## Conservation Recommendations for $locationName
+## Conservation Recommendations
 8 specific, prioritized, actionable interventions referencing actual debris types and materials found:
 
 1. [IMMEDIATE — <48 h] Highest-priority waypoints: specify WP IDs, debris types, collection team and equipment.
@@ -1078,17 +988,117 @@ Per-image summary table (all column headers in $languageName):
 8. [LONG-TERM] Habitat restoration: specific actions for affected ecosystems identified in the ecological analysis.
 
 ## Monitoring Protocol
-- Recommended survey frequency for $locationName derived from health score and trend.
+- Recommended survey frequency derived from health score and trend.
 - KPIs to track between surveys: debris density, health score, dominant type ratio, new type appearances.
 - Data requirements for next survey: minimum analyzed images, mandatory GPS, image quality threshold.
-- Alert thresholds: define debris count or health score values that trigger emergency response.
+- Alert thresholds: define debris count or health score values that trigger emergency response.""".trimIndent()
+    }
+
+    /** Minimal user prompt — section structure and grounding live in the system message. */
+    private fun buildVlmPrompt(languageName: String, jsonSummary: String, language: String = "en"): String = """
+Generate the marine debris environmental assessment using ONLY the JSON data below.
 
 ---
-Detection data (read only — do not reproduce in the report):
 $jsonSummary
 ---
-Before writing: (1) all ## headings in $languageName; (2) no sentences in English; (3) all table headers in $languageName; (4) write ALL sections completely.
-Write the full comprehensive report now in $languageName for $locationName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
+All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] ?: "## Executive Summary"}:""".trimIndent()
+
+    // -----------------------------------------------------------------
+    // Zone JSON + prompt
+    // -----------------------------------------------------------------
+
+    private fun buildDayEntry(day: DayGroup): JSONObject {
+        val allDebris = day.sessions.flatMap { it.debrisList }
+        val materialMap = mutableMapOf<String, Int>()
+        val typeMap = mutableMapOf<String, Int>()
+        allDebris.forEach { d ->
+            materialMap[d.material.name] = (materialMap[d.material.name] ?: 0) + 1
+            typeMap[d.type.name] = (typeMap[d.type.name] ?: 0) + 1
+        }
+        return JSONObject().apply {
+            put("date", DAY_FORMAT.format(day.date))
+            put("analyzed_images", day.sessions.size)
+            put("total_debris", day.totalDebris)
+            put("health_score", day.avgHealthScore)
+            put("material_breakdown", JSONObject(materialMap as Map<*, *>))
+            put("type_breakdown", JSONObject(typeMap as Map<*, *>))
+            put("confidence_range", buildConfidenceStats(allDebris))
+        }
+    }
+
+    internal fun buildZoneJsonSummary(input: ZoneReportInput): String {
+        val allDebris = input.sessions.flatMap { it.debrisList }
+        val materialCounts = mutableMapOf<String, Int>()
+        allDebris.forEach { d -> materialCounts[d.material.name] = (materialCounts[d.material.name] ?: 0) + 1 }
+
+        val sortedDays = input.dayGroups.sortedBy { it.date }
+        val cappedDays = if (sortedDays.size > MAX_ZONE_DAYS) sortedDays.takeLast(MAX_ZONE_DAYS) else sortedDays
+        val surveyDays = JSONArray()
+        cappedDays.forEach { surveyDays.put(buildDayEntry(it)) }
+
+        val overall = JSONObject().apply {
+            put("total_analyzed_images", input.sessions.size)
+            put("total_debris_items", input.sessions.sumOf { it.totalCount })
+            put("average_health_score", String.format("%.1f", input.sessions.map { it.healthScore }.average()))
+            put("dominant_material", materialCounts.maxByOrNull { it.value }?.key ?: "N/A")
+            put("high_risk_items", allDebris.count { it.getRiskScore() >= HIGH_RISK_THRESHOLD })
+            put("trend", input.trend.name)
+            put("type_breakdown", buildTypeBreakdown(allDebris))
+            put("confidence_range", buildConfidenceStats(allDebris))
+            put("risk_breakdown", buildRiskBreakdown(allDebris))
+            put("image_quality", buildQualityDistribution(input.sessions))
+            put("material_breakdown", JSONObject(materialCounts as Map<*, *>))
+        }
+
+        val trendDelta = if (input.dayGroups.size >= 2) {
+            val sorted = input.dayGroups.sortedBy { it.date }
+            val first = sorted.first()
+            val last = sorted.last()
+            JSONObject().apply {
+                put("first_day", DAY_FORMAT.format(first.date))
+                put("last_day", DAY_FORMAT.format(last.date))
+                put("health_score_first", first.avgHealthScore)
+                put("health_score_last", last.avgHealthScore)
+                put("health_score_change", last.avgHealthScore - first.avgHealthScore)
+                put("debris_count_first", first.totalDebris)
+                put("debris_count_last", last.totalDebris)
+                put("debris_count_change", last.totalDebris - first.totalDebris)
+            }
+        } else null
+
+        return JSONObject().apply {
+            put("location", input.locationName)
+            put("coordinates", JSONObject().apply {
+                put("lat", String.format("%.4f", input.centroidLat))
+                put("lon", String.format("%.4f", input.centroidLon))
+            })
+            put("survey_days", surveyDays)
+            if (sortedDays.size > MAX_ZONE_DAYS)
+                put("survey_days_note", "Showing ${MAX_ZONE_DAYS} most recent of ${sortedDays.size} total survey days")
+            put("overall", overall)
+            put("collection_waypoints", buildCollectionWaypoints(input.sessions))
+            if (trendDelta != null) put("trend_delta", trendDelta)
+        }.toString()
+    }
+
+    private fun buildZoneVlmPrompt(
+        languageName: String,
+        jsonSummary: String,
+        locationName: String,
+        dateRangeLabel: String?,
+        language: String = "en",
+    ): String {
+        val periodLine = if (dateRangeLabel != null) {
+            "REPORTING PERIOD: $dateRangeLabel (only analyzed images within this range are included)\n"
+        } else ""
+        return """
+${periodLine}Location: $locationName
+Generate the zone environmental assessment using ONLY the JSON data below.
+
+---
+$jsonSummary
+---
+All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
     }
 
     // -----------------------------------------------------------------
@@ -1147,7 +1157,7 @@ Write the full comprehensive report now in $languageName for $locationName. Star
             visionEngine.generateText(
                 prompt           = prompt,
                 maxTokens        = 4096,
-                systemMessage    = buildSystemMessage(languageName),
+                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE),
                 assistantPrefill = firstHeading,
             ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
         } else {
@@ -1156,7 +1166,7 @@ Write the full comprehensive report now in $languageName for $locationName. Star
                 bitmap           = bitmaps.first(),
                 prompt           = prompt,
                 maxTokens        = 4096,
-                systemMessage    = buildSystemMessage(languageName),
+                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE),
                 assistantPrefill = firstHeading,
             ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
         }
