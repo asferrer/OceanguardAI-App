@@ -92,6 +92,7 @@
     <string name="report_btn_delete">Delete</string>
     <string name="report_label_language">Report language</string>
     <string name="report_btn_generating">Generating…</string>
+    <string name="report_eta">~%s left</string>
     <string name="report_btn_generate_sample">Generate Sample Report</string>
     <!-- plural-style: built in code as "Generate Report (%d sessions)" -->
     <string name="report_btn_generate">Generate Report (%d images)</string>
@@ -178,9 +179,13 @@
     <string name="settings_dev_mode_activated">Developer mode activated!</string>
     <string name="settings_dev_mode_countdown">%1$d taps to go…</string>
     <string name="settings_dev_mode_disable">Disable Developer Mode</string>
+    <string name="settings_label_vlm_provider">VLM Provider</string>
+    <string name="settings_desc_vlm_provider">Model family for report generation and deep analysis. Gemma 4 adds native vision support.</string>
     <string name="settings_label_vlm_tier">VLM Text Model</string>
-    <string name="settings_desc_vlm_tier">Preferred Qwen3.5 model for report generation. Falls back to best available if not downloaded.</string>
+    <string name="settings_desc_vlm_tier">Preferred model for report generation. Falls back to best available if not downloaded.</string>
     <string name="settings_vlm_not_downloaded">not downloaded</string>
+    <string name="settings_label_gemma4_mmproj">Vision Projector (mmproj)</string>
+    <string name="settings_desc_gemma4_mmproj">Download the vision projector to enable Gemma 4 image analysis capabilities.</string>
 
     <!-- About section -->
     <string name="settings_section_about">About</string>

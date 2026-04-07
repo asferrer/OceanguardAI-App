@@ -47,6 +47,7 @@ class SettingsRepository(private val context: Context) {
         val LAST_UPDATE_CHECK_MS = longPreferencesKey("last_update_check_ms")
         val SKIPPED_VERSION = stringPreferencesKey("skipped_update_version")
         val VLM_MODEL_TIER = stringPreferencesKey("vlm_model_tier")
+        val VLM_PROVIDER = stringPreferencesKey("vlm_provider")
         val REPORT_AUDIENCE = stringPreferencesKey("report_audience")
 
         // Research contribution
@@ -65,6 +66,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_CONFIRM_CAPTURE = true
         const val DEFAULT_DETECTOR_PRECISION = "fp16"
         const val DEFAULT_VLM_MODEL_TIER = "balanced"
+        const val DEFAULT_VLM_PROVIDER = "qwen"
         const val DEFAULT_REPORT_AUDIENCE = "scientific"
 
         /** Supported audience modes for report generation. Keys match ReportAudience.fromKey(). */
@@ -338,11 +340,20 @@ class SettingsRepository(private val context: Context) {
     // -----------------------------------------------------------------------
 
     /**
-     * Selected VLM text-model tier: "fast" (1.5B) or "quality" (3B).
+     * Selected VLM text-model tier: "fast", "balanced", "quality", or "gemma4_e2b".
      * Controls which model is loaded when generating reports.
      */
     val vlmModelTier: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
+    }
+
+    /**
+     * Selected VLM provider: "qwen" or "gemma4".
+     * Determines which model family is used for report generation and deep analysis.
+     * Developer-only setting — hidden behind easter egg.
+     */
+    val vlmProvider: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.VLM_PROVIDER] ?: DEFAULT_VLM_PROVIDER
     }
 
     /** Audience for AI-generated reports: "scientific", "ngo", or "citizen". */
@@ -382,6 +393,15 @@ class SettingsRepository(private val context: Context) {
     fun getVlmModelTierSync(): String {
         val prefs = runBlocking { context.dataStore.data.first() }
         return prefs[Keys.VLM_MODEL_TIER] ?: DEFAULT_VLM_MODEL_TIER
+    }
+
+    suspend fun setVlmProvider(provider: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.VLM_PROVIDER] = provider }
+    }
+
+    fun getVlmProviderSync(): String {
+        val prefs = runBlocking { context.dataStore.data.first() }
+        return prefs[Keys.VLM_PROVIDER] ?: DEFAULT_VLM_PROVIDER
     }
 
     // -----------------------------------------------------------------------

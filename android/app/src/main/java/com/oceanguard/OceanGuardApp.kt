@@ -18,7 +18,9 @@ import com.oceanguard.ai.inference.LlamaVisionEngine
 import com.oceanguard.ai.inference.RTDETRInference
 import com.oceanguard.ai.inference.ReportAudience
 import com.oceanguard.ai.inference.ReportGenerator
+import com.oceanguard.ai.inference.Gemma4PromptFormatter
 import com.oceanguard.ai.inference.TextModelTier
+import com.oceanguard.ai.inference.VlmProvider
 import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.inference.VlmModelManager
 import com.oceanguard.ai.inference.ZoneReportInput
@@ -67,9 +69,38 @@ sealed class ReportGenerationState {
     /** VLM is verifying detections image-by-image before report generation. */
     data class VerifyingDetections(val verified: Int, val total: Int) : ReportGenerationState()
     data object Generating : ReportGenerationState()
-    data class StreamingText(val partialText: String) : ReportGenerationState()
+    data class StreamingText(
+        val partialText: String,
+        val tokenCount: Int = 0,
+        val tokensPerSec: Float = 0f,
+        val maxTokens: Int = 0,
+    ) : ReportGenerationState()
     data class Complete(val report: GeneratedReport) : ReportGenerationState()
     data class Error(val message: String) : ReportGenerationState()
+}
+
+/**
+ * Tracks token generation metrics for the streaming UI.
+ *
+ * Estimates token count from the partial text length (1 token ~ 4 chars for
+ * most GGUF models). Computes a rolling tokens/second rate.
+ */
+class GenerationTracker(val maxTokens: Int) {
+    private val startMs = System.currentTimeMillis()
+    private var lastTokenCount = 0
+
+    fun snapshot(partialText: String): ReportGenerationState.StreamingText {
+        val estimatedTokens = partialText.length / 4
+        val elapsedSec = (System.currentTimeMillis() - startMs) / 1000f
+        val tokPerSec = if (elapsedSec > 0.5f) estimatedTokens / elapsedSec else 0f
+        lastTokenCount = estimatedTokens
+        return ReportGenerationState.StreamingText(
+            partialText  = partialText,
+            tokenCount   = estimatedTokens,
+            tokensPerSec = tokPerSec,
+            maxTokens    = maxTokens,
+        )
+    }
 }
 
 /**
@@ -101,8 +132,21 @@ class OceanGuardApp : Application() {
     // Text engine — one at a time, tier-aware. Access via getOrCreateTextEngine().
     @Volatile private var _vlmTextEngine: LlamaTextEngine? = null
 
-    // Vision engine — lazy, shared for both deep analysis and vision reports
-    val vlmVisionEngine: LlamaVisionEngine by lazy { LlamaVisionEngine() }
+    // Vision engine — lazy, provider-aware. Recreated when VLM provider changes.
+    @Volatile private var _vlmVisionEngine: LlamaVisionEngine? = null
+    val vlmVisionEngine: LlamaVisionEngine
+        get() = _vlmVisionEngine ?: createVisionEngine().also { _vlmVisionEngine = it }
+
+    private fun createVisionEngine(): LlamaVisionEngine {
+        val provider = VlmProvider.fromKey(settingsRepository.getVlmProviderSync())
+        return when (provider) {
+            VlmProvider.GEMMA4 -> LlamaVisionEngine(
+                formatter    = Gemma4PromptFormatter,
+                displayLabel = "Gemma 4 E2B + mmproj",
+            )
+            else -> LlamaVisionEngine()
+        }
+    }
 
     // Database
     val database: OceanGuardDatabase by lazy {
@@ -245,12 +289,25 @@ class OceanGuardApp : Application() {
     // -----------------------------------------------------------------------
 
     /**
-     * Best available text tier respecting user preference.
-     * Tries the user-selected tier first; falls back to highest available quality.
+     * Best available text tier respecting user preference and selected provider.
+     * Tries the user-selected tier first; falls back to highest available quality
+     * within the same provider family.
      */
     private fun bestAvailableTier(): TextModelTier {
+        val provider = VlmProvider.fromKey(settingsRepository.getVlmProviderSync())
         val preferred = TextModelTier.fromKey(settingsRepository.getVlmModelTierSync())
-        if (vlmModelManager.isModelAvailable(preferred)) return preferred
+
+        // If the preferred tier matches the selected provider and is available, use it
+        if (preferred.provider == provider && vlmModelManager.isModelAvailable(preferred)) {
+            return preferred
+        }
+
+        // Fall back to the best available tier within the selected provider
+        val providerTiers = TextModelTier.forProvider(provider)
+        val available = providerTiers.lastOrNull { vlmModelManager.isModelAvailable(it) }
+        if (available != null) return available
+
+        // Ultimate fallback: any provider, any tier
         return when {
             vlmModelManager.isModelAvailable(TextModelTier.QUALITY)  -> TextModelTier.QUALITY
             vlmModelManager.isModelAvailable(TextModelTier.BALANCED) -> TextModelTier.BALANCED
@@ -358,13 +415,14 @@ class OceanGuardApp : Application() {
                         },
                     )
                     reportGenerationState.value = ReportGenerationState.Generating
+                    val tracker = GenerationTracker(maxTokens = 6144)
                     val reportText = generator.generateVerifiedReportStreaming(
                         sessions      = sessions,
                         verifications = verifications,
                         language      = language,
                         audience      = audience,
                     ) { partial ->
-                        reportGenerationState.value = ReportGenerationState.StreamingText(partial)
+                        reportGenerationState.value = tracker.snapshot(partial)
                     }
                     val report = GeneratedReport(
                         text         = reportText,
@@ -377,12 +435,13 @@ class OceanGuardApp : Application() {
                     reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
                     Log.i(TAG, "Verified report saved (id=$id, verifications=${verifications.size})")
                 } else {
-                    // ── Fallback: text-only report ────────────────────────────────────
+                    // ── Fallback: text-only report ----
                     val engine = loadTextEngineIfNeeded()
                     reportGenerationState.value = ReportGenerationState.Generating
+                    val tracker2 = GenerationTracker(maxTokens = 6144)
                     val generator = ReportGenerator(engine)
                     val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
-                        reportGenerationState.value = ReportGenerationState.StreamingText(partial)
+                        reportGenerationState.value = tracker2.snapshot(partial)
                     }
                     val report = GeneratedReport(
                         text         = reportText,
@@ -425,9 +484,10 @@ class OceanGuardApp : Application() {
             try {
                 val engine = loadTextEngineIfNeeded()
                 reportGenerationState.value = ReportGenerationState.Generating
+                val tracker = GenerationTracker(maxTokens = 6144)
                 val generator = ReportGenerator(engine)
                 val reportText = generator.generateZoneReportStreaming(input, language, audience) { partial ->
-                    reportGenerationState.value = ReportGenerationState.StreamingText(partial)
+                    reportGenerationState.value = tracker.snapshot(partial)
                 }
                 val report = GeneratedReport(
                     text             = reportText,
@@ -495,15 +555,16 @@ class OceanGuardApp : Application() {
                 )
                 Log.i(TAG, "Verification complete: ${verifications.size}/${candidateCount} sessions verified")
 
-                // ── Phase 2: Report generation (same 2B model, text mode) ────
+                // ── Phase 2: Report generation (same 2B model, text mode) ----
                 reportGenerationState.value = ReportGenerationState.Generating
+                val tracker = GenerationTracker(maxTokens = 6144)
                 val reportText = generator.generateVerifiedZoneReportStreaming(
                     input         = input,
                     verifications = verifications,
                     language      = language,
                     audience      = audience,
                 ) { partial ->
-                    reportGenerationState.value = ReportGenerationState.StreamingText(partial)
+                    reportGenerationState.value = tracker.snapshot(partial)
                 }
 
                 val report = GeneratedReport(
@@ -599,10 +660,12 @@ class OceanGuardApp : Application() {
             engine.release()
             Log.i(TAG, "Text VLM auto-released after ${VLM_RETAIN_MS / 1000}s idle")
         }
-        if (vlmVisionEngine.isReady()) {
-            vlmVisionEngine.release()
+        val vision = _vlmVisionEngine
+        if (vision?.isReady() == true) {
+            vision.release()
             Log.i(TAG, "Vision VLM auto-released after ${VLM_RETAIN_MS / 1000}s idle")
         }
+        _vlmVisionEngine = null // Allow recreation with updated provider on next access
         modelLoadingState.update {
             it.copy(qwenText = ModelStatus.Standby, qwenVision = ModelStatus.Standby, activeTierName = "")
         }

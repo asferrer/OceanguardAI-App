@@ -92,6 +92,7 @@
     <string name="report_btn_delete">Löschen</string>
     <string name="report_label_language">Berichtssprache</string>
     <string name="report_btn_generating">Wird erstellt…</string>
+    <string name="report_eta">~%s verbleibend</string>
     <string name="report_btn_generate_sample">Beispielbericht erstellen</string>
     <!-- Pluralstil: wird im Code als "Bericht erstellen (%d Analysen)" erstellt -->
     <string name="report_btn_generate">Bericht erstellen (%d Analysen)</string>
@@ -178,9 +179,13 @@
     <string name="settings_dev_mode_activated">Entwicklermodus aktiviert!</string>
     <string name="settings_dev_mode_countdown">Noch %1$d Mal tippen…</string>
     <string name="settings_dev_mode_disable">Entwicklermodus deaktivieren</string>
+    <string name="settings_label_vlm_provider">VLM-Anbieter</string>
+    <string name="settings_desc_vlm_provider">Modellfamilie für Berichte und Tiefenanalyse. Gemma 4 bietet native Bildverarbeitung.</string>
     <string name="settings_label_vlm_tier">VLM-Textmodell</string>
-    <string name="settings_desc_vlm_tier">Bevorzugtes Qwen3.5-Modell für die Berichtserstellung. Weicht auf das beste verfügbare Modell aus, wenn das gewählte nicht heruntergeladen ist.</string>
+    <string name="settings_desc_vlm_tier">Bevorzugtes Modell für die Berichtserstellung. Weicht auf das beste verfügbare Modell aus, wenn das gewählte nicht heruntergeladen ist.</string>
     <string name="settings_vlm_not_downloaded">nicht heruntergeladen</string>
+    <string name="settings_label_gemma4_mmproj">Vision-Projektor (mmproj)</string>
+    <string name="settings_desc_gemma4_mmproj">Laden Sie den Vision-Projektor herunter, um die Bildanalyse mit Gemma 4 zu aktivieren.</string>
 
     <!-- Über-Abschnitt -->
     <string name="settings_section_about">Über</string>

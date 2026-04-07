@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(oceanguard_llama)
 
-# ARM64 with dotprod + fp16 (Exynos 2200 = ARMv8.4-A)
-# NOTE: -fno-finite-math-only required: ggml vec.h checks for it at compile time
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -march=armv8-a+dotprod+fp16 -fno-finite-math-only")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=armv8-a+dotprod+fp16 -fno-finite-math-only -std=c++17")
+# ARM64 optimized for Exynos 2200 (Cortex-X2 = ARMv9 ⊃ ARMv8.6-A)
+# - dotprod: accelerates INT8 dot products in ggml quantized kernels
+# - fp16: half-precision compute for flash attention KV cache
+# - i8mm: INT8 matrix multiply (ARMv8.6+), ~20-30% faster Q4_K_M matmul
+# - fno-finite-math-only: required by ggml vec.h compile-time checks
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -march=armv8.6-a+dotprod+fp16+i8mm -fno-finite-math-only")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=armv8.6-a+dotprod+fp16+i8mm -fno-finite-math-only -std=c++17")
 
 # CPU-only — no GPU backends (Xclipse 920 drivers are buggy; EDEN NPU SDK is private)
 set(GGML_METAL    OFF CACHE BOOL "" FORCE)
@@ -17,24 +20,23 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER   OFF CACHE BOOL "" FORCE)
 
 # Fetch llama.cpp — shallow clone of exact tag (faster download, no git-describe needed).
-# b8583 = March 30 2026; first version with qwen35 arch support (added ~Feb 19 2026).
-# Architecture "qwen35" in GGUF requires llama.cpp >= ~b7900.
+# b8678 = April 6 2026; supports qwen35 (>= ~b7900) and gemma4 (>= b8637).
+# Includes critical gemma4 fixes: tokenizer (b8671), softcapping (b8662), byte tokens (b8678).
 include(FetchContent)
 FetchContent_Declare(llama_cpp
     GIT_REPOSITORY https://github.com/ggerganov/llama.cpp.git
-    GIT_TAG        b8583
+    GIT_TAG        b8678
     GIT_SHALLOW    TRUE
 )
 FetchContent_MakeAvailable(llama_cpp)
 
-# ---- Vision bridge: stub mode (mtmd API migration pending) ----
-# llama.cpp b8583 moved vision to tools/mtmd/ with a new API that pulls in
-# ~20 model backends + audio deps (conformer, whisper-enc, miniaudio).
-# OceanGuard uses Qwen3.5-2B text-only for reports — vision is out of scope.
-# Set LLAVA_AVAILABLE=FALSE so llava_bridge.cpp compiles as no-ops.
+# ---- Vision bridge: enabled for Gemma 4 + Qwen multimodal support ----
+# llama.cpp mtmd API provides multi-modal support (image + text).
+# Enabled to support Gemma 4 E2B vision (mmproj) and Qwen3.5 vision verification.
+# Set LLAVA_AVAILABLE=TRUE to compile llava_bridge.cpp with full mtmd support.
 set(LLAVA_SOURCES "")
-set(LLAVA_AVAILABLE FALSE)
-message(STATUS "Vision bridge: stub mode (text-only reports, mtmd migration deferred)")
+set(LLAVA_AVAILABLE TRUE)
+message(STATUS "Vision bridge: enabled (Gemma 4 + Qwen multimodal via mtmd)")
 
 add_library(llama_oceanguard SHARED
     llama_bridge.cpp

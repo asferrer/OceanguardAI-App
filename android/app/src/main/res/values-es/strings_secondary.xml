@@ -92,6 +92,7 @@
     <string name="report_btn_delete">Eliminar</string>
     <string name="report_label_language">Idioma del informe</string>
     <string name="report_btn_generating">Generando…</string>
+    <string name="report_eta">~%s restante</string>
     <string name="report_btn_generate_sample">Generar informe de muestra</string>
     <!-- En plural: construido en el código como "Generar informe (%d análisis)" -->
     <string name="report_btn_generate">Generar informe (%d análisis)</string>
@@ -178,9 +179,13 @@
     <string name="settings_dev_mode_activated">Modo desarrollador activado!</string>
     <string name="settings_dev_mode_countdown">%1$d toques más…</string>
     <string name="settings_dev_mode_disable">Desactivar modo desarrollador</string>
+    <string name="settings_label_vlm_provider">Proveedor VLM</string>
+    <string name="settings_desc_vlm_provider">Familia de modelos para informes y análisis profundo. Gemma 4 añade visión nativa.</string>
     <string name="settings_label_vlm_tier">Modelo de texto VLM</string>
-    <string name="settings_desc_vlm_tier">Modelo Qwen3.5 preferido para generar informes. Usa el mejor disponible si el elegido no está descargado.</string>
+    <string name="settings_desc_vlm_tier">Modelo preferido para generar informes. Usa el mejor disponible si el elegido no está descargado.</string>
     <string name="settings_vlm_not_downloaded">no descargado</string>
+    <string name="settings_label_gemma4_mmproj">Proyector de visión (mmproj)</string>
+    <string name="settings_desc_gemma4_mmproj">Descarga el proyector de visión para habilitar el análisis de imágenes con Gemma 4.</string>
 
     <!-- Sección Acerca de -->
     <string name="settings_section_about">Acerca de</string>

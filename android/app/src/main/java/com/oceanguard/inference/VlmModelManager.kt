@@ -39,20 +39,32 @@ class VlmModelManager(private val context: Context) {
         private const val TEXT_QUALITY_URL =
             "$HF_BASE/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
 
-        // Vision model URLs (2B + mmproj)
+        // Gemma 4 E2B — Apache 2.0, day-one llama.cpp support with mmproj vision
+        private const val GEMMA4_E2B_URL =
+            "$HF_BASE/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf"
+        private const val GEMMA4_MMPROJ_URL =
+            "$HF_BASE/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/mmproj-gemma-4-e2b-it-f16.gguf"
+
+        // Vision model URLs — Qwen (2B + mmproj)
         private const val VISION_MODEL_URL =
-            "$HF_BASE/unsloth/Qwen3.5-2B-GGUF/resolve/main/${LlamaVisionEngine.MODEL_FILENAME}"
+            "$HF_BASE/unsloth/Qwen3.5-2B-GGUF/resolve/main/${LlamaVisionEngine.QWEN_MODEL_FILENAME}"
         private const val MMPROJ_URL =
-            "$HF_BASE/unsloth/Qwen3.5-2B-GGUF/resolve/main/${LlamaVisionEngine.MMPROJ_FILENAME}"
+            "$HF_BASE/unsloth/Qwen3.5-2B-GGUF/resolve/main/${LlamaVisionEngine.QWEN_MMPROJ_FILENAME}"
+
+        // Gemma 4 vision filenames
+        const val GEMMA4_MODEL_FILENAME  = "gemma-4-e2b-it-Q4_K_M.gguf"
+        const val GEMMA4_MMPROJ_FILENAME = "mmproj-gemma-4-e2b-it-f16.gguf"
 
         // Minimum valid file sizes (small files = error HTML pages from HF)
         private val MIN_TEXT_BYTES = mapOf(
-            TextModelTier.FAST     to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
-            TextModelTier.BALANCED to   900_000_000L, //  900 MB — Qwen3.5-2B  (~1.1 GB)
-            TextModelTier.QUALITY  to 2_200_000_000L, // 2.2 GB — Qwen3.5-4B  (~2.74 GB)
+            TextModelTier.FAST       to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
+            TextModelTier.BALANCED   to   900_000_000L, //  900 MB — Qwen3.5-2B  (~1.1 GB)
+            TextModelTier.QUALITY    to 2_200_000_000L, // 2.2 GB — Qwen3.5-4B  (~2.74 GB)
+            TextModelTier.GEMMA4_E2B to 2_500_000_000L, // 2.5 GB — Gemma 4 E2B (~3.1 GB)
         )
         private const val MIN_VISION_MODEL_BYTES = 500_000_000L // 500 MB — 2B
         private const val MIN_MMPROJ_BYTES       =  50_000_000L //  50 MB — mmproj
+        private const val MIN_GEMMA4_MMPROJ_BYTES = 500_000_000L // 500 MB — Gemma 4 mmproj (~986 MB)
 
         private const val BUFFER_SIZE        = 8 * 1024 * 1024 // 8 MB
         private const val CONNECT_TIMEOUT_MS = 30_000
@@ -77,13 +89,17 @@ class VlmModelManager(private val context: Context) {
     fun getTextModelPath(tier: TextModelTier = TextModelTier.FAST): String =
         File(getModelDirectory(), tier.filename).absolutePath
 
-    /** Absolute path to the vision LLM GGUF file. */
+    /** Absolute path to the Qwen vision LLM GGUF file. */
     fun getVisionModelPath(): String =
-        File(getModelDirectory(), LlamaVisionEngine.MODEL_FILENAME).absolutePath
+        File(getModelDirectory(), LlamaVisionEngine.QWEN_MODEL_FILENAME).absolutePath
 
-    /** Absolute path to the CLIP mmproj GGUF file. */
+    /** Absolute path to the Qwen CLIP mmproj GGUF file. */
     fun getMmprojPath(): String =
-        File(getModelDirectory(), LlamaVisionEngine.MMPROJ_FILENAME).absolutePath
+        File(getModelDirectory(), LlamaVisionEngine.QWEN_MMPROJ_FILENAME).absolutePath
+
+    /** Absolute path to the Gemma 4 mmproj GGUF file. */
+    fun getGemma4MmprojPath(): String =
+        File(getModelDirectory(), GEMMA4_MMPROJ_FILENAME).absolutePath
 
     // -----------------------------------------------------------------------
     // Availability checks
@@ -103,18 +119,33 @@ class VlmModelManager(private val context: Context) {
         isModelAvailable(TextModelTier.QUALITY)
 
     /**
-     * True if both the 2B vision model and the mmproj file are present AND the native
-     * library was compiled with vision support ([LlamaCppBridge.nativeIsVisionSupported]).
-     * When the native vision bridge is a stub (current build), returns false so the app
-     * falls back to text-only report generation using the 2B model as a text tier.
+     * True if the Qwen 2B vision model + mmproj are present AND native vision is compiled.
      */
     fun isVisionModelAvailable(): Boolean {
         if (!LlamaCppBridge.nativeIsVisionSupported()) return false
         val modelDir = getModelDirectory()
-        val model  = File(modelDir, LlamaVisionEngine.MODEL_FILENAME)
-        val mmproj = File(modelDir, LlamaVisionEngine.MMPROJ_FILENAME)
+        val model  = File(modelDir, LlamaVisionEngine.QWEN_MODEL_FILENAME)
+        val mmproj = File(modelDir, LlamaVisionEngine.QWEN_MMPROJ_FILENAME)
         return model.exists()  && model.length()  > MIN_VISION_MODEL_BYTES
             && mmproj.exists() && mmproj.length() > MIN_MMPROJ_BYTES
+    }
+
+    /**
+     * True if the Gemma 4 E2B text model + mmproj are both present AND native vision is compiled.
+     */
+    fun isGemma4VisionAvailable(): Boolean {
+        if (!LlamaCppBridge.nativeIsVisionSupported()) return false
+        val modelDir = getModelDirectory()
+        val model  = File(modelDir, GEMMA4_MODEL_FILENAME)
+        val mmproj = File(modelDir, GEMMA4_MMPROJ_FILENAME)
+        return model.exists()  && model.length()  > (MIN_TEXT_BYTES[TextModelTier.GEMMA4_E2B] ?: 0L)
+            && mmproj.exists() && mmproj.length() > MIN_GEMMA4_MMPROJ_BYTES
+    }
+
+    /** True if the Gemma 4 mmproj is downloaded (text model checked via isModelAvailable). */
+    fun isGemma4MmprojAvailable(): Boolean {
+        val mmproj = File(getModelDirectory(), GEMMA4_MMPROJ_FILENAME)
+        return mmproj.exists() && mmproj.length() > MIN_GEMMA4_MMPROJ_BYTES
     }
 
     // -----------------------------------------------------------------------
@@ -124,6 +155,8 @@ class VlmModelManager(private val context: Context) {
     fun getModelSizeLabel(tier: TextModelTier = TextModelTier.FAST): String = tier.sizeLabel
 
     fun getVisionModelSizeLabel(): String = "~1.6 GB"
+
+    fun getGemma4MmprojSizeLabel(): String = "~986 MB"
 
     // -----------------------------------------------------------------------
     // Downloads
@@ -141,9 +174,10 @@ class VlmModelManager(private val context: Context) {
             }
             cancelled = false
             val url = when (tier) {
-                TextModelTier.FAST     -> TEXT_FAST_URL
-                TextModelTier.BALANCED -> TEXT_BALANCED_URL
-                TextModelTier.QUALITY  -> TEXT_QUALITY_URL
+                TextModelTier.FAST       -> TEXT_FAST_URL
+                TextModelTier.BALANCED   -> TEXT_BALANCED_URL
+                TextModelTier.QUALITY    -> TEXT_QUALITY_URL
+                TextModelTier.GEMMA4_E2B -> GEMMA4_E2B_URL
             }
             val target = File(getModelDirectory(), tier.filename)
             val minBytes = MIN_TEXT_BYTES[tier] ?: 50_000_000L
@@ -156,7 +190,7 @@ class VlmModelManager(private val context: Context) {
         }
 
     /**
-     * Download both vision model files (2B + mmproj) from HuggingFace.
+     * Download both Qwen vision model files (2B + mmproj) from HuggingFace.
      * Progress is emitted per file; completes only when both are valid.
      */
     suspend fun downloadVisionModel() = withContext(Dispatchers.IO) {
@@ -168,26 +202,50 @@ class VlmModelManager(private val context: Context) {
         val modelDir = getModelDirectory()
 
         try {
-            val model2b = File(modelDir, LlamaVisionEngine.MODEL_FILENAME)
+            val model2b = File(modelDir, LlamaVisionEngine.QWEN_MODEL_FILENAME)
             if (!model2b.exists() || model2b.length() < MIN_VISION_MODEL_BYTES) {
                 downloadFile(
                     url          = VISION_MODEL_URL,
                     target       = model2b,
                     minValidBytes = MIN_VISION_MODEL_BYTES,
-                    filename     = LlamaVisionEngine.MODEL_FILENAME,
+                    filename     = LlamaVisionEngine.QWEN_MODEL_FILENAME,
                 )
                 if (cancelled) return@withContext
             }
 
-            val mmproj = File(modelDir, LlamaVisionEngine.MMPROJ_FILENAME)
+            val mmproj = File(modelDir, LlamaVisionEngine.QWEN_MMPROJ_FILENAME)
             if (!mmproj.exists() || mmproj.length() < MIN_MMPROJ_BYTES) {
                 downloadFile(
                     url          = MMPROJ_URL,
                     target       = mmproj,
                     minValidBytes = MIN_MMPROJ_BYTES,
-                    filename     = LlamaVisionEngine.MMPROJ_FILENAME,
+                    filename     = LlamaVisionEngine.QWEN_MMPROJ_FILENAME,
                 )
             }
+        } catch (e: VlmDownloadException) {
+            _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")
+            throw e
+        }
+    }
+
+    /**
+     * Download the Gemma 4 mmproj file from HuggingFace.
+     * The text model is downloaded via [downloadModel] with [TextModelTier.GEMMA4_E2B].
+     */
+    suspend fun downloadGemma4Mmproj() = withContext(Dispatchers.IO) {
+        if (isGemma4MmprojAvailable()) {
+            _downloadState.value = VlmDownloadState.Complete
+            return@withContext
+        }
+        cancelled = false
+        try {
+            val target = File(getModelDirectory(), GEMMA4_MMPROJ_FILENAME)
+            downloadFile(
+                url           = GEMMA4_MMPROJ_URL,
+                target        = target,
+                minValidBytes = MIN_GEMMA4_MMPROJ_BYTES,
+                filename      = GEMMA4_MMPROJ_FILENAME,
+            )
         } catch (e: VlmDownloadException) {
             _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")
             throw e

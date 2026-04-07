@@ -48,6 +48,7 @@ import androidx.core.os.LocaleListCompat
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VlmDownloadState
 import com.oceanguard.ai.inference.VlmModelManager
+import com.oceanguard.ai.inference.VlmProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -646,9 +647,68 @@ private fun DeveloperSettingsSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // VLM model tier selector
+        // VLM provider selector (Qwen 3.5 / Gemma 4)
+        val vlmProviderKey by settings.vlmProvider.collectAsStateWithLifecycle(
+            initialValue = SettingsRepository.DEFAULT_VLM_PROVIDER
+        )
+        var providerExpanded by remember { mutableStateOf(false) }
+        val currentProvider = VlmProvider.fromKey(vlmProviderKey)
+
+        Text(
+            text = stringResource(R.string.settings_label_vlm_provider),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = stringResource(R.string.settings_desc_vlm_provider),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = providerExpanded,
+            onExpandedChange = { providerExpanded = it },
+        ) {
+            OutlinedTextField(
+                value = currentProvider.displayLabel,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = providerExpanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                shape = RoundedCornerShape(12.dp),
+            )
+            ExposedDropdownMenu(
+                expanded = providerExpanded,
+                onDismissRequest = { providerExpanded = false },
+            ) {
+                VlmProvider.entries.forEach { provider ->
+                    DropdownMenuItem(
+                        text = { Text(provider.displayLabel) },
+                        onClick = {
+                            scope.launch {
+                                settings.setVlmProvider(provider.key)
+                                // Auto-select best tier for the new provider
+                                val bestTier = TextModelTier.forProvider(provider).firstOrNull()
+                                if (bestTier != null) {
+                                    settings.setVlmModelTier(bestTier.name.lowercase())
+                                }
+                            }
+                            providerExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // VLM model tier selector (filtered by selected provider)
         var tierExpanded by remember { mutableStateOf(false) }
         val currentTier = TextModelTier.fromKey(vlmModelTierKey)
+        val providerTiers = TextModelTier.forProvider(currentProvider)
 
         Text(
             text = stringResource(R.string.settings_label_vlm_tier),
@@ -687,7 +747,7 @@ private fun DeveloperSettingsSection(
                 expanded = tierExpanded,
                 onDismissRequest = { tierExpanded = false },
             ) {
-                TextModelTier.entries.forEach { tier ->
+                providerTiers.forEach { tier ->
                     val tierAvailable = vlmModelManager.isModelAvailable(tier)
                     DropdownMenuItem(
                         text = {
@@ -745,9 +805,58 @@ private fun DeveloperSettingsSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+        // Gemma 4 mmproj download (vision support)
+        if (currentProvider == VlmProvider.GEMMA4 &&
+            vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B) &&
+            !vlmModelManager.isGemma4MmprojAvailable()
+        ) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                text = stringResource(R.string.settings_label_gemma4_mmproj),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = stringResource(R.string.settings_desc_gemma4_mmproj),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            if (isDownloading) {
+                val progress = (downloadState as? VlmDownloadState.Downloading)?.progress
+                if (progress != null) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            } else {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            vlmModelManager.downloadGemma4Mmproj()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Download mmproj (${vlmModelManager.getGemma4MmprojSizeLabel()})")
+                }
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
         // Technical info
+        val techLabel = if (currentProvider == VlmProvider.GEMMA4) {
+            "RT-DETRv2 + Gemma 4 (llama.cpp)"
+        } else {
+            "RT-DETRv2 + Qwen3.5 (llama.cpp)"
+        }
         Text(
-            text = "RT-DETRv2 + Qwen3.5 (llama.cpp)",
+            text = techLabel,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

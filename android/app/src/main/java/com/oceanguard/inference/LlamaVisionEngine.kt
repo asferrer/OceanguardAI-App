@@ -10,13 +10,17 @@ import kotlinx.coroutines.withContext
 /**
  * [VlmVisionEngine] implementation backed by llama.cpp + llava (via [LlamaCppBridge]).
  *
- * Designed for Qwen3.5-2B Q4_K_M (~1.2 GB) + mmproj FP16 (~400 MB) for optional
- * vision-enhanced debris analysis. Loaded only when user explicitly enables it.
+ * Supports multiple model families via [formatter] parameter:
+ * - Qwen3.5-2B Q4_K_M + mmproj FP16 (default)
+ * - Gemma 4 E2B Q4_K_M + mmproj FP16
  *
  * Two handles are maintained: one for the LLM, one for the CLIP projector.
  * Both must be loaded before [generateWithImage] can be called.
  */
-class LlamaVisionEngine : VlmVisionEngine {
+class LlamaVisionEngine(
+    private val formatter: PromptFormatter = QwenPromptFormatter,
+    displayLabel: String = "Qwen3.5-2B Q4_K_M + mmproj",
+) : VlmVisionEngine {
 
     companion object {
         private const val TAG = "LlamaVisionEngine"
@@ -27,11 +31,17 @@ class LlamaVisionEngine : VlmVisionEngine {
         private const val TEMPERATURE = 0.3f
         private const val TOP_K = 20
 
-        const val MODEL_FILENAME  = "Qwen3.5-2B-Q4_K_M.gguf"
-        const val MMPROJ_FILENAME = "mmproj-F16.gguf"
+        // Qwen vision filenames
+        const val QWEN_MODEL_FILENAME  = "Qwen3.5-2B-Q4_K_M.gguf"
+        const val QWEN_MMPROJ_FILENAME = "mmproj-F16.gguf"
+
+        @Deprecated("Use QWEN_MODEL_FILENAME", replaceWith = ReplaceWith("QWEN_MODEL_FILENAME"))
+        const val MODEL_FILENAME  = QWEN_MODEL_FILENAME
+        @Deprecated("Use QWEN_MMPROJ_FILENAME", replaceWith = ReplaceWith("QWEN_MMPROJ_FILENAME"))
+        const val MMPROJ_FILENAME = QWEN_MMPROJ_FILENAME
     }
 
-    override val displayName: String = "Qwen3.5-2B Q4_K_M + mmproj"
+    override val displayName: String = displayLabel
 
     private val initMutex = Mutex()
 
@@ -110,7 +120,7 @@ class LlamaVisionEngine : VlmVisionEngine {
         val handle = llmHandle
         check(handle != 0L) { "Vision model not loaded." }
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
-        val formatted = QwenPromptFormatter.format(
+        val formatted = formatter.format(
             userMessage      = prompt,
             systemMessage    = systemMessage ?: QwenPromptFormatter.DEFAULT_SYSTEM_PROMPT,
             assistantPrefill = assistantPrefill ?: "",
@@ -137,7 +147,7 @@ class LlamaVisionEngine : VlmVisionEngine {
         val raw = LlamaCppBridge.nativeGenerateText(
             handle, formatted, safeMaxTokens, TEMPERATURE, TOP_K, callback
         )
-        prefill + QwenPromptFormatter.sanitizeOutput(raw)
+        prefill + formatter.sanitizeOutput(raw)
     }
 
     override suspend fun generateWithImage(
@@ -161,11 +171,11 @@ class LlamaVisionEngine : VlmVisionEngine {
         if (argbBitmap !== bitmap) argbBitmap.recycle()
 
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
-        val formatted = QwenPromptFormatter.format(
+        val formatted = formatter.format(
             userMessage      = prompt,
             systemMessage    = systemMessage ?: QwenPromptFormatter.DEFAULT_SYSTEM_PROMPT,
             assistantPrefill = assistantPrefill ?: "",
-            thinkingEnabled  = false,  // Qwen3-VL: no thinking mode
+            thinkingEnabled  = false,  // Vision mode: no thinking
         )
         Log.d(TAG, "Vision generation (${imgW}x${imgH}, maxTokens=$maxTokens, prefill=${prefill.length}b)")
 
@@ -186,6 +196,6 @@ class LlamaVisionEngine : VlmVisionEngine {
             pixels, imgW, imgH,
             formatted, maxTokens, TEMPERATURE, callback,
         )
-        prefill + QwenPromptFormatter.sanitizeOutput(raw)
+        prefill + formatter.sanitizeOutput(raw)
     }
 }

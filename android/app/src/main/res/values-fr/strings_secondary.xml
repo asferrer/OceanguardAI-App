@@ -92,6 +92,7 @@
     <string name="report_btn_delete">Supprimer</string>
     <string name="report_label_language">Langue du rapport</string>
     <string name="report_btn_generating">Génération…</string>
+    <string name="report_eta">~%s restant</string>
     <string name="report_btn_generate_sample">Générer un rapport exemple</string>
     <!-- style pluriel : construit dans le code sous la forme "Générer le rapport (%d images)" -->
     <string name="report_btn_generate">Générer le rapport (%d images)</string>
@@ -178,9 +179,13 @@
     <string name="settings_dev_mode_activated">Mode développeur activé !</string>
     <string name="settings_dev_mode_countdown">Encore %1$d appuis…</string>
     <string name="settings_dev_mode_disable">Désactiver le mode développeur</string>
+    <string name="settings_label_vlm_provider">Fournisseur VLM</string>
+    <string name="settings_desc_vlm_provider">Famille de modèles pour les rapports et l\'analyse approfondie. Gemma 4 ajoute la vision native.</string>
     <string name="settings_label_vlm_tier">Modèle de texte VLM</string>
-    <string name="settings_desc_vlm_tier">Modèle Qwen3.5 préféré pour la génération de rapports. Utilise le meilleur disponible si le choix n\'est pas téléchargé.</string>
+    <string name="settings_desc_vlm_tier">Modèle préféré pour la génération de rapports. Utilise le meilleur disponible si le choix n\'est pas téléchargé.</string>
     <string name="settings_vlm_not_downloaded">non téléchargé</string>
+    <string name="settings_label_gemma4_mmproj">Projecteur de vision (mmproj)</string>
+    <string name="settings_desc_gemma4_mmproj">Téléchargez le projecteur de vision pour activer l\'analyse d\'images avec Gemma 4.</string>
 
     <!-- Section À propos -->
     <string name="settings_section_about">À propos</string>

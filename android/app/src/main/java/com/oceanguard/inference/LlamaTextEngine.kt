@@ -10,23 +10,40 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
+ * VLM model provider — groups tiers from the same model family.
+ * Used to filter available tiers in the developer settings UI.
+ */
+enum class VlmProvider(val key: String, val displayLabel: String) {
+    QWEN("qwen", "Qwen 3.5"),
+    GEMMA4("gemma4", "Gemma 4");
+
+    companion object {
+        fun fromKey(key: String): VlmProvider =
+            entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: QWEN
+    }
+}
+
+/**
  * Supported text-model tiers for report generation.
  *
  * Each entry bundles all model-specific config: filename, context size, sampling params,
  * and chat-template formatter. Adding a new model only requires a new enum entry —
  * no changes needed in [LlamaTextEngine] or [ReportGenerator].
  *
- * All Qwen3.5 Q4_K_M GGUF (Apache 2.0, llama.cpp compatible).
- * The Qwen3.5 family ships in 0.8B / 2B / 4B / 9B — no 1.5B or 3B variants.
+ * **Qwen 3.5** — Q4_K_M GGUF (Apache 2.0):
+ * - [FAST]:     0.8B — ~533 MB, ~20–30 tok/s. No thinking.
+ * - [BALANCED]: 2B   — ~1.1 GB, ~12–18 tok/s. Thinking enabled.
+ * - [QUALITY]:  4B   — ~2.74 GB, ~6–10 tok/s. Thinking enabled.
  *
- * - [FAST]:     Qwen3.5-0.8B — ~533 MB, ~20–30 tok/s on Exynos 2200 big cores. No thinking.
- * - [BALANCED]: Qwen3.5-2B   — ~1.1 GB, ~12–18 tok/s. Thinking mode enabled (temperature=1.0).
- * - [QUALITY]:  Qwen3.5-4B   — ~2.74 GB, ~6–10 tok/s. Thinking mode enabled.
+ * **Gemma 4** — Q4_K_M GGUF (Apache 2.0):
+ * - [GEMMA4_E2B]: E2B (5.1B total, 2.3B effective) — ~3.1 GB. Native vision via mmproj.
  */
 enum class TextModelTier(
     val filename: String,
     val sizeLabel: String,
     val displayName: String,
+    /** Which model family this tier belongs to. */
+    val provider: VlmProvider,
     /** llama_context window size. Larger models with thinking need more room for reasoning tokens. */
     val nCtx: Int,
     /** Sampling temperature. Qwen3.5 docs recommend 1.0 for thinking mode, 0.3 for non-thinking. */
@@ -39,6 +56,7 @@ enum class TextModelTier(
         filename     = "Qwen3.5-0.8B-Q4_K_M.gguf",
         sizeLabel    = "~533 MB",
         displayName  = "Fast (0.8B)",
+        provider     = VlmProvider.QWEN,
         // 12288 = prompt ceiling (~3500 tok, data-capped) + maxTokens 6144 + margin.
         // KV cache at 12288: ~670 MB + 533 MB model ≈ 1.2 GB on S22 Ultra.
         nCtx         = 12288,
@@ -51,6 +69,7 @@ enum class TextModelTier(
         filename     = "Qwen3.5-2B-Q4_K_M.gguf",
         sizeLabel    = "~1.1 GB",
         displayName  = "Balanced (2B)",
+        provider     = VlmProvider.QWEN,
         // 12288 accommodates prompt + 6144 output + thinking tokens (500-2000 extra).
         // KV cache: ~700 MB + 1.1 GB model ≈ 1.8 GB on S22 Ultra.
         nCtx         = 12288,
@@ -62,16 +81,36 @@ enum class TextModelTier(
         filename     = "Qwen3.5-4B-Q4_K_M.gguf",
         sizeLabel    = "~2.74 GB",
         displayName  = "Quality (4B)",
+        provider     = VlmProvider.QWEN,
         // KV cache: ~900 MB + 2.74 GB model ≈ 3.6 GB on S22 Ultra.
         nCtx         = 12288,
         temperature  = 1.0f,
         topK         = 20,
         formatter    = QwenPromptFormatter,
+    ),
+    /** Gemma 4 E2B — 5.1B total params, 2.3B effective. Native vision via mmproj (~986 MB).
+     *  128K context window, but clamped to 12288 for on-device KV cache budget. */
+    GEMMA4_E2B(
+        filename     = "gemma-4-e2b-it-Q4_K_M.gguf",
+        sizeLabel    = "~3.1 GB",
+        displayName  = "Gemma 4 E2B",
+        provider     = VlmProvider.GEMMA4,
+        // Gemma 4 E2B: no thinking mode, so prompt (~3500 tok) + maxTokens (4096) fits in 8192.
+        // Smaller nCtx = less KV cache RAM (~550 MB vs ~900 MB) + faster prefill.
+        // With flash_attn=true, KV is FP16 so actual usage is ~275 MB.
+        nCtx         = 8192,
+        temperature  = 0.3f,
+        topK         = 20,
+        formatter    = Gemma4PromptFormatter,
     );
 
     companion object {
         fun fromKey(key: String): TextModelTier =
             entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: FAST
+
+        /** Returns tiers belonging to a specific provider. */
+        fun forProvider(provider: VlmProvider): List<TextModelTier> =
+            entries.filter { it.provider == provider }
     }
 }
 
