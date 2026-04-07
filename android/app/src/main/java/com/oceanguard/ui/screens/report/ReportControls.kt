@@ -240,7 +240,10 @@ private fun PulsingAIIcon(tint: androidx.compose.ui.graphics.Color, modifier: Mo
 internal fun GeneratingBanner(
     isLoadingModel: Boolean,
     streamingText: String? = null,
-    verifyingProgress: Pair<Int, Int>? = null, // (verified, total) while verifying
+    tokenCount: Int = 0,
+    tokensPerSec: Float = 0f,
+    maxTokens: Int = 0,
+    verifyingProgress: Pair<Int, Int>? = null,
     modifier: Modifier = Modifier,
 ) {
     val currentHeading = remember(streamingText) {
@@ -251,6 +254,12 @@ internal fun GeneratingBanner(
             streamingText.substring(lastIdx + 1, end).removePrefix("## ").trim()
         } else ""
     }
+
+    val hasTokenMetrics = tokenCount > 0 && maxTokens > 0
+    val progress = if (hasTokenMetrics) (tokenCount.toFloat() / maxTokens).coerceIn(0f, 1f) else 0f
+    val etaSeconds = if (hasTokenMetrics && tokensPerSec > 0.5f) {
+        ((maxTokens - tokenCount) / tokensPerSec).toInt()
+    } else null
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -288,6 +297,13 @@ internal fun GeneratingBanner(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                 )
+            } else if (hasTokenMetrics) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+                )
             } else {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
@@ -295,9 +311,39 @@ internal fun GeneratingBanner(
                     trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                 )
             }
+            // Token metrics row: tok/s + ETA
+            if (hasTokenMetrics) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "%.1f tok/s".format(tokensPerSec),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                    )
+                    if (etaSeconds != null) {
+                        val etaText = if (etaSeconds >= 60) {
+                            "${etaSeconds / 60}m ${etaSeconds % 60}s"
+                        } else {
+                            "${etaSeconds}s"
+                        }
+                        Text(
+                            text = stringResource(R.string.report_eta, etaText),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        )
+                    }
+                }
+            }
             if (currentHeading.isNotBlank()) {
                 Text(
-                    text = "▶ $currentHeading",
+                    text = "\u25B6 $currentHeading",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                     maxLines = 1,

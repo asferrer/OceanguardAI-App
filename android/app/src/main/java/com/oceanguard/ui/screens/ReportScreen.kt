@@ -173,7 +173,11 @@ fun ReportScreen(
         }
     }
     val isLoadingModel by remember { derivedStateOf { generationState is ReportGenerationState.LoadingModel } }
-    val streamingText = (generationState as? ReportGenerationState.StreamingText)?.partialText
+    val streamingState = generationState as? ReportGenerationState.StreamingText
+    val streamingText = streamingState?.partialText
+    val tokenCount = streamingState?.tokenCount ?: 0
+    val tokensPerSec = streamingState?.tokensPerSec ?: 0f
+    val maxTokens = streamingState?.maxTokens ?: 0
     val verifyingProgress = (generationState as? ReportGenerationState.VerifyingDetections)
         ?.let { it.verified to it.total }
 
@@ -487,6 +491,9 @@ fun ReportScreen(
                     GeneratingBanner(
                         isLoadingModel    = isLoadingModel,
                         streamingText     = streamingText,
+                        tokenCount        = tokenCount,
+                        tokensPerSec      = tokensPerSec,
+                        maxTokens         = maxTokens,
                         verifyingProgress = verifyingProgress,
                     )
                 }

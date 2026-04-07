@@ -75,7 +75,15 @@ class ReportGenerationService : LifecycleService() {
                         updateNotification(getString(R.string.report_notif_generating))
                     }
                     is ReportGenerationState.StreamingText -> {
-                        updateNotification(getString(R.string.report_notif_generating))
+                        val pct = if (state.maxTokens > 0) {
+                            (state.tokenCount * 100 / state.maxTokens).coerceIn(0, 100)
+                        } else 0
+                        val text = if (pct > 0) {
+                            "${getString(R.string.report_notif_generating)} ($pct%)"
+                        } else {
+                            getString(R.string.report_notif_generating)
+                        }
+                        updateNotification(text, progress = pct, maxProgress = 100)
                     }
                     is ReportGenerationState.Complete -> {
                         updateNotification(getString(R.string.report_notif_complete))
@@ -116,7 +124,11 @@ class ReportGenerationService : LifecycleService() {
         }
     }
 
-    private fun buildNotification(contentText: String): Notification {
+    private fun buildNotification(
+        contentText: String,
+        progress: Int = -1,
+        maxProgress: Int = 100,
+    ): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -133,11 +145,16 @@ class ReportGenerationService : LifecycleService() {
             .setOnlyAlertOnce(true)
             .setContentIntent(openAppPendingIntent)
 
-        val state = app.reportGenerationState.value
-        if (state is ReportGenerationState.LoadingModel ||
-            state is ReportGenerationState.Generating
-        ) {
-            builder.setProgress(0, 0, true)
+        when {
+            progress in 1..100 -> builder.setProgress(maxProgress, progress, false)
+            else -> {
+                val state = app.reportGenerationState.value
+                if (state is ReportGenerationState.LoadingModel ||
+                    state is ReportGenerationState.Generating
+                ) {
+                    builder.setProgress(0, 0, true)
+                }
+            }
         }
 
         val notification = builder.build()
@@ -146,9 +163,13 @@ class ReportGenerationService : LifecycleService() {
         return notification
     }
 
-    private fun updateNotification(text: String) {
+    private fun updateNotification(
+        text: String,
+        progress: Int = -1,
+        maxProgress: Int = 100,
+    ) {
         try {
-            notificationManager.notify(NOTIFICATION_ID, buildNotification(text))
+            notificationManager.notify(NOTIFICATION_ID, buildNotification(text, progress, maxProgress))
         } catch (e: SecurityException) {
             Log.w(TAG, "Cannot update notification: permission denied", e)
         }
