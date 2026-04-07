@@ -54,6 +54,9 @@ Java_com_oceanguard_ai_inference_LlamaCppBridge_nativeInitTextModel(
     cparams.n_batch         = static_cast<uint32_t>(nCtx);
     cparams.n_threads       = static_cast<uint32_t>(nThreads);
     cparams.n_threads_batch = static_cast<uint32_t>(nThreadsBatch);
+    // Flash attention: fuses Q·K·V into a single kernel, halves KV cache memory
+    // (FP16 instead of FP32) and speeds up long-context attention significantly.
+    cparams.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
 
     llama_context* ctx = llama_init_from_model(model, cparams);
     if (!ctx) {
