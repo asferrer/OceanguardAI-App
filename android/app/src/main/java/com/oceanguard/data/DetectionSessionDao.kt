@@ -205,6 +205,13 @@ interface DetectionSessionDao {
     fun getSessionsContainingDebrisType(debrisTypeName: String): Flow<List<DetectionSession>>
 
     // -----------------------------------------------------------------------
+    // Batch lookup by ID list
+    // -----------------------------------------------------------------------
+
+    @Query("SELECT * FROM detection_sessions WHERE id IN (:ids) ORDER BY timestamp DESC")
+    suspend fun getSessionsByIds(ids: List<Long>): List<DetectionSession>
+
+    // -----------------------------------------------------------------------
     // Demo data helpers
     // -----------------------------------------------------------------------
 

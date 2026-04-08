@@ -850,11 +850,7 @@ private fun DeveloperSettingsSection(
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
         // Technical info
-        val techLabel = if (currentProvider == VlmProvider.GEMMA4) {
-            "RT-DETRv2 + Gemma 4 (llama.cpp)"
-        } else {
-            "RT-DETRv2 + Qwen3.5 (llama.cpp)"
-        }
+        val techLabel = "RT-DETRv2 + VLM (llama.cpp)"
         Text(
             text = techLabel,
             style = MaterialTheme.typography.bodySmall,

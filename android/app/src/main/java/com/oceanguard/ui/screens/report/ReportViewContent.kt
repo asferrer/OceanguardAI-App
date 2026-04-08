@@ -52,11 +52,15 @@ import coil3.compose.AsyncImage
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.data.GeneratedReport
+import androidx.compose.ui.graphics.Color
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.MarkdownText
 import com.oceanguard.ai.ui.components.ShimmerLoadingScreen
 import com.oceanguard.ai.ui.components.pressableScale
 import com.oceanguard.ai.utils.DataExporter
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.Badge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -349,6 +353,7 @@ internal fun ReportFullScreenView(
     onDownloadPdf: () -> Unit = {},
     isExportingPdf: Boolean = false,
     sessions: List<DetectionSession> = emptyList(),
+    onSessionClick: (Long) -> Unit = {},
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()) }
 
@@ -437,9 +442,12 @@ internal fun ReportFullScreenView(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
                     ) {
-                        // Thumbnail gallery
+                        // Thumbnail gallery — clickable to navigate to session detail
                         if (sessions.isNotEmpty()) {
-                            SessionThumbnailStrip(sessions = sessions)
+                            SessionThumbnailStrip(
+                                sessions = sessions,
+                                onSessionClick = onSessionClick,
+                            )
                         }
 
                         MarkdownText(
@@ -457,16 +465,20 @@ internal fun ReportFullScreenView(
 
 /**
  * Horizontal scrollable strip showing annotated thumbnails from sessions.
+ * Each thumbnail is clickable and navigates to the session detail screen.
  */
 @Composable
-private fun SessionThumbnailStrip(sessions: List<DetectionSession>) {
-    val thumbnails = remember(sessions) {
+private fun SessionThumbnailStrip(
+    sessions: List<DetectionSession>,
+    onSessionClick: (Long) -> Unit = {},
+) {
+    val sessionData = remember(sessions) {
         sessions.mapNotNull { s ->
             val uri = s.thumbnailUri ?: s.imageUri
-            uri.takeIf { it.isNotBlank() }
+            if (uri.isNotBlank()) Triple(s.id, uri, s.totalCount) else null
         }
     }
-    if (thumbnails.isEmpty()) return
+    if (sessionData.isEmpty()) return
 
     Column(modifier = Modifier.padding(bottom = 8.dp)) {
         Text(
@@ -482,20 +494,38 @@ private fun SessionThumbnailStrip(sessions: List<DetectionSession>) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            thumbnails.forEach { uriStr ->
-                AsyncImage(
-                    model = Uri.parse(uriStr),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                            RoundedCornerShape(8.dp),
-                        ),
-                )
+            sessionData.forEach { (sessionId, uriStr, debrisCount) ->
+                Box {
+                    AsyncImage(
+                        model = Uri.parse(uriStr),
+                        contentDescription = stringResource(R.string.report_cd_session_thumbnail),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant,
+                                RoundedCornerShape(8.dp),
+                            )
+                            .clickable { onSessionClick(sessionId) },
+                    )
+                    if (debrisCount > 0) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 4.dp, y = (-4).dp),
+                        ) {
+                            Text(
+                                text = debrisCount.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -506,11 +536,12 @@ internal fun shareMarkdownReport(
     reportText: String,
     snackbarHostState: SnackbarHostState,
     scope: CoroutineScope,
+    locationName: String? = null,
 ) {
     val uri = DataExporter.exportToMarkdown(
         context = context,
         report = reportText,
-        locationName = "OceanGuard_Survey",
+        locationName = locationName ?: "OceanGuard_Survey",
     )
 
     if (uri != null) {

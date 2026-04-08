@@ -29,4 +29,7 @@ interface GeneratedReportDao {
 
     @Query("SELECT * FROM generated_reports WHERE locationName = :locationName ORDER BY timestamp DESC")
     fun getByLocation(locationName: String): Flow<List<GeneratedReport>>
+
+    @Query("UPDATE generated_reports SET validationScore = :score, validationDetails = :details WHERE id = :id")
+    suspend fun updateValidation(id: Long, score: Int, details: String)
 }

@@ -18,6 +18,7 @@ import com.oceanguard.ai.inference.LlamaVisionEngine
 import com.oceanguard.ai.inference.RTDETRInference
 import com.oceanguard.ai.inference.ReportAudience
 import com.oceanguard.ai.inference.ReportGenerator
+import com.oceanguard.ai.inference.ReportValidator
 import com.oceanguard.ai.inference.Gemma4PromptFormatter
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VlmProvider
@@ -424,14 +425,17 @@ class OceanGuardApp : Application() {
                     ) { partial ->
                         reportGenerationState.value = tracker.snapshot(partial)
                     }
+                    val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
                     val report = GeneratedReport(
                         text         = reportText,
                         language     = language,
                         sessionCount = sessions.size,
                         usedAi       = true,
                         audience     = audience.name.lowercase(),
+                        sessionIds   = sessionIdsCsv,
                     )
                     val id = database.generatedReportDao().insert(report)
+                    validateAndPersist(id, reportText, sessions, language)
                     reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
                     Log.i(TAG, "Verified report saved (id=$id, verifications=${verifications.size})")
                 } else {
@@ -443,14 +447,17 @@ class OceanGuardApp : Application() {
                     val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
                         reportGenerationState.value = tracker2.snapshot(partial)
                     }
+                    val sessionIdsCsv2 = sessions.joinToString(",") { it.id.toString() }
                     val report = GeneratedReport(
                         text         = reportText,
                         language     = language,
                         sessionCount = sessions.size,
                         usedAi       = true,
                         audience     = audience.name.lowercase(),
+                        sessionIds   = sessionIdsCsv2,
                     )
                     val id = database.generatedReportDao().insert(report)
+                    validateAndPersist(id, reportText, sessions, language)
                     reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
                     Log.i(TAG, "Text-only report saved (id=$id)")
                 }
@@ -489,6 +496,7 @@ class OceanGuardApp : Application() {
                 val reportText = generator.generateZoneReportStreaming(input, language, audience) { partial ->
                     reportGenerationState.value = tracker.snapshot(partial)
                 }
+                val zoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
                 val report = GeneratedReport(
                     text             = reportText,
                     language         = language,
@@ -500,8 +508,10 @@ class OceanGuardApp : Application() {
                     dateRangeStartMs = input.dateRangeStartMs,
                     dateRangeEndMs   = input.dateRangeEndMs,
                     audience         = audience.name.lowercase(),
+                    sessionIds       = zoneSessionIds,
                 )
                 val id = database.generatedReportDao().insert(report)
+                validateAndPersist(id, reportText, input.sessions, language)
                 reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
                 Log.i(TAG, "Zone report saved (id=$id)")
             } catch (e: Exception) {
@@ -567,6 +577,7 @@ class OceanGuardApp : Application() {
                     reportGenerationState.value = tracker.snapshot(partial)
                 }
 
+                val verifiedZoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
                 val report = GeneratedReport(
                     text             = reportText,
                     language         = language,
@@ -578,8 +589,10 @@ class OceanGuardApp : Application() {
                     dateRangeStartMs = input.dateRangeStartMs,
                     dateRangeEndMs   = input.dateRangeEndMs,
                     audience         = audience.name.lowercase(),
+                    sessionIds       = verifiedZoneSessionIds,
                 )
                 val id = database.generatedReportDao().insert(report)
+                validateAndPersist(id, reportText, input.sessions, language)
                 reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
                 Log.i(TAG, "Verified zone report saved (id=$id, verifications=${verifications.size})")
             } catch (e: Exception) {
@@ -589,6 +602,35 @@ class OceanGuardApp : Application() {
             } finally {
                 scheduleVlmRelease()
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Post-generation validation
+    // -----------------------------------------------------------------------
+
+    /**
+     * Validates the generated report against source session data and persists
+     * the validation score + details alongside the report in Room.
+     * Runs on IO — safe to call from any coroutine scope.
+     */
+    private suspend fun validateAndPersist(
+        reportId: Long,
+        reportText: String,
+        sessions: List<DetectionSession>,
+        language: String = "en",
+    ) {
+        try {
+            val validation = ReportValidator.validate(reportText, sessions, language)
+            val confidence = ReportValidator.computeConfidenceScore(validation, sessions)
+            database.generatedReportDao().updateValidation(
+                id = reportId,
+                score = confidence,
+                details = validation.toJsonString(),
+            )
+            Log.i(TAG, "Report $reportId validated: confidence=$confidence, ${validation.toSummaryString()}")
+        } catch (e: Exception) {
+            Log.w(TAG, "Report validation failed for id=$reportId", e)
         }
     }
 

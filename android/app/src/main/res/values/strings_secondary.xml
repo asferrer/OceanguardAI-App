@@ -121,6 +121,7 @@
     <string name="report_cd_download_pdf">Download PDF</string>
     <string name="report_snackbar_pdf_error">Could not create PDF.</string>
     <string name="report_images_title">Analysed Images</string>
+    <string name="report_cd_session_thumbnail">View session details</string>
 
     <!-- ================================================================== -->
     <!-- Settings Screen                                                      -->

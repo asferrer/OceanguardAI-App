@@ -61,5 +61,6 @@ object Gemma4PromptFormatter : PromptFormatter {
             .replace("\u200D", "")
             .replace(EXCESS_BOLD_RE, "***")
             .trim()
+            .let { truncateRepetitionLoop(it) }
     }
 }

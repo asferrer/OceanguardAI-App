@@ -253,7 +253,10 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
         val raw = LlamaCppBridge.nativeGenerateText(
             handle, formatted, safeMaxTokens, tier.temperature, tier.topK, callback
         )
-        val result = prefill + tier.formatter.sanitizeOutput(raw)
+        Log.d(TAG, "Raw native output: ${raw.length} chars")
+        val sanitized = tier.formatter.sanitizeOutput(raw)
+        Log.d(TAG, "After sanitizeOutput: ${sanitized.length} chars (delta=${raw.length - sanitized.length})")
+        val result = prefill + sanitized
         Log.d(TAG, "Generation complete [${tier.displayName}] ${result.length} chars")
         result
         } finally {

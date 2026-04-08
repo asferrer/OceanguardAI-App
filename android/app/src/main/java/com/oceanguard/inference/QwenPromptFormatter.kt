@@ -131,5 +131,92 @@ object QwenPromptFormatter : PromptFormatter {
             // Collapse excessive markdown repeats (e.g. ****text**** → **text**)
             .replace(EXCESS_BOLD_RE, "***")
             .trim()
+            .let { truncateRepetitionLoop(it) }
     }
+}
+
+/**
+ * Detects and truncates repetition loops in LLM output.
+ *
+ * Small models (0.8B–2B) degenerate in two ways:
+ * 1. Repeating the same paragraph until maxTokens (caught by paragraph dedup)
+ * 2. Generating infinite empty/identical table rows (caught by line-run detection)
+ *
+ * Both are truncated at the point where the loop starts.
+ */
+fun truncateRepetitionLoop(text: String): String {
+    // --- Pass 1: Collapse runs of identical consecutive lines (e.g. empty table rows) ---
+    val cleaned = collapseRepeatedLines(text)
+
+    // --- Pass 2: Paragraph-level dedup (catches repeated paragraphs) ---
+    val paragraphs = cleaned.split(Regex("""\n{2,}""")).map { it.trim() }.filter { it.length >= 40 }
+    if (paragraphs.size < 3) return cleaned
+
+    val seen = mutableMapOf<String, Int>()
+    for ((index, para) in paragraphs.withIndex()) {
+        val normalized = para.lowercase().replace(Regex("""\s+"""), " ")
+        val prevIndex = seen[normalized]
+        if (prevIndex != null) {
+            val cutPoint = findParagraphStart(cleaned, index, paragraphs)
+            if (cutPoint > 0) {
+                val truncated = cleaned.substring(0, cutPoint).trimEnd()
+                android.util.Log.w("RepetitionLoop",
+                    "Truncated paragraph at $index (${cleaned.length}->${truncated.length} chars)")
+                return truncated
+            }
+        }
+        seen[normalized] = index
+    }
+    return cleaned
+}
+
+/**
+ * Detects runs of ≥3 identical consecutive lines and keeps only the first 2.
+ * Handles the "infinite empty table row" degeneration pattern where the model
+ * outputs `| | | | | | |` hundreds of times consuming the entire token budget.
+ */
+private fun collapseRepeatedLines(text: String): String {
+    val lines = text.split("\n")
+    if (lines.size < 5) return text
+
+    val result = StringBuilder()
+    var prevNorm = ""
+    var runCount = 0
+    val maxConsecutive = 2  // keep at most 2 identical lines in a row
+
+    for (line in lines) {
+        val norm = line.trim().lowercase()
+        if (norm == prevNorm && norm.isNotEmpty()) {
+            runCount++
+            if (runCount <= maxConsecutive) {
+                result.append(line).append("\n")
+            }
+            // else: skip — degenerate repetition
+        } else {
+            if (runCount > maxConsecutive) {
+                android.util.Log.w("RepetitionLoop",
+                    "Collapsed ${runCount - maxConsecutive} repeated lines")
+            }
+            runCount = 1
+            prevNorm = norm
+            result.append(line).append("\n")
+        }
+    }
+    if (runCount > maxConsecutive) {
+        android.util.Log.w("RepetitionLoop",
+            "Collapsed ${runCount - maxConsecutive} repeated lines (end)")
+    }
+
+    return result.toString().trimEnd()
+}
+
+/** Finds the char index where the Nth paragraph starts in the original text. */
+private fun findParagraphStart(text: String, paragraphIndex: Int, paragraphs: List<String>): Int {
+    var searchFrom = 0
+    for (i in 0 until paragraphIndex) {
+        val idx = text.indexOf(paragraphs[i], searchFrom)
+        if (idx < 0) return -1
+        searchFrom = idx + paragraphs[i].length
+    }
+    return searchFrom
 }

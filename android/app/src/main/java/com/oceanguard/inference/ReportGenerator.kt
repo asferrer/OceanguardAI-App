@@ -82,6 +82,65 @@ class ReportGenerator(
 
         private const val HIGH_RISK_THRESHOLD = 4
         private const val MEDIUM_RISK_THRESHOLD = 3
+
+        // ---- i18n: Zone report section headings per language ----
+        private data class ZoneHeadings(
+            val zoneProfile: String,
+            val debrisComposition: String,
+            val materialAnalysis: String,
+            val typeAnalysis: String,
+            val ecologicalImpact: String,
+            val riskAssessment: String,
+            val conclusions: String,
+            val recommendations: String,
+            val monitoringProtocol: String,
+        )
+        private val ZONE_HEADINGS = mapOf(
+            "en" to ZoneHeadings("## Zone Profile", "## Debris Composition", "### Material Analysis", "### Type Analysis", "## Ecological Impact", "## Risk Assessment", "## Conclusions & Next Steps", "## Conservation Recommendations", "## Monitoring Protocol"),
+            "es" to ZoneHeadings("## Perfil de la Zona", "## Composición de Residuos", "### Análisis por Material", "### Análisis por Tipo", "## Impacto Ecológico", "## Evaluación de Riesgos", "## Conclusiones y Próximos Pasos", "## Recomendaciones de Conservación", "## Protocolo de Monitoreo"),
+            "fr" to ZoneHeadings("## Profil de la Zone", "## Composition des Déchets", "### Analyse par Matériau", "### Analyse par Type", "## Impact Écologique", "## Évaluation des Risques", "## Conclusions et Prochaines Étapes", "## Recommandations de Conservation", "## Protocole de Surveillance"),
+            "de" to ZoneHeadings("## Zonenprofil", "## Abfallzusammensetzung", "### Materialanalyse", "### Typanalyse", "## Ökologische Auswirkungen", "## Risikobewertung", "## Schlussfolgerungen und Nächste Schritte", "## Schutzempfehlungen", "## Überwachungsprotokoll"),
+            "it" to ZoneHeadings("## Profilo della Zona", "## Composizione dei Rifiuti", "### Analisi per Materiale", "### Analisi per Tipo", "## Impatto Ecologico", "## Valutazione dei Rischi", "## Conclusioni e Prossimi Passi", "## Raccomandazioni di Conservazione", "## Protocollo di Monitoraggio"),
+            "pt" to ZoneHeadings("## Perfil da Zona", "## Composição dos Resíduos", "### Análise por Material", "### Análise por Tipo", "## Impacto Ecológico", "## Avaliação de Riscos", "## Conclusões e Próximos Passos", "## Recomendações de Conservação", "## Protocolo de Monitoramento"),
+        )
+        private val DEFAULT_ZONE_HEADINGS = ZONE_HEADINGS["en"]!!
+
+        // ---- i18n: Material display names per language ----
+        private val MATERIAL_NAMES: Map<String, Map<String, String>> = mapOf(
+            "en" to mapOf("PLASTIC" to "Plastic", "FISHING_NET" to "Fishing Net", "RUBBER" to "Rubber", "METAL" to "Metal", "GLASS" to "Glass", "FABRIC" to "Fabric", "WOOD" to "Wood", "PAPER" to "Paper"),
+            "es" to mapOf("PLASTIC" to "Plástico", "FISHING_NET" to "Red de pesca", "RUBBER" to "Caucho", "METAL" to "Metal", "GLASS" to "Vidrio", "FABRIC" to "Tela", "WOOD" to "Madera", "PAPER" to "Papel"),
+            "fr" to mapOf("PLASTIC" to "Plastique", "FISHING_NET" to "Filet de pêche", "RUBBER" to "Caoutchouc", "METAL" to "Métal", "GLASS" to "Verre", "FABRIC" to "Tissu", "WOOD" to "Bois", "PAPER" to "Papier"),
+            "de" to mapOf("PLASTIC" to "Plastik", "FISHING_NET" to "Fischernetz", "RUBBER" to "Gummi", "METAL" to "Metall", "GLASS" to "Glas", "FABRIC" to "Stoff", "WOOD" to "Holz", "PAPER" to "Papier"),
+            "it" to mapOf("PLASTIC" to "Plastica", "FISHING_NET" to "Rete da pesca", "RUBBER" to "Gomma", "METAL" to "Metallo", "GLASS" to "Vetro", "FABRIC" to "Tessuto", "WOOD" to "Legno", "PAPER" to "Carta"),
+            "pt" to mapOf("PLASTIC" to "Plástico", "FISHING_NET" to "Rede de pesca", "RUBBER" to "Borracha", "METAL" to "Metal", "GLASS" to "Vidro", "FABRIC" to "Tecido", "WOOD" to "Madeira", "PAPER" to "Papel"),
+        )
+
+        // ---- i18n: Debris type display names per language ----
+        private val TYPE_NAMES: Map<String, Map<String, String>> = mapOf(
+            "en" to mapOf("PLASTIC_DEBRIS" to "Plastic Debris", "FISHING_NET" to "Fishing Net", "TIRE" to "Tire", "BOTTLE" to "Bottle", "CAN" to "Can", "MASK" to "Mask", "GLOVE" to "Glove", "METAL_DEBRIS" to "Metal Debris"),
+            "es" to mapOf("PLASTIC_DEBRIS" to "Residuos plásticos", "FISHING_NET" to "Red de pesca", "TIRE" to "Neumático", "BOTTLE" to "Botella", "CAN" to "Lata", "MASK" to "Mascarilla", "GLOVE" to "Guante", "METAL_DEBRIS" to "Residuos metálicos"),
+            "fr" to mapOf("PLASTIC_DEBRIS" to "Débris plastiques", "FISHING_NET" to "Filet de pêche", "TIRE" to "Pneu", "BOTTLE" to "Bouteille", "CAN" to "Canette", "MASK" to "Masque", "GLOVE" to "Gant", "METAL_DEBRIS" to "Débris métalliques"),
+            "de" to mapOf("PLASTIC_DEBRIS" to "Plastikmüll", "FISHING_NET" to "Fischernetz", "TIRE" to "Reifen", "BOTTLE" to "Flasche", "CAN" to "Dose", "MASK" to "Maske", "GLOVE" to "Handschuh", "METAL_DEBRIS" to "Metallabfall"),
+            "it" to mapOf("PLASTIC_DEBRIS" to "Rifiuti plastici", "FISHING_NET" to "Rete da pesca", "TIRE" to "Pneumatico", "BOTTLE" to "Bottiglia", "CAN" to "Lattina", "MASK" to "Mascherina", "GLOVE" to "Guanto", "METAL_DEBRIS" to "Rifiuti metallici"),
+            "pt" to mapOf("PLASTIC_DEBRIS" to "Resíduos plásticos", "FISHING_NET" to "Rede de pesca", "TIRE" to "Pneu", "BOTTLE" to "Garrafa", "CAN" to "Lata", "MASK" to "Máscara", "GLOVE" to "Luva", "METAL_DEBRIS" to "Resíduos metálicos"),
+        )
+
+        /** Translates a raw material/type key to the user's language, falling back to the key itself. */
+        internal fun translateMaterial(key: String, language: String): String =
+            MATERIAL_NAMES[language]?.get(key) ?: MATERIAL_NAMES["en"]?.get(key) ?: key
+
+        internal fun translateType(key: String, language: String): String =
+            TYPE_NAMES[language]?.get(key) ?: TYPE_NAMES["en"]?.get(key) ?: key
+
+        /** Pre-built risk table header row + separator for the ZONE template. */
+        private fun buildRiskTableHeader(language: String): String = when (language) {
+            "es" -> "Genera esta tabla EXACTA:\n| Tipo de Residuo | Puntuación de Riesgo (1-5) | Cantidad | Riesgo Principal | Urgencia |\n|---|---|---|---|---|"
+            "fr" -> "Genera cette table EXACTE:\n| Type de Déchet | Score de Risque (1-5) | Quantité | Risque Principal | Urgence |\n|---|---|---|---|---|"
+            "de" -> "Erstelle diese EXAKTE Tabelle:\n| Abfallart | Risikobewertung (1-5) | Anzahl | Hauptrisiko | Dringlichkeit |\n|---|---|---|---|---|"
+            "it" -> "Genera questa tabella ESATTA:\n| Tipo di Rifiuto | Punteggio di Rischio (1-5) | Quantità | Rischio Principale | Urgenza |\n|---|---|---|---|---|"
+            "pt" -> "Gere esta tabela EXATA:\n| Tipo de Resíduo | Pontuação de Risco (1-5) | Quantidade | Risco Principal | Urgência |\n|---|---|---|---|---|"
+            else -> "Generate this EXACT table:\n| Debris Type | Risk Score (1-5) | Count | Primary Risk | Urgency |\n|---|---|---|---|---|"
+        }
     }
 
     /**
@@ -120,10 +179,11 @@ class ReportGenerator(
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
-        val summary = buildZoneJsonSummary(input)
+        val allDebris = input.sessions.flatMap { it.debrisList }
+        val summary = buildZoneJsonSummary(input, language)
         Log.i(TAG, "Generating zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
-        val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language)
+        val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language, allDebris)
         val response = runTextInference(prompt, language, languageName, audience, ReportType.ZONE)
         Log.i(TAG, "Zone VLM report generated (${response.length} chars)")
         QwenPromptFormatter.sanitizeOutput(response)
@@ -148,8 +208,9 @@ class ReportGenerator(
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 6144,
-            systemMessage = buildSystemMessage(languageName, audience, ReportType.GENERIC),
+            systemMessage = buildSystemMessage(languageName, audience, ReportType.GENERIC, language),
             assistantPrefill = firstHeading,
+            thinkingEnabled = false,  // Reports: maximize output tokens, no thinking overhead
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
         }
@@ -165,16 +226,18 @@ class ReportGenerator(
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
-        val summary = buildZoneJsonSummary(input)
+        val allDebris = input.sessions.flatMap { it.debrisList }
+        val summary = buildZoneJsonSummary(input, language)
         Log.i(TAG, "Generating streamed zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
-        val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language)
+        val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language, allDebris)
         val firstHeading = FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
         val response = inference.generateText(
             prompt = prompt,
             maxTokens = 6144,
-            systemMessage = buildSystemMessage(languageName, audience, ReportType.ZONE),
+            systemMessage = buildSystemMessage(languageName, audience, ReportType.ZONE, language),
             assistantPrefill = firstHeading,
+            thinkingEnabled = false,  // Reports: maximize output tokens, no thinking overhead
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
         }
@@ -367,15 +430,16 @@ Rules:
         val languageName = LANGUAGE_NAMES[language] ?: "English"
         val firstHeading = FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
 
-        val enrichedJson = buildEnrichedZoneJsonSummary(input, verifications)
+        val enrichedJson = buildEnrichedZoneJsonSummary(input, verifications, language)
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
         val prompt = buildVerifiedZoneVlmPrompt(languageName, enrichedJson, input.locationName, dateRangeLabel, language, verifications)
 
         val response = inference.generateText(
             prompt           = prompt,
             maxTokens        = 6144,
-            systemMessage    = buildSystemMessage(languageName, audience, ReportType.ZONE),
+            systemMessage    = buildSystemMessage(languageName, audience, ReportType.ZONE, language),
             assistantPrefill = firstHeading,
+            thinkingEnabled  = false,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
         }
@@ -415,8 +479,9 @@ Rules:
         val response = inference.generateText(
             prompt           = prompt,
             maxTokens        = 6144,
-            systemMessage    = buildSystemMessage(languageName, audience, ReportType.GENERIC),
+            systemMessage    = buildSystemMessage(languageName, audience, ReportType.GENERIC, language),
             assistantPrefill = firstHeading,
+            thinkingEnabled  = false,
         ) { partial ->
             onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
         }
@@ -467,9 +532,10 @@ Rules:
     private fun buildEnrichedZoneJsonSummary(
         input: ZoneReportInput,
         verifications: List<VlmVerificationResult>,
+        language: String = "en",
     ): String {
         val verificationMap = verifications.associateBy { it.sessionId }
-        val baseJson = JSONObject(buildZoneJsonSummary(input))
+        val baseJson = JSONObject(buildZoneJsonSummary(input, language))
 
         // Add verification summary at top level
         val verifiedCount = verifications.count { it.confirmed.isNotEmpty() }
@@ -541,6 +607,7 @@ Rules:
         languageName: String,
         audience: ReportAudience = ReportAudience.SCIENTIFIC,
         reportType: ReportType = ReportType.GENERIC,
+        language: String = "en",
     ): String {
         val persona = when (audience) {
             ReportAudience.SCIENTIFIC ->
@@ -586,9 +653,8 @@ Rules:
             "OR a detailed table with ≥4 data rows. Do NOT end the report prematurely — write ALL sections completely. " +
             "If a section has little data, note the limitation and expand adjacent analysis instead.\n\n" +
             "VISUAL ELEMENTS (mandatory):\n" +
-            "- Include at least one ASCII bar chart using ██ blocks (e.g. for debris type distribution).\n" +
-            "- If collection_waypoints is non-empty, include a text-based spatial map in a code block.\n" +
-            "- Include a detailed collection itinerary table with waypoint IDs, coordinates, priority, and method.\n\n"
+            "- Include a detailed collection itinerary table with waypoint IDs, coordinates, priority, and method.\n" +
+            "- Use markdown tables for all quantitative data. Do NOT use ASCII art, code blocks for maps, or ██ block charts.\n\n"
         return "OUTPUT LANGUAGE: $languageName. Every word of your response must be in " +
             "$languageName. Do not write a single sentence in English unless a Latin scientific " +
             "term has no equivalent. All ## section headings must be in $languageName.\n\n" +
@@ -606,8 +672,11 @@ Rules:
             "6. collection_waypoints in the JSON are the ONLY GPS points you may cite for the itinerary.\n" +
             "7. If a section cannot be substantiated by the JSON data, write exactly: " +
             "'[Insufficient data for this section]' and proceed — never fabricate content to fill sections.\n" +
-            "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |), code blocks for maps." +
-            "\n\n" + buildSectionTemplate(languageName, reportType)
+            "8. Each paragraph must contain unique analysis — NEVER repeat the same sentence or near-identical phrasing across sections.\n" +
+            "9. When listing percentages for categories (materials or types), they MUST sum to exactly 100%. Double-check arithmetic before writing.\n" +
+            "10. NEVER write placeholder tags like '[Insert...', '[TODO', or template instructions — generate actual content or omit the section.\n" +
+            "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |)." +
+            "\n\n" + buildSectionTemplate(languageName, reportType, language)
     }
 
     private suspend fun runTextInference(
@@ -618,12 +687,13 @@ Rules:
         reportType: ReportType = ReportType.GENERIC,
     ): String = inference.generateText(
         prompt = prompt,
-        systemMessage = buildSystemMessage(languageName, audience, reportType),
+        systemMessage = buildSystemMessage(languageName, audience, reportType, language),
         assistantPrefill = if (reportType == ReportType.ZONE) {
             FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
         } else {
             FIRST_HEADING[language] ?: "## Executive Summary"
         },
+        thinkingEnabled = false,  // Reports: maximize output tokens, no thinking overhead
     )
 
     // -----------------------------------------------------------------
@@ -653,6 +723,66 @@ Rules:
             typeMap[d.type.name] = (typeMap[d.type.name] ?: 0) + 1
         }
         return JSONObject(typeMap as Map<*, *>)
+    }
+
+    /**
+     * Builds a pre-computed breakdown array with count + percentage for each item.
+     * Returns a JSONArray of objects: [{"name":"X","count":N,"percent":"XX.X%"}, ...]
+     * Sorted by count descending.
+     */
+    private fun buildBreakdownWithPct(
+        counts: Map<String, Int>,
+        nameTranslator: (String) -> String = { it },
+    ): JSONArray {
+        val total = counts.values.sum()
+        if (total == 0) return JSONArray()
+        return JSONArray().apply {
+            counts.entries.sortedByDescending { it.value }.forEach { (name, count) ->
+                put(JSONObject().apply {
+                    put("name", nameTranslator(name))
+                    put("count", count)
+                    put("percent", String.format("%.1f", count * 100.0 / total))
+                })
+            }
+        }
+    }
+
+    /**
+     * Generates a pre-formatted markdown table for materials or types.
+     * The model should copy this table as-is, then add analysis paragraphs.
+     */
+    private fun buildPreFormattedMaterialTable(allDebris: List<Debris>, language: String = "en"): String {
+        val total = allDebris.size
+        if (total == 0) return ""
+        val counts = allDebris.groupingBy { it.material.name }.eachCount()
+        val hMat = when (language) { "es" -> "Material"; "fr" -> "Matériau"; "de" -> "Material"; "it" -> "Materiale"; "pt" -> "Material"; else -> "Material" }
+        val hCount = when (language) { "es" -> "Cantidad"; "fr" -> "Quantité"; "de" -> "Anzahl"; "it" -> "Quantità"; "pt" -> "Quantidade"; else -> "Count" }
+        val hPct = when (language) { "es" -> "% del Total"; "fr" -> "% du Total"; "de" -> "% Gesamt"; "it" -> "% del Totale"; "pt" -> "% do Total"; else -> "% of Total" }
+        val sb = StringBuilder()
+        sb.appendLine("| $hMat | $hCount | $hPct |")
+        sb.appendLine("|---|---|---|")
+        counts.entries.sortedByDescending { it.value }.forEach { (name, count) ->
+            val pct = String.format("%.1f", count * 100.0 / total)
+            sb.appendLine("| ${translateMaterial(name, language)} | $count | $pct% |")
+        }
+        return sb.toString().trimEnd()
+    }
+
+    private fun buildPreFormattedTypeTable(allDebris: List<Debris>, language: String = "en"): String {
+        val total = allDebris.size
+        if (total == 0) return ""
+        val counts = allDebris.groupingBy { it.type.name }.eachCount()
+        val hType = when (language) { "es" -> "Tipo de Residuo"; "fr" -> "Type de Déchet"; "de" -> "Abfallart"; "it" -> "Tipo di Rifiuto"; "pt" -> "Tipo de Resíduo"; else -> "Debris Type" }
+        val hCount = when (language) { "es" -> "Cantidad"; "fr" -> "Quantité"; "de" -> "Anzahl"; "it" -> "Quantità"; "pt" -> "Quantidade"; else -> "Count" }
+        val hPct = when (language) { "es" -> "% del Total"; "fr" -> "% du Total"; "de" -> "% Gesamt"; "it" -> "% del Totale"; "pt" -> "% do Total"; else -> "% of Total" }
+        val sb = StringBuilder()
+        sb.appendLine("| $hType | $hCount | $hPct |")
+        sb.appendLine("|---|---|---|")
+        counts.entries.sortedByDescending { it.value }.forEach { (name, count) ->
+            val pct = String.format("%.1f", count * 100.0 / total)
+            sb.appendLine("| ${translateType(name, language)} | $count | $pct% |")
+        }
+        return sb.toString().trimEnd()
     }
 
     private fun buildRiskBreakdown(allDebris: List<Debris>): JSONObject {
@@ -810,10 +940,16 @@ Rules:
      * reports generated with the same language + audience combination.
      * NONE returns an empty string — used when the user prompt provides its own structure.
      */
-    private fun buildSectionTemplate(languageName: String, reportType: ReportType): String = when (reportType) {
+    private fun buildSectionTemplate(languageName: String, reportType: ReportType, language: String = "en"): String = when (reportType) {
         ReportType.NONE -> ""
         ReportType.GENERIC -> """
-REPORT STRUCTURE — Write ALL sections completely in this exact order:
+REPORT STRUCTURE — write ALL sections completely in this exact order.
+IMPORTANT: Translate every ## and ### heading below into $languageName. Do NOT copy them in English.
+
+TAXONOMY REMINDER — the JSON contains TWO independent classification axes:
+• "material_breakdown" = physical composition (e.g. PLASTIC, FISHING_NET, RUBBER, METAL). These go in the Material Analysis table.
+• "type_breakdown" = object category (e.g. PLASTIC_DEBRIS, FISHING_NET, TIRE, BOTTLE, CAN). These go in the Type Analysis table.
+NEVER mix them: a material must NOT appear in the Type table, and a type must NOT appear in the Material table.
 
 ## Executive Summary
 Open directly with the most critical finding — NO preamble phrases like "This report presents...".
@@ -831,13 +967,6 @@ Open directly with the most critical finding — NO preamble phrases like "This 
 ## Spatial Distribution & Collection Waypoints
 If collection_waypoints is non-empty:
 
-### Site Map
-Using the waypoint coordinates, generate a text-based spatial map in a code block showing the relative geographic positions of all waypoints.
-Mark each point with its waypoint_id. Add a compass rose (N/S/E/W) and approximate scale.
-```
-[Insert ASCII spatial map here using relative positions of waypoints]
-```
-
 ### Collection Route Itinerary
 Generate a prioritized collection itinerary. Sort waypoints by collection_priority (HIGH first), then by debris_count descending.
 Table (all column headers in $languageName):
@@ -850,13 +979,9 @@ If collection_waypoints is empty: write a 2-sentence note on the importance of G
 ## Debris Composition
 
 ### Material Analysis
-ASCII bar chart (use ██ blocks, scale to the highest count = 20 blocks):
-```
-[Insert material distribution bar chart]
-Example format: Material ████████████ XX% (count: N)
-```
-Detailed table (all column headers in $languageName):
+Table (all column headers in $languageName):
 | Material | Count | % of Total | Marine Persistence (years) | Microplastic Risk | Primary Threat Pathway | Risk Level |
+Ensure the % of Total column sums to exactly 100%.
 
 ### Type Analysis
 Detailed table (all column headers in $languageName):
@@ -869,8 +994,9 @@ Write a dedicated paragraph (4–6 sentences) covering: (1) quantity and proport
 ## Risk Assessment
 
 ### Risk Matrix
+IMPORTANT: Risk Score must be on a 1–5 integer scale (1=minimal, 2=low, 3=moderate, 4=high, 5=critical). Do NOT use scores outside this range.
 Table (all column headers in $languageName):
-| Debris Type | Risk Score | Count | Primary Risk Driver | Affected Marine Zone | Urgency |
+| Debris Type | Risk Score (1-5) | Count | Primary Risk Driver | Affected Marine Zone | Urgency |
 
 ### Site Risk Summary
 - High-risk items: exact count, which types, and why they are critical in a marine context.
@@ -903,95 +1029,47 @@ Write 8 specific, prioritized, actionable interventions referencing the ACTUAL d
 - Data collection requirements for the next survey: minimum image count, GPS requirement, quality threshold.
 - Trigger conditions for escalating to emergency response.""".trimIndent()
 
-        ReportType.ZONE -> """
-REPORT STRUCTURE — Write ALL sections completely in this exact order:
+        ReportType.ZONE -> {
+            val h = ZONE_HEADINGS[language] ?: DEFAULT_ZONE_HEADINGS
+            """
+REPORT STRUCTURE — write ALL 7 sections in this exact order using the EXACT headings shown below.
 
-## Zone Profile
-- Site name: use the "location" field from the JSON. Coordinates from JSON (centroid lat/lon). Classify the marine zone: coastal / estuary / open water / port / reef — based on coordinate context.
-- Survey coverage: total survey days, date range, total analyzed images, total debris items, average debris per image.
-- Paragraph (3–4 sentences): Interpret the overall health score (Critical <30 / High 30–50 / Moderate 50–70 / Good >70), the dominant material and type, and their combined significance for this specific marine zone.
+${h.zoneProfile}
+Write 1 paragraph: site name from "location", coordinates, zone type (coastal/estuary/port/reef), total analyzed images, total debris items, average health score. If "survey_days" has only 1 entry, say "single-day survey". Do NOT invent extra dates.
 
-## Survey Timeline & Spatial Coverage
+${h.debrisComposition}
+COPY the PRE-COMPUTED TABLES from the prompt EXACTLY as provided (Material Table and Type Table). Do NOT recalculate percentages — the tables are already correct.
+After each table, write 1 paragraph interpreting the data: dominant material/type, ecological significance, persistence risk.
 
-### Survey-Day Evolution Table
-If survey_days has 2+ entries, show full temporal evolution (all column headers in $languageName):
-| Date | Analyzed Images | Debris Items | Health Score | Dominant Material | Dominant Type | Change vs Prior |
-After the table, write a paragraph characterizing the temporal pattern.
-If only 1 survey day: write a paragraph noting the single-day baseline and recommending a revisit schedule.
+${h.ecologicalImpact}
+For each debris type in "type_breakdown", write 1 paragraph (3–4 sentences): count and %, threatened species, threat mechanism (entanglement/ingestion/habitat alteration), microplastic risk. Each paragraph must be UNIQUE — do not repeat the same phrases.
 
-### Site Map
-If collection_waypoints is non-empty, generate a text-based spatial map in a code block showing waypoint positions:
-```
-[Insert ASCII spatial map with waypoint labels, compass rose, and approximate scale]
-```
+${h.riskAssessment}
+${buildRiskTableHeader(language)}
+Risk scores MUST be integers 1–5. Do NOT add a "Total" row. After the table, 1 paragraph with overall site risk rating justified by health_score and risk_breakdown.
 
-### Collection Route Itinerary
-Generate a prioritized cleanup itinerary sorted by collection_priority (HIGH first), then debris_count descending.
-Table (all column headers in $languageName):
-| Waypoint | Latitude | Longitude | Debris Count | Health Score | Dominant Type | Priority | Recommended Method | Est. Time |
-After the table, write a 2–3 sentence route narrative describing the recommended sequence and access logistics.
+${h.conclusions}
+Summarize what was FOUND — do NOT list actions or recommendations here:
+- 1 paragraph: overall environmental status, key findings from the data (dominant pollutant, risk level, health score interpretation).
+- 1 paragraph: limitations of the survey (single-day, number of images, data gaps) and how they affect confidence in the findings.
 
-## Debris Composition
+${h.recommendations}
+List what to DO — concrete actions only. Each recommendation must be DIFFERENT from the others. Do NOT repeat conclusions.
+Write 6 numbered recommendations in $languageName. Express urgency naturally within each sentence (e.g. "within 48 hours", "in the next 30 days"):
+1. Immediate cleanup: which debris types, what equipment, how many people.
+2. Emergency containment for the highest-risk debris category.
+3. Full-site cleanup plan for the dominant material within 30 days.
+4. Source identification and community engagement within 30 days.
+5. Monitoring schedule and key indicators for the next 3 months.
+6. Long-term policy or regulatory interventions for prevention.
 
-### Material Analysis
-ASCII bar chart of material distribution (scale: highest count = 20 ██ blocks):
-```
-[Insert material distribution bar chart]
-```
-Detailed table (all column headers in $languageName):
-| Material | Count | % of Total | Marine Persistence (years) | Microplastic Risk | Primary Threat Pathway | Risk Level |
-
-### Type Analysis
-Detailed table (all column headers in $languageName):
-| Debris Type | Count | % of Total | Primary Marine Hazard | Secondary Hazard | Most Vulnerable Taxa | Est. Cleanup Effort |
-
-## Per-Type Ecological Impact Analysis
-For EACH debris type present in overall.type_breakdown (no omissions):
-Write a dedicated paragraph (4–6 sentences): quantity and proportion; specific threatened species + threat mechanism; microplastic fragmentation timeline if applicable; ecological pathway in this marine zone.
-
-## Contamination Trend Analysis
-If trend_delta is present (2+ survey days):
-- Health score evolution: from [health_score_first] to [health_score_last] = [change] points.
-- Debris count evolution: from [debris_count_first] to [debris_count_last] = [change] items.
-- Trajectory classification: IMPROVING (health ↑ AND debris ↓) / DEGRADING / MIXED / STABLE — justify with exact numbers.
-- Trend interpretation paragraph (3–4 sentences): causation hypotheses, seasonal factors, effectiveness of any prior interventions.
-- Projection: if trend continues unchanged, describe the likely site condition in 6 and 12 months.
-If trend_delta absent: write that temporal analysis requires ≥2 survey visits; recommend specific revisit interval based on health score.
-
-## Risk Assessment
-
-### Risk Matrix
-Table (all column headers in $languageName):
-| Debris Type | Risk Score | Count | Primary Risk Driver | Affected Marine Zone | Urgency |
-
-### Overall Risk Rating
-- **Site risk rating**: Critical / High / Moderate / Low — justify with health_score, dominant_material, high_risk count.
-- Paragraph (3–4 sentences): synthesize the risk profile for this site, naming the most immediate biological threats and the most vulnerable ecosystem components.
-
-## Statistical Analysis
-Per-image summary table (all column headers in $languageName):
-| Image # | Timestamp | Debris Count | Health Score | Image Quality | Dominant Type | GPS |
-(use "No GPS" if coordinates absent)
-- Confidence interpretation: what min/avg/max values imply about detection reliability at this site.
-- Quality-debris correlation: note any relationship between image_quality tier and debris density.
-
-## Conservation Recommendations
-8 specific, prioritized, actionable interventions referencing actual debris types and materials found:
-
-1. [IMMEDIATE — <48 h] Highest-priority waypoints: specify WP IDs, debris types, collection team and equipment.
-2. [IMMEDIATE — <48 h] Emergency containment for the highest-entanglement/ingestion-risk item.
-3. [SHORT-TERM — <2 weeks] Complete site cleanup plan: methodology adapted to dominant material, site access, and tidal conditions.
-4. [SHORT-TERM — <30 days] Source tracing: most probable pollution pathways (river discharge, fishing vessels, coastal urbanization, stormwater runoff).
-5. [SHORT-TERM — <30 days] Community and stakeholder engagement: specific local actors, roles, and coordination protocol.
-6. [MEDIUM-TERM — 3 months] Monitoring schedule: survey frequency, minimum image count per visit, GPS coverage requirements.
-7. [LONG-TERM — 6–12 months] Policy and regulatory interventions targeting the dominant debris source at origin.
-8. [LONG-TERM] Habitat restoration: specific actions for affected ecosystems identified in the ecological analysis.
-
-## Monitoring Protocol
-- Recommended survey frequency derived from health score and trend.
-- KPIs to track between surveys: debris density, health score, dominant type ratio, new type appearances.
-- Data requirements for next survey: minimum analyzed images, mandatory GPS, image quality threshold.
-- Alert thresholds: define debris count or health score values that trigger emergency response.""".trimIndent()
+${h.monitoringProtocol}
+4 DIFFERENT bullet points — each must cover a distinct topic:
+- Survey frequency based on contamination level.
+- Key performance indicators (KPIs) to track.
+- Data collection requirements for next survey.
+- Alert thresholds for escalating to emergency response.""".trimIndent()
+        }
     }
 
     /** Minimal user prompt — section structure and grounding live in the system message. */
@@ -1026,10 +1104,14 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
         }
     }
 
-    internal fun buildZoneJsonSummary(input: ZoneReportInput): String {
+    internal fun buildZoneJsonSummary(input: ZoneReportInput, language: String = "en"): String {
         val allDebris = input.sessions.flatMap { it.debrisList }
         val materialCounts = mutableMapOf<String, Int>()
-        allDebris.forEach { d -> materialCounts[d.material.name] = (materialCounts[d.material.name] ?: 0) + 1 }
+        val typeCounts = mutableMapOf<String, Int>()
+        allDebris.forEach { d ->
+            materialCounts[d.material.name] = (materialCounts[d.material.name] ?: 0) + 1
+            typeCounts[d.type.name] = (typeCounts[d.type.name] ?: 0) + 1
+        }
 
         val sortedDays = input.dayGroups.sortedBy { it.date }
         val cappedDays = if (sortedDays.size > MAX_ZONE_DAYS) sortedDays.takeLast(MAX_ZONE_DAYS) else sortedDays
@@ -1043,11 +1125,12 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
             put("dominant_material", materialCounts.maxByOrNull { it.value }?.key ?: "N/A")
             put("high_risk_items", allDebris.count { it.getRiskScore() >= HIGH_RISK_THRESHOLD })
             put("trend", input.trend.name)
-            put("type_breakdown", buildTypeBreakdown(allDebris))
+            // Breakdowns with pre-computed percentages (model copies, not calculates)
+            put("material_breakdown", buildBreakdownWithPct(materialCounts) { translateMaterial(it, language) })
+            put("type_breakdown", buildBreakdownWithPct(typeCounts) { translateType(it, language) })
             put("confidence_range", buildConfidenceStats(allDebris))
             put("risk_breakdown", buildRiskBreakdown(allDebris))
             put("image_quality", buildQualityDistribution(input.sessions))
-            put("material_breakdown", JSONObject(materialCounts as Map<*, *>))
         }
 
         val trendDelta = if (input.dayGroups.size >= 2) {
@@ -1087,17 +1170,33 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
         locationName: String,
         dateRangeLabel: String?,
         language: String = "en",
+        allDebris: List<Debris> = emptyList(),
     ): String {
         val periodLine = if (dateRangeLabel != null) {
             "REPORTING PERIOD: $dateRangeLabel (only analyzed images within this range are included)\n"
         } else ""
+        val materialTable = if (allDebris.isNotEmpty()) buildPreFormattedMaterialTable(allDebris, language) else ""
+        val typeTable = if (allDebris.isNotEmpty()) buildPreFormattedTypeTable(allDebris, language) else ""
+        val h = ZONE_HEADINGS[language] ?: DEFAULT_ZONE_HEADINGS
+        val preformatted = if (materialTable.isNotEmpty()) """
+
+PRE-COMPUTED TABLES — copy each table EXACTLY into the Debris Composition section.
+Do NOT use "Material Table" or "Type Table" as subtitles. Use the headings ${h.materialAnalysis} and ${h.typeAnalysis} instead.
+
+${h.materialAnalysis}
+$materialTable
+
+${h.typeAnalysis}
+$typeTable"""
+        else ""
         return """
 ${periodLine}Location: $locationName
 Generate the zone environmental assessment using ONLY the JSON data below.
 
 ---
 $jsonSummary
----
+---$preformatted
+
 All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[language] ?: "## Zone Profile"}:""".trimIndent()
     }
 
@@ -1130,7 +1229,7 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[langu
         val firstHeading = FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
 
         // Build JSON summary and date label first (always needed)
-        val jsonSummary    = buildZoneJsonSummary(input)
+        val jsonSummary    = buildZoneJsonSummary(input, language)
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
 
         // Attempt to load representative bitmaps
@@ -1153,11 +1252,12 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[langu
         val result = if (bitmaps.isEmpty()) {
             // No images available — fall back to text-only report
             Log.w(TAG, "No bitmaps loaded — falling back to text-only zone report")
-            val prompt = buildZoneVlmPrompt(languageName, jsonSummary, input.locationName, dateRangeLabel, language)
+            val allDebris = input.sessions.flatMap { it.debrisList }
+            val prompt = buildZoneVlmPrompt(languageName, jsonSummary, input.locationName, dateRangeLabel, language, allDebris)
             visionEngine.generateText(
                 prompt           = prompt,
                 maxTokens        = 4096,
-                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE),
+                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE, language = language),
                 assistantPrefill = firstHeading,
             ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
         } else {
@@ -1166,7 +1266,7 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[langu
                 bitmap           = bitmaps.first(),
                 prompt           = prompt,
                 maxTokens        = 4096,
-                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE),
+                systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE, language = language),
                 assistantPrefill = firstHeading,
             ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
         }

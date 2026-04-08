@@ -110,7 +110,10 @@ Java_com_oceanguard_ai_inference_LlamaCppBridge_nativeGenerateText(
         return env->NewStringUTF("");
     }
 
-    // Sampling
+    // Sampling chain: top_k → temperature → dist.
+    // Repeat penalty intentionally OMITTED: even gentle values (1.05) cause the 0.8B
+    // model to emit EOS after ~100-200 tokens. Degenerate repetition loops are caught
+    // post-generation by truncateRepetitionLoop() in the Kotlin sanitizers instead.
     llama_sampler* sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
     llama_sampler_chain_add(sampler, llama_sampler_init_top_k(static_cast<int32_t>(topK)));
     llama_sampler_chain_add(sampler, llama_sampler_init_temp(temperature));

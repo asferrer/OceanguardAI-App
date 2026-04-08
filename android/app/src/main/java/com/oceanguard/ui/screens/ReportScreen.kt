@@ -262,6 +262,28 @@ fun ReportScreen(
     }
     val selectedZoneName = selectedZoneIndex?.let { zoneNames.getOrNull(it) } ?: ""
 
+    // Resolve sessions for the report being viewed.
+    // Priority: 1) sessionIds from DB  2) filteredZoneSessions (active selection)
+    var sessionsForViewingReport by remember { mutableStateOf<List<com.oceanguard.ai.data.DetectionSession>>(emptyList()) }
+    val viewingReport = (screenState as? ReportScreenState.ViewingReport)?.report
+    LaunchedEffect(viewingReport?.id, filteredZoneSessions) {
+        val report = viewingReport ?: run {
+            sessionsForViewingReport = emptyList()
+            return@LaunchedEffect
+        }
+        val ids = report.sessionIds
+            ?.split(",")
+            ?.mapNotNull { it.trim().toLongOrNull() }
+            ?: emptyList()
+        if (ids.isNotEmpty()) {
+            sessionsForViewingReport = app.database.detectionSessionDao().getSessionsByIds(ids)
+        } else if (filteredZoneSessions.isNotEmpty()) {
+            sessionsForViewingReport = filteredZoneSessions
+        } else {
+            sessionsForViewingReport = emptyList()
+        }
+    }
+
     // Background generation: sync app state → snackbar + auto-view
     LaunchedEffect(generationState) {
         when (val state = generationState) {
@@ -551,19 +573,23 @@ fun ReportScreen(
                     report = report,
                     onClose = { screenState = ReportScreenState.Idle },
                     onShare = {
-                        shareMarkdownReport(context, report.text, snackbarHostState, scope)
+                        shareMarkdownReport(context, report.text, snackbarHostState, scope, report.locationName)
                     },
                     onDownloadPdf = {
                         isExportingPdf = true
                         scope.launch {
                             sharePdfReport(
-                                context, report, filteredZoneSessions, snackbarHostState,
+                                context, report, sessionsForViewingReport, snackbarHostState,
                             )
                             isExportingPdf = false
                         }
                     },
                     isExportingPdf = isExportingPdf,
-                    sessions = filteredZoneSessions,
+                    sessions = sessionsForViewingReport,
+                    onSessionClick = { sessionId ->
+                        screenState = ReportScreenState.Idle
+                        navController.navigate("session/$sessionId")
+                    },
                 )
             }
         }

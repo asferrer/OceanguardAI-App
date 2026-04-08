@@ -262,6 +262,11 @@ data class GeneratedReport(
     val dateRangeEndMs: Long? = null,
     // v7: audience used for report generation (nullable for backward compat)
     val audience: String? = null,
+    // v9: post-generation validation score (0-100) and JSON details
+    val validationScore: Int? = null,
+    val validationDetails: String? = null,
+    // v10: comma-separated session IDs used for this report
+    val sessionIds: String? = null,
 )
 
 /**
