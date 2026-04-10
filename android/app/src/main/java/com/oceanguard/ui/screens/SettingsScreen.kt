@@ -733,7 +733,7 @@ private fun DeveloperSettingsSection(
             onExpandedChange = { tierExpanded = it },
         ) {
             OutlinedTextField(
-                value = "${currentTier.displayName} — ${currentTier.sizeLabel}" +
+                value = "${currentTier.displayName} - ${currentTier.sizeLabel}" +
                     if (!currentAvailable) " ($notDownloaded)" else "",
                 onValueChange = {},
                 readOnly = true,
@@ -756,7 +756,7 @@ private fun DeveloperSettingsSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("${tier.displayName} — ${tier.sizeLabel}")
+                                Text("${tier.displayName} - ${tier.sizeLabel}")
                                 if (!tierAvailable) {
                                     Text(
                                         text = notDownloaded,
@@ -805,45 +805,171 @@ private fun DeveloperSettingsSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // Gemma 4 mmproj download (vision support)
-        if (currentProvider == VlmProvider.GEMMA4 &&
-            vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B) &&
-            !vlmModelManager.isGemma4MmprojAvailable()
-        ) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            Text(
-                text = stringResource(R.string.settings_label_gemma4_mmproj),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = stringResource(R.string.settings_desc_gemma4_mmproj),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            if (isDownloading) {
-                val progress = (downloadState as? VlmDownloadState.Downloading)?.progress
-                if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-            } else {
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            vlmModelManager.downloadGemma4Mmproj()
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // LiteRT-LM Benchmark (temporary spike)
+        var benchmarkRunning by remember { mutableStateOf(false) }
+        var benchmarkStatus by remember { mutableStateOf<String?>(null) }
+        var benchmarkResult by remember { mutableStateOf<String?>(null) }
+        val liteRTAvailable = vlmModelManager.isLiteRTModelAvailable()
+
+        Text(
+            text = "LiteRT-LM Benchmark",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = if (liteRTAvailable)
+                "Gemma 4 E2B ready. Run text + vision benchmark."
+            else
+                "Gemma 4 E2B .litertlm (~2.6 GB) will be downloaded first.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        if (benchmarkRunning) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            benchmarkStatus?.let { status ->
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            OutlinedButton(
+                onClick = {
+                    benchmarkRunning = true
+                    benchmarkResult = null
+                    scope.launch {
+                        try {
+                            // Download if not present
+                            if (!vlmModelManager.isLiteRTModelAvailable()) {
+                                benchmarkStatus = "Downloading Gemma 4 E2B .litertlm (~2.6 GB)…"
+                                vlmModelManager.downloadLiteRTModel()
+                            }
+
+                            benchmarkStatus = "Running benchmark…"
+                            val modelsDir = vlmModelManager.getModelDirectory()
+                            val cacheDir = java.io.File(modelsDir, "litert-cache").apply { mkdirs() }
+                            val results = com.oceanguard.ai.inference.LiteRTBenchmark.runAll(
+                                modelPath = vlmModelManager.getLiteRTModelPath(),
+                                cacheDir = cacheDir.absolutePath,
+                            )
+                            benchmarkResult = results.joinToString("\n") { it.toString() }
+                        } catch (e: Exception) {
+                            benchmarkResult = "ERROR: ${e.message}"
+                            android.util.Log.e("LiteRTBenchmark", "Benchmark failed", e)
+                        } finally {
+                            benchmarkRunning = false
+                            benchmarkStatus = null
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Download mmproj (${vlmModelManager.getGemma4MmprojSizeLabel()})")
-                }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    if (liteRTAvailable) "Run LiteRT-LM Benchmark"
+                    else "Download & Run Benchmark (~2.6 GB)"
+                )
+            }
+        }
+        benchmarkResult?.let { result ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    text = result,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                )
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // llama.cpp Benchmark (temporary spike)
+        var llamaBenchRunning by remember { mutableStateOf(false) }
+        var llamaBenchStatus by remember { mutableStateOf<String?>(null) }
+        var llamaBenchResult by remember { mutableStateOf<String?>(null) }
+
+        Text(
+            text = "llama.cpp Benchmark",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = "Benchmark the active VLM tier with llama.cpp (current backend).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        if (llamaBenchRunning) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            llamaBenchStatus?.let { status ->
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            val currentTier = com.oceanguard.ai.inference.TextModelTier.fromKey(vlmModelTierKey)
+            val tierAvailable = vlmModelManager.isModelAvailable(currentTier)
+            OutlinedButton(
+                onClick = {
+                    llamaBenchRunning = true
+                    llamaBenchResult = null
+                    scope.launch {
+                        try {
+                            val tier = com.oceanguard.ai.inference.TextModelTier.fromKey(vlmModelTierKey)
+                            if (!vlmModelManager.isModelAvailable(tier)) {
+                                llamaBenchStatus = "Downloading ${tier.displayName}…"
+                                vlmModelManager.downloadModel(tier)
+                            }
+                            llamaBenchStatus = "Running llama.cpp benchmark (${tier.displayName})…"
+                            val modelDir = vlmModelManager.getModelDirectory()
+                            val modelFile = java.io.File(modelDir, tier.filename)
+                            val result = com.oceanguard.ai.inference.LlamaCppBenchmark.run(
+                                modelPath = modelFile.absolutePath,
+                                tier = tier,
+                            )
+                            llamaBenchResult = result.toString()
+                        } catch (e: Exception) {
+                            llamaBenchResult = "ERROR: ${e.message}"
+                            android.util.Log.e("LlamaCppBenchmark", "Benchmark failed", e)
+                        } finally {
+                            llamaBenchRunning = false
+                            llamaBenchStatus = null
+                        }
+                    }
+                },
+                enabled = tierAvailable,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    if (tierAvailable) "Run llama.cpp Benchmark (${currentTier.displayName})"
+                    else "Model not downloaded"
+                )
+            }
+        }
+        llamaBenchResult?.let { result ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    text = result,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                )
             }
         }
 
