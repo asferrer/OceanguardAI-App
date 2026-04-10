@@ -24,6 +24,8 @@ import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VlmProvider
 import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.inference.VlmModelManager
+import com.oceanguard.ai.inference.VlmTextEngine
+import com.oceanguard.ai.inference.LiteRTTextEngine
 import com.oceanguard.ai.inference.ZoneReportInput
 import com.oceanguard.ai.service.InferenceServiceState
 import com.oceanguard.ai.service.ReportGenerationService
@@ -130,8 +132,9 @@ class OceanGuardApp : Application() {
     lateinit var detectionOrchestrator: DetectionOrchestrator
         private set
 
-    // Text engine — one at a time, tier-aware. Access via getOrCreateTextEngine().
-    @Volatile private var _vlmTextEngine: LlamaTextEngine? = null
+    // Text engine — one at a time, tier-aware. LlamaTextEngine for Qwen, LiteRTTextEngine for Gemma 4.
+    @Volatile private var _vlmTextEngine: VlmTextEngine? = null
+    @Volatile private var _vlmTextEngineTier: TextModelTier? = null
 
     // Vision engine — lazy, provider-aware. Recreated when VLM provider changes.
     @Volatile private var _vlmVisionEngine: LlamaVisionEngine? = null
@@ -294,24 +297,31 @@ class OceanGuardApp : Application() {
      * Tries the user-selected tier first; falls back to highest available quality
      * within the same provider family.
      */
+    /** Check if a tier has a usable model on disk.
+     *  Works uniformly for GGUF (llama.cpp) and .litertlm (LiteRT-LM) tiers because
+     *  [VlmModelManager.isModelAvailable] checks by `tier.filename`. */
+    private fun isTextModelAvailable(tier: TextModelTier): Boolean =
+        vlmModelManager.isModelAvailable(tier)
+
     private fun bestAvailableTier(): TextModelTier {
         val provider = VlmProvider.fromKey(settingsRepository.getVlmProviderSync())
         val preferred = TextModelTier.fromKey(settingsRepository.getVlmModelTierSync())
 
         // If the preferred tier matches the selected provider and is available, use it
-        if (preferred.provider == provider && vlmModelManager.isModelAvailable(preferred)) {
+        if (preferred.provider == provider && isTextModelAvailable(preferred)) {
             return preferred
         }
 
         // Fall back to the best available tier within the selected provider
         val providerTiers = TextModelTier.forProvider(provider)
-        val available = providerTiers.lastOrNull { vlmModelManager.isModelAvailable(it) }
+        val available = providerTiers.lastOrNull { isTextModelAvailable(it) }
         if (available != null) return available
 
-        // Ultimate fallback: any provider, any tier
+        // Ultimate fallback: Gemma 4 (LiteRT-LM, default) first, then Qwen by size.
         return when {
-            vlmModelManager.isModelAvailable(TextModelTier.QUALITY)  -> TextModelTier.QUALITY
-            vlmModelManager.isModelAvailable(TextModelTier.BALANCED) -> TextModelTier.BALANCED
+            vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B) -> TextModelTier.GEMMA4_E2B
+            vlmModelManager.isModelAvailable(TextModelTier.QUALITY)    -> TextModelTier.QUALITY
+            vlmModelManager.isModelAvailable(TextModelTier.BALANCED)   -> TextModelTier.BALANCED
             else -> TextModelTier.FAST
         }
     }
@@ -321,29 +331,46 @@ class OceanGuardApp : Application() {
      * Sets [ReportGenerationState.LoadingModel] while loading.
      * Must be called from a coroutine inside [applicationScope].
      */
-    private suspend fun loadTextEngineIfNeeded(): LlamaTextEngine {
+    private suspend fun loadTextEngineIfNeeded(): VlmTextEngine {
         val tier = bestAvailableTier()
         val existing = _vlmTextEngine
-        val engine = if (existing != null && existing.tier == tier) existing
+        val engine = if (existing != null && _vlmTextEngineTier == tier) existing
                      else {
                          existing?.release()
-                         LlamaTextEngine(tier).also { _vlmTextEngine = it }
+                         createTextEngine(tier).also {
+                             _vlmTextEngine = it
+                             _vlmTextEngineTier = tier
+                         }
                      }
         if (!engine.isReady()) {
             reportGenerationState.value = ReportGenerationState.LoadingModel
             modelLoadingState.update {
                 it.copy(qwenText = ModelStatus.Loading, activeTierName = tier.displayName)
             }
-            Log.i(TAG, "Loading ${tier.displayName} on demand...")
-            engine.initialize(vlmModelManager.getTextModelPath(tier))
+            // Both GGUF and .litertlm files live at `tier.filename` inside the models dir.
+            val modelPath = vlmModelManager.getTextModelPath(tier)
+            Log.i(TAG, "Loading ${engine.displayName} on demand...")
+            engine.initialize(modelPath)
             modelLoadingState.update { it.copy(qwenText = ModelStatus.WarmingUp) }
             engine.warmUp()
             modelLoadingState.update { it.copy(qwenText = ModelStatus.Ready) }
         } else {
-            Log.i(TAG, "${tier.displayName} already loaded — skipping")
+            Log.i(TAG, "${engine.displayName} already loaded — skipping")
         }
         return engine
     }
+
+    /** Create the right engine implementation based on the tier's backend. */
+    private fun createTextEngine(tier: TextModelTier): VlmTextEngine =
+        if (tier.provider.usesLiteRT) {
+            Log.i(TAG, "Using LiteRT-LM backend for ${tier.displayName}")
+            val cacheDir = java.io.File(vlmModelManager.getModelDirectory(), "litert-cache")
+                .apply { mkdirs() }.absolutePath
+            LiteRTTextEngine(cacheDir)
+        } else {
+            Log.i(TAG, "Using llama.cpp backend for ${tier.displayName}")
+            LlamaTextEngine(tier)
+        }
 
     /**
      * Loads the vision engine (2B + mmproj) if not already ready.
@@ -366,12 +393,15 @@ class OceanGuardApp : Application() {
         modelLoadingState.update { it.copy(qwenVision = ModelStatus.Ready) }
     }
 
-    private fun getOrCreateTextEngine(tier: TextModelTier): LlamaTextEngine {
+    private fun getOrCreateTextEngine(tier: TextModelTier): VlmTextEngine {
         val existing = _vlmTextEngine
-        if (existing != null && existing.tier == tier) return existing
+        if (existing != null && _vlmTextEngineTier == tier) return existing
         existing?.release()
         modelLoadingState.update { it.copy(qwenText = ModelStatus.Standby, activeTierName = "") }
-        return LlamaTextEngine(tier).also { _vlmTextEngine = it }
+        return createTextEngine(tier).also {
+            _vlmTextEngine = it
+            _vlmTextEngineTier = tier
+        }
     }
 
     /** Expose best available tier for UI display. */

@@ -39,9 +39,8 @@ class VlmModelManager(private val context: Context) {
         private const val TEXT_QUALITY_URL =
             "$HF_BASE/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
 
-        // Gemma 4 E2B — Apache 2.0, day-one llama.cpp support with mmproj vision
-        private const val GEMMA4_E2B_URL =
-            "$HF_BASE/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf"
+        // Gemma 4 E2B — Apache 2.0, LiteRT-LM (.litertlm) for on-device inference
+        // GGUF variant removed: LiteRT-LM is 1.65x faster on Exynos 2200 CPU
         private const val GEMMA4_MMPROJ_URL =
             "$HF_BASE/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/mmproj-gemma-4-e2b-it-f16.gguf"
 
@@ -51,16 +50,19 @@ class VlmModelManager(private val context: Context) {
         private const val MMPROJ_URL =
             "$HF_BASE/unsloth/Qwen3.5-2B-GGUF/resolve/main/${LlamaVisionEngine.QWEN_MMPROJ_FILENAME}"
 
-        // Gemma 4 vision filenames
-        const val GEMMA4_MODEL_FILENAME  = "gemma-4-e2b-it-Q4_K_M.gguf"
+        // Gemma 4 filenames
         const val GEMMA4_MMPROJ_FILENAME = "mmproj-gemma-4-e2b-it-f16.gguf"
+        private const val GEMMA4_LITERTLM_URL =
+            "$HF_BASE/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+        const val GEMMA4_LITERTLM_FILENAME = "gemma-4-E2B-it.litertlm"
+        private const val MIN_GEMMA4_LITERTLM_BYTES = 2_000_000_000L // 2 GB (~2.58 GB)
 
         // Minimum valid file sizes (small files = error HTML pages from HF)
         private val MIN_TEXT_BYTES = mapOf(
             TextModelTier.FAST       to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
             TextModelTier.BALANCED   to   900_000_000L, //  900 MB — Qwen3.5-2B  (~1.1 GB)
             TextModelTier.QUALITY    to 2_200_000_000L, // 2.2 GB — Qwen3.5-4B  (~2.74 GB)
-            TextModelTier.GEMMA4_E2B to 2_500_000_000L, // 2.5 GB — Gemma 4 E2B (~3.1 GB)
+            TextModelTier.GEMMA4_E2B to MIN_GEMMA4_LITERTLM_BYTES, // 2 GB — Gemma 4 E2B (~2.58 GB)
         )
         private const val MIN_VISION_MODEL_BYTES = 500_000_000L // 500 MB — 2B
         private const val MIN_MMPROJ_BYTES       =  50_000_000L //  50 MB — mmproj
@@ -114,9 +116,7 @@ class VlmModelManager(private val context: Context) {
 
     /** True if any text tier is downloaded (fast check for report button). */
     fun isAnyTextModelAvailable(): Boolean =
-        isModelAvailable(TextModelTier.FAST) ||
-        isModelAvailable(TextModelTier.BALANCED) ||
-        isModelAvailable(TextModelTier.QUALITY)
+        TextModelTier.entries.any { isModelAvailable(it) }
 
     /**
      * True if the Qwen 2B vision model + mmproj are present AND native vision is compiled.
@@ -131,16 +131,9 @@ class VlmModelManager(private val context: Context) {
     }
 
     /**
-     * True if the Gemma 4 E2B text model + mmproj are both present AND native vision is compiled.
+     * True if the Gemma 4 E2B .litertlm is available (vision is built-in, no mmproj needed).
      */
-    fun isGemma4VisionAvailable(): Boolean {
-        if (!LlamaCppBridge.nativeIsVisionSupported()) return false
-        val modelDir = getModelDirectory()
-        val model  = File(modelDir, GEMMA4_MODEL_FILENAME)
-        val mmproj = File(modelDir, GEMMA4_MMPROJ_FILENAME)
-        return model.exists()  && model.length()  > (MIN_TEXT_BYTES[TextModelTier.GEMMA4_E2B] ?: 0L)
-            && mmproj.exists() && mmproj.length() > MIN_GEMMA4_MMPROJ_BYTES
-    }
+    fun isGemma4VisionAvailable(): Boolean = isLiteRTModelAvailable()
 
     /** True if the Gemma 4 mmproj is downloaded (text model checked via isModelAvailable). */
     fun isGemma4MmprojAvailable(): Boolean {
@@ -177,7 +170,7 @@ class VlmModelManager(private val context: Context) {
                 TextModelTier.FAST       -> TEXT_FAST_URL
                 TextModelTier.BALANCED   -> TEXT_BALANCED_URL
                 TextModelTier.QUALITY    -> TEXT_QUALITY_URL
-                TextModelTier.GEMMA4_E2B -> GEMMA4_E2B_URL
+                TextModelTier.GEMMA4_E2B -> GEMMA4_LITERTLM_URL
             }
             val target = File(getModelDirectory(), tier.filename)
             val minBytes = MIN_TEXT_BYTES[tier] ?: 50_000_000L
@@ -245,6 +238,41 @@ class VlmModelManager(private val context: Context) {
                 target        = target,
                 minValidBytes = MIN_GEMMA4_MMPROJ_BYTES,
                 filename      = GEMMA4_MMPROJ_FILENAME,
+            )
+        } catch (e: VlmDownloadException) {
+            _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")
+            throw e
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // LiteRT-LM benchmark spike
+    // -----------------------------------------------------------------------
+
+    /** Check if the Gemma 4 E2B .litertlm model is downloaded and valid. */
+    fun isLiteRTModelAvailable(): Boolean {
+        val file = File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME)
+        return file.exists() && file.length() > MIN_GEMMA4_LITERTLM_BYTES
+    }
+
+    /** Absolute path to the .litertlm model file (may not exist yet). */
+    fun getLiteRTModelPath(): String =
+        File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME).absolutePath
+
+    /** Download Gemma 4 E2B .litertlm from HuggingFace (~2.58 GB). */
+    suspend fun downloadLiteRTModel() = withContext(Dispatchers.IO) {
+        if (isLiteRTModelAvailable()) {
+            _downloadState.value = VlmDownloadState.Complete
+            return@withContext
+        }
+        cancelled = false
+        try {
+            val target = File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME)
+            downloadFile(
+                url           = GEMMA4_LITERTLM_URL,
+                target        = target,
+                minValidBytes = MIN_GEMMA4_LITERTLM_BYTES,
+                filename      = GEMMA4_LITERTLM_FILENAME,
             )
         } catch (e: VlmDownloadException) {
             _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")

@@ -196,6 +196,9 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     // select-tf-ops removed: both FP16 and INT8 models are now Erf-free (TFLITE_BUILTINS only)
 
+    // LiteRT-LM — Gemma 4 E2B inference (dual backend alongside llama.cpp)
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.10.0")
+
     // Room Database - Offline storage (2.7.0+ required for KSP2 with Kotlin 2.2.0)
     implementation("androidx.room:room-runtime:2.7.0")
     implementation("androidx.room:room-ktx:2.7.0")

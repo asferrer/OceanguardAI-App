@@ -18,6 +18,16 @@ interface PromptFormatter {
 
     /** Lightweight partial sanitizer for streaming — no heavy regex. */
     fun sanitizePartial(raw: String): String
+
+    companion object {
+        /** Model-agnostic default system prompt for marine conservation reports. */
+        const val DEFAULT_SYSTEM_PROMPT =
+            "You are a marine conservation scientist. " +
+            "Generate environmental assessment reports using ONLY the provided data. " +
+            "GROUNDING: never mention species, debris types, or percentages not present in the input. " +
+            "Format: ## headings, bullet points, markdown tables with | separators. " +
+            "Never invent or extrapolate data not in the input."
+    }
 }
 
 /**
@@ -40,13 +50,6 @@ object QwenPromptFormatter : PromptFormatter {
     private val ROLE_MARKER_RE  = Regex("^(system|user|assistant)\\n?", RegexOption.MULTILINE)
     private val CONTROL_CHAR_RE = Regex("[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]")
     private val EXCESS_BOLD_RE  = Regex("\\*{4,}")
-
-    const val DEFAULT_SYSTEM_PROMPT =
-        "You are a marine conservation scientist. " +
-        "Generate environmental assessment reports using ONLY the provided data. " +
-        "GROUNDING: never mention species, debris types, or percentages not present in the input. " +
-        "Format: ## headings, bullet points, markdown tables with | separators. " +
-        "Never invent or extrapolate data not in the input."
 
     /**
      * Wraps a user message in the ChatML template ready for inference.

@@ -13,13 +13,18 @@ import kotlinx.coroutines.withContext
  * VLM model provider — groups tiers from the same model family.
  * Used to filter available tiers in the developer settings UI.
  */
-enum class VlmProvider(val key: String, val displayLabel: String) {
-    QWEN("qwen", "Qwen 3.5"),
-    GEMMA4("gemma4", "Gemma 4");
+enum class VlmProvider(
+    val key: String,
+    val displayLabel: String,
+    /** True if tiers in this family run on LiteRT-LM; false for llama.cpp. */
+    val usesLiteRT: Boolean,
+) {
+    QWEN("qwen", "Qwen 3.5", usesLiteRT = false),
+    GEMMA4("gemma4", "Gemma 4", usesLiteRT = true);
 
     companion object {
         fun fromKey(key: String): VlmProvider =
-            entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: QWEN
+            entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: GEMMA4
     }
 }
 
@@ -88,25 +93,23 @@ enum class TextModelTier(
         topK         = 20,
         formatter    = QwenPromptFormatter,
     ),
-    /** Gemma 4 E2B — 5.1B total params, 2.3B effective. Native vision via mmproj (~986 MB).
-     *  128K context window, but clamped to 12288 for on-device KV cache budget. */
+    /** Gemma 4 E2B — 5.1B total params, 2.3B effective. Uses LiteRT-LM (not llama.cpp).
+     *  The nCtx/temperature/topK/formatter fields are unused for LiteRT-LM but kept for
+     *  compatibility with the enum contract. LiteRTTextEngine handles its own config. */
     GEMMA4_E2B(
-        filename     = "gemma-4-e2b-it-Q4_K_M.gguf",
-        sizeLabel    = "~3.1 GB",
+        filename     = "gemma-4-E2B-it.litertlm",
+        sizeLabel    = "~2.6 GB",
         displayName  = "Gemma 4 E2B",
         provider     = VlmProvider.GEMMA4,
-        // Gemma 4 E2B: no thinking mode, so prompt (~3500 tok) + maxTokens (4096) fits in 8192.
-        // Smaller nCtx = less KV cache RAM (~550 MB vs ~900 MB) + faster prefill.
-        // With flash_attn=true, KV is FP16 so actual usage is ~275 MB.
-        nCtx         = 8192,
-        temperature  = 0.3f,
-        topK         = 20,
-        formatter    = Gemma4PromptFormatter,
+        nCtx         = 4096,   // Unused — LiteRT-LM manages context internally
+        temperature  = 0.3f,   // Unused — LiteRTTextEngine sets its own sampling
+        topK         = 20,     // Unused
+        formatter    = Gemma4PromptFormatter, // Unused — LiteRT-LM handles chat template
     );
 
     companion object {
         fun fromKey(key: String): TextModelTier =
-            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: FAST
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: GEMMA4_E2B
 
         /** Returns tiers belonging to a specific provider. */
         fun forProvider(provider: VlmProvider): List<TextModelTier> =
@@ -218,7 +221,7 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
         val formatted = tier.formatter.format(
             userMessage      = prompt,
-            systemMessage    = systemMessage ?: QwenPromptFormatter.DEFAULT_SYSTEM_PROMPT,
+            systemMessage    = systemMessage ?: PromptFormatter.DEFAULT_SYSTEM_PROMPT,
             assistantPrefill = assistantPrefill ?: "",
             thinkingEnabled  = thinkingEnabled,
         )

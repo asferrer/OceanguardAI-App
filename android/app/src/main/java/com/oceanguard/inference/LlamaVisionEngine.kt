@@ -122,7 +122,7 @@ class LlamaVisionEngine(
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
         val formatted = formatter.format(
             userMessage      = prompt,
-            systemMessage    = systemMessage ?: QwenPromptFormatter.DEFAULT_SYSTEM_PROMPT,
+            systemMessage    = systemMessage ?: PromptFormatter.DEFAULT_SYSTEM_PROMPT,
             assistantPrefill = assistantPrefill ?: "",
             thinkingEnabled  = thinkingEnabled,
         )
@@ -139,7 +139,7 @@ class LlamaVisionEngine(
                 accumulated.append(piece)
                 val now = System.currentTimeMillis()
                 if (now - lastPartialMs >= 200L) {
-                    onPartialResult(accumulated.toString())
+                    onPartialResult(formatter.sanitizePartial(accumulated.toString()))
                     lastPartialMs = now
                 }
             }
@@ -173,7 +173,7 @@ class LlamaVisionEngine(
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
         val formatted = formatter.format(
             userMessage      = prompt,
-            systemMessage    = systemMessage ?: QwenPromptFormatter.DEFAULT_SYSTEM_PROMPT,
+            systemMessage    = systemMessage ?: PromptFormatter.DEFAULT_SYSTEM_PROMPT,
             assistantPrefill = assistantPrefill ?: "",
             thinkingEnabled  = false,  // Vision mode: no thinking
         )
@@ -186,7 +186,7 @@ class LlamaVisionEngine(
                 accumulated.append(piece)
                 val now = System.currentTimeMillis()
                 if (now - lastPartialMs >= 200L) {
-                    onPartialResult(accumulated.toString())
+                    onPartialResult(formatter.sanitizePartial(accumulated.toString()))
                     lastPartialMs = now
                 }
             }
