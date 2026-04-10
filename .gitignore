@@ -8,6 +8,7 @@ android/.idea/
 android/.kotlin/
 android/local.properties
 android/app/build/
+android/app/.cxx/
 android/build/
 *.hprof
 
