@@ -362,10 +362,12 @@ fun ReportScreen(
             onDismissRequest = { showVisionDownloadDialog = false },
             title = { Text(stringResource(R.string.vlm_download_dialog_title)) },
             text = {
+                // Generic: only the size is shown to the user. Technical tier/model
+                // details are visible in developer-mode settings only.
                 Text(
                     stringResource(
                         R.string.vlm_download_dialog_message,
-                        "${preferredTier.displayName} · ${preferredTier.sizeLabel}",
+                        preferredTier.sizeLabel,
                     )
                 )
             },
