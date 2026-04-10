@@ -306,9 +306,9 @@
     <string name="contribute_channel_desc">Avanzamento caricamento dati di ricerca</string>
     <string name="contribute_upload_title">Contributo in corso</string>
     <string name="contribute_upload_progress">Caricamento immagine %1$d di %2$d…</string>
-    <string name="contribute_upload_success">%d immagine/i contribuita/e — grazie!</string>
-    <string name="contribute_upload_partial">%d immagine/i caricata/e, alcune non riuscite — si riproverà</string>
-    <string name="contribute_upload_failed">Caricamento fallito — si riproverà con connessione migliore</string>
+    <string name="contribute_upload_success">%d immagine/i contribuita/e - grazie!</string>
+    <string name="contribute_upload_partial">%d immagine/i caricata/e, alcune non riuscite - si riproverà</string>
+    <string name="contribute_upload_failed">Caricamento fallito - si riproverà con connessione migliore</string>
     <string name="contribute_stats_uploaded">%d immagine/i caricata/e ✓</string>
     <string name="contribute_stats_pending">%d immagine/i in attesa</string>
     <string name="contribute_stats_failed">%d immagine/i non riuscita/e</string>

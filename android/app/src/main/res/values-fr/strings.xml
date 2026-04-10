@@ -306,9 +306,9 @@
     <string name="contribute_channel_desc">Progression de l\'envoi des données de recherche</string>
     <string name="contribute_upload_title">Contribution en cours</string>
     <string name="contribute_upload_progress">Envoi de l\'image %1$d sur %2$d…</string>
-    <string name="contribute_upload_success">%d image(s) envoyée(s) — merci !</string>
-    <string name="contribute_upload_partial">%d image(s) envoyée(s), certaines ont échoué — nouvel essai plus tard</string>
-    <string name="contribute_upload_failed">Envoi échoué — nouvel essai lorsque la connexion s\'améliorera</string>
+    <string name="contribute_upload_success">%d image(s) envoyée(s) - merci !</string>
+    <string name="contribute_upload_partial">%d image(s) envoyée(s), certaines ont échoué - nouvel essai plus tard</string>
+    <string name="contribute_upload_failed">Envoi échoué - nouvel essai lorsque la connexion s\'améliorera</string>
     <string name="contribute_stats_uploaded">%d image(s) envoyée(s) ✓</string>
     <string name="contribute_stats_pending">%d image(s) en attente</string>
     <string name="contribute_stats_failed">%d image(s) échouée(s)</string>

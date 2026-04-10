@@ -26,7 +26,7 @@
     <!-- Map Screen                                                           -->
     <!-- ================================================================== -->
     <string name="map_title">Analysis Map</string>
-    <!-- session count subtitle uses plural-style format args — built in code -->
+    <!-- session count subtitle uses plural-style format args - built in code -->
     <string name="map_cd_go_back">Go back</string>
     <string name="map_zone_avg_health">Avg health: %d</string>
     <string name="map_legend_title">Health Score</string>
@@ -351,18 +351,18 @@
     <string name="health_breakdown_factor_material_variety_tip">Penalty for diverse pollutant materials found. Max 10 pts for 7+ types.</string>
 
     <!-- ================================================================== -->
-    <!-- Spotlight Tour Definitions — used as @StringRes in TourDefinitions  -->
+    <!-- Spotlight Tour Definitions - used as @StringRes in TourDefinitions  -->
     <!-- ================================================================== -->
 
     <!-- Home tour -->
     <string name="tour_home_scan_title">Start Scanning</string>
-    <string name="tour_home_scan_desc">Use the camera to capture, or tap \"Scan from Gallery\" to choose from Gallery or Files. Supports images and videos — the app detects the type and routes each file automatically.</string>
+    <string name="tour_home_scan_desc">Use the camera to capture, or tap \"Scan from Gallery\" to choose from Gallery or Files. Supports images and videos - the app detects the type and routes each file automatically.</string>
     <string name="tour_home_model_status_title">AI Status</string>
     <string name="tour_home_model_status_desc">Shows whether the detection engine and deep analysis model are loaded and ready.</string>
     <string name="tour_home_stats_title">Your Impact</string>
     <string name="tour_home_stats_desc">Track your total analyses, debris found, and average ocean health score over time.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Your collection of discovered debris types — catch all 11! Tap to explore the full catalog.</string>
+    <string name="tour_home_marinedex_desc">Your collection of discovered debris types - catch all 11! Tap to explore the full catalog.</string>
 
     <!-- Camera tour -->
     <string name="tour_camera_shutter_title">Capture</string>
@@ -374,7 +374,7 @@
 
     <!-- Live Detection tour -->
     <string name="tour_live_detection_viewfinder_title">Real-Time Detection</string>
-    <string name="tour_live_detection_viewfinder_desc">Point your camera at debris — detections appear as live bounding boxes.</string>
+    <string name="tour_live_detection_viewfinder_desc">Point your camera at debris - detections appear as live bounding boxes.</string>
     <string name="tour_live_detection_fps_title">Performance</string>
     <string name="tour_live_detection_fps_desc">Shows frames per second and inference latency.</string>
     <string name="tour_live_detection_capture_title">Capture Frame</string>
@@ -418,7 +418,7 @@
     <string name="tour_map_filters_title">Map Filters</string>
     <string name="tour_map_filters_desc">Filter map markers by debris type or date range to focus on specific data.</string>
     <string name="tour_map_view_title">Detection Map</string>
-    <string name="tour_map_view_desc">All your analyses plotted on the map. Clusters group nearby detections — tap a cluster to see zone details and trends.</string>
+    <string name="tour_map_view_desc">All your analyses plotted on the map. Clusters group nearby detections - tap a cluster to see zone details and trends.</string>
     <string name="tour_map_heatmap_title">Heatmap</string>
     <string name="tour_map_heatmap_desc">Toggle between heatmap and pin views to see debris density patterns.</string>
     <string name="tour_map_fit_all_title">Fit All</string>
@@ -432,7 +432,7 @@
     <string name="tour_reports_language_title">Date &amp; Language</string>
     <string name="tour_reports_language_desc">Filter by date range and choose the language for the generated report. Supports 6 languages.</string>
     <string name="tour_reports_generate_title">Generate Report</string>
-    <string name="tour_reports_generate_desc">Generate an AI environmental report. Runs in the background — progress appears in notifications. Open saved reports to share or export as PDF.</string>
+    <string name="tour_reports_generate_desc">Generate an AI environmental report. Runs in the background - progress appears in notifications. Open saved reports to share or export as PDF.</string>
 
     <!-- Settings tour -->
     <string name="tour_settings_confidence_title">Detection Settings</string>
@@ -444,11 +444,11 @@
     <string name="tour_settings_theme_title">Dark Mode</string>
     <string name="tour_settings_theme_desc">Switch between dark and light themes for better underwater visibility.</string>
     <string name="tour_settings_data_title">Data Management</string>
-    <string name="tour_settings_data_desc">Reset all data to start fresh — removes all analyses, MarineDex entries, and achievements.</string>
+    <string name="tour_settings_data_desc">Reset all data to start fresh - removes all analyses, MarineDex entries, and achievements.</string>
     <string name="tour_settings_tours_title">Guided Tours</string>
     <string name="tour_settings_tours_desc">Replay the guided tours at any time to revisit all app features.</string>
     <string name="tour_settings_contribution_title">Research Contribution</string>
-    <string name="tour_settings_contribution_desc">Opt in to share your analyzed images with the OceanGuard research team via your own NAS server. No GPS or personal data — only the image and detections.</string>
+    <string name="tour_settings_contribution_desc">Opt in to share your analyzed images with the OceanGuard research team via your own NAS server. No GPS or personal data - only the image and detections.</string>
 
     <!-- MarineDex tour -->
     <string name="tour_marinedex_progress_title">Collection Progress</string>
@@ -623,6 +623,6 @@
     <string name="update_later">Later</string>
     <string name="update_data_preserved">Your data and analyses will be preserved when updating.</string>
     <string name="update_downloading">Downloading update…</string>
-    <string name="update_download_started">Download started — check your notifications</string>
+    <string name="update_download_started">Download started - check your notifications</string>
 
 </resources>

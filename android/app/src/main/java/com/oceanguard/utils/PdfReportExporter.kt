@@ -96,7 +96,7 @@ object PdfReportExporter {
             // 7. Footer
             pdf.addSpacing(12)
             pdf.drawSeparator()
-            pdf.drawCaption("${l.generatedBy} — ${dateFormat.format(Date())}")
+            pdf.drawCaption("${l.generatedBy} - ${dateFormat.format(Date())}")
 
             pdf.finish()
             Log.i(TAG, "PDF exported: ${file.absolutePath} (${file.length() / 1024}KB)")
@@ -272,8 +272,8 @@ object PdfReportExporter {
             pdf.drawImage(bitmap)
             val caption = buildString {
                 append(dateFormat.format(session.timestamp))
-                append(" — ${session.totalCount} ${l.debrisDetected}")
-                append(" — ${l.health}: ${session.healthScore}/100")
+                append(" - ${session.totalCount} ${l.debrisDetected}")
+                append(" - ${l.health}: ${session.healthScore}/100")
             }
             pdf.drawCaption(caption)
             pdf.addSpacing(4)

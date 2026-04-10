@@ -306,9 +306,9 @@
     <string name="contribute_channel_desc">Progreso de subida de datos de investigación</string>
     <string name="contribute_upload_title">Contribuyendo a la investigación</string>
     <string name="contribute_upload_progress">Subiendo imagen %1$d de %2$d…</string>
-    <string name="contribute_upload_success">%d imagen(es) contribuida(s) — ¡gracias!</string>
-    <string name="contribute_upload_partial">%d imagen(es) subida(s), algunas fallaron — se reintentará</string>
-    <string name="contribute_upload_failed">Subida fallida — se reintentará cuando mejore la conexión</string>
+    <string name="contribute_upload_success">%d imagen(es) contribuida(s) - ¡gracias!</string>
+    <string name="contribute_upload_partial">%d imagen(es) subida(s), algunas fallaron - se reintentará</string>
+    <string name="contribute_upload_failed">Subida fallida - se reintentará cuando mejore la conexión</string>
     <string name="contribute_stats_uploaded">%d imagen(es) subida(s) ✓</string>
     <string name="contribute_stats_pending">%d imagen(es) pendiente(s)</string>
     <string name="contribute_stats_failed">%d imagen(es) fallida(s)</string>

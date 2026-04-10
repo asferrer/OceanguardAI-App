@@ -26,7 +26,7 @@
     <!-- Écran Carte                                                          -->
     <!-- ================================================================== -->
     <string name="map_title">Carte des analyses</string>
-    <!-- Le sous-titre du nombre de sessions utilise des arguments de format de style pluriel — construit dans le code -->
+    <!-- Le sous-titre du nombre de sessions utilise des arguments de format de style pluriel - construit dans le code -->
     <string name="map_cd_go_back">Retour</string>
     <string name="map_zone_avg_health">Santé moy. : %1$d</string>
     <string name="map_legend_title">Score de santé</string>
@@ -352,18 +352,18 @@
     <string name="health_breakdown_factor_material_variety_tip">Pénalité pour la diversité des matériaux polluants trouvés. Max 10 pts pour 7+ types.</string>
 
     <!-- ================================================================== -->
-    <!-- Définitions de la visite Spotlight — utilisées comme @StringRes dans TourDefinitions -->
+    <!-- Définitions de la visite Spotlight - utilisées comme @StringRes dans TourDefinitions -->
     <!-- ================================================================== -->
 
     <!-- Visite de l\'accueil -->
     <string name="tour_home_scan_title">Commencer le scan</string>
-    <string name="tour_home_scan_desc">Utilisez la caméra pour capturer, ou appuyez sur « Scanner depuis la Galerie » pour choisir depuis la Galerie ou les Fichiers. Compatible avec images et vidéos — l\'app détecte le type et traite chaque fichier automatiquement.</string>
+    <string name="tour_home_scan_desc">Utilisez la caméra pour capturer, ou appuyez sur « Scanner depuis la Galerie » pour choisir depuis la Galerie ou les Fichiers. Compatible avec images et vidéos - l\'app détecte le type et traite chaque fichier automatiquement.</string>
     <string name="tour_home_model_status_title">Statut de l\'IA</string>
     <string name="tour_home_model_status_desc">Indique si le moteur de détection et le modèle d\'analyse profonde sont chargés et prêts.</string>
     <string name="tour_home_stats_title">Votre impact</string>
     <string name="tour_home_stats_desc">Suivez vos analyses totales, débris trouvés et score moyen de santé océanique.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">Votre collection de types de débris découverts — attrapez les 11 ! Appuyez pour explorer le catalogue.</string>
+    <string name="tour_home_marinedex_desc">Votre collection de types de débris découverts - attrapez les 11 ! Appuyez pour explorer le catalogue.</string>
 
     <!-- Visite de la caméra -->
     <string name="tour_camera_shutter_title">Capturer</string>
@@ -375,7 +375,7 @@
 
     <!-- Visite de la détection en direct -->
     <string name="tour_live_detection_viewfinder_title">Détection en temps réel</string>
-    <string name="tour_live_detection_viewfinder_desc">Pointez votre caméra sur des débris — les détections apparaissent sous forme de cadres de délimitation en direct.</string>
+    <string name="tour_live_detection_viewfinder_desc">Pointez votre caméra sur des débris - les détections apparaissent sous forme de cadres de délimitation en direct.</string>
     <string name="tour_live_detection_fps_title">Performances</string>
     <string name="tour_live_detection_fps_desc">Affiche les images par seconde et la latence d\'inférence.</string>
     <string name="tour_live_detection_capture_title">Capturer une image</string>
@@ -417,7 +417,7 @@
 
     <!-- Visite de la carte -->
     <string name="tour_map_view_title">Carte de détection</string>
-    <string name="tour_map_view_desc">Toutes vos analyses sur la carte. Les clusters regroupent les détections proches — appuyez sur un cluster pour voir les détails et tendances de zone.</string>
+    <string name="tour_map_view_desc">Toutes vos analyses sur la carte. Les clusters regroupent les détections proches - appuyez sur un cluster pour voir les détails et tendances de zone.</string>
     <string name="tour_map_heatmap_title">Carte de chaleur</string>
     <string name="tour_map_heatmap_desc">Basculez entre carte thermique et épingles pour voir les motifs de densité des débris.</string>
     <string name="tour_map_style_title">Style de carte</string>
@@ -429,7 +429,7 @@
 
     <!-- Visite des rapports -->
     <string name="tour_reports_generate_title">Générer un rapport</string>
-    <string name="tour_reports_generate_desc">Générez un rapport environnemental IA. S\'exécute en arrière-plan — la progression apparaît dans les notifications. Ouvrez les rapports sauvegardés pour partager ou exporter en PDF.</string>
+    <string name="tour_reports_generate_desc">Générez un rapport environnemental IA. S\'exécute en arrière-plan - la progression apparaît dans les notifications. Ouvrez les rapports sauvegardés pour partager ou exporter en PDF.</string>
     <string name="tour_reports_language_title">Date et Langue</string>
     <string name="tour_reports_language_desc">Filtrez par plage de dates et choisissez la langue du rapport. Compatible avec 6 langues.</string>
     <string name="tour_reports_zone_title">Sélecteur de Zone</string>
@@ -445,11 +445,11 @@
     <string name="tour_settings_language_title">Langues</string>
     <string name="tour_settings_language_desc">Définissez la langue de l\'interface, la langue des rapports IA et le public cible (scientifique, ONG ou citoyen).</string>
     <string name="tour_settings_data_title">Gestion des Données</string>
-    <string name="tour_settings_data_desc">Réinitialisez toutes les données pour repartir à zéro — supprime analyses, entrées MarineDex et succès.</string>
+    <string name="tour_settings_data_desc">Réinitialisez toutes les données pour repartir à zéro - supprime analyses, entrées MarineDex et succès.</string>
     <string name="tour_settings_tours_title">Visites Guidées</string>
     <string name="tour_settings_tours_desc">Rejouez les visites guidées à tout moment pour revoir toutes les fonctionnalités.</string>
     <string name="tour_settings_contribution_title">Contribution à la Recherche</string>
-    <string name="tour_settings_contribution_desc">Partagez vos images analysées avec l\'équipe OceanGuard via votre NAS. Sans GPS ni données personnelles — uniquement l\'image et les détections.</string>
+    <string name="tour_settings_contribution_desc">Partagez vos images analysées avec l\'équipe OceanGuard via votre NAS. Sans GPS ni données personnelles - uniquement l\'image et les détections.</string>
 
     <!-- Visite du MarineDex -->
     <string name="tour_marinedex_progress_title">Progression de la collection</string>
@@ -622,6 +622,6 @@
     <string name="update_later">Plus tard</string>
     <string name="update_data_preserved">Vos données et analyses seront conservées lors de la mise à jour.</string>
     <string name="update_downloading">Téléchargement de la mise à jour…</string>
-    <string name="update_download_started">Téléchargement lancé — vérifiez vos notifications</string>
+    <string name="update_download_started">Téléchargement lancé - vérifiez vos notifications</string>
 
 </resources>

@@ -26,7 +26,7 @@
     <!-- Schermata Mappa                                                      -->
     <!-- ================================================================== -->
     <string name="map_title">Mappa delle analisi</string>
-    <!-- il sottotitolo con il numero di sessioni usa argomenti in stile plurale — costruito nel codice -->
+    <!-- il sottotitolo con il numero di sessioni usa argomenti in stile plurale - costruito nel codice -->
     <string name="map_cd_go_back">Torna indietro</string>
     <string name="map_zone_avg_health">Salute media: %1$d</string>
     <string name="map_legend_title">Punteggio di Salute</string>
@@ -352,18 +352,18 @@
     <string name="health_breakdown_factor_material_variety_tip">Penalità per la diversità dei materiali inquinanti trovati. Max 10 pts per 7+ tipi.</string>
 
     <!-- ================================================================== -->
-    <!-- Definizioni Tour Spotlight — usate come @StringRes in TourDefinitions -->
+    <!-- Definizioni Tour Spotlight - usate come @StringRes in TourDefinitions -->
     <!-- ================================================================== -->
 
     <!-- Tour Home -->
     <string name="tour_home_scan_title">Inizia la Scansione</string>
-    <string name="tour_home_scan_desc">Usa la fotocamera per catturare, o tocca "Scansiona dalla Galleria" per scegliere dalla Galleria o dai File. Supporta immagini e video — l\'app rileva il tipo e elabora ogni file automaticamente.</string>
+    <string name="tour_home_scan_desc">Usa la fotocamera per catturare, o tocca "Scansiona dalla Galleria" per scegliere dalla Galleria o dai File. Supporta immagini e video - l\'app rileva il tipo e elabora ogni file automaticamente.</string>
     <string name="tour_home_model_status_title">Stato AI</string>
     <string name="tour_home_model_status_desc">Mostra se il motore di rilevamento e il modello di analisi profonda sono caricati e pronti.</string>
     <string name="tour_home_stats_title">Il Tuo Impatto</string>
     <string name="tour_home_stats_desc">Monitora le tue analisi totali, i rifiuti trovati e il punteggio medio di salute oceanica.</string>
     <string name="tour_home_marinedex_title">MarineDex</string>
-    <string name="tour_home_marinedex_desc">La tua collezione di tipi di rifiuti scoperti — scoprili tutti e 11! Tocca per esplorare il catalogo.</string>
+    <string name="tour_home_marinedex_desc">La tua collezione di tipi di rifiuti scoperti - scoprili tutti e 11! Tocca per esplorare il catalogo.</string>
 
     <!-- Tour Fotocamera -->
     <string name="tour_camera_shutter_title">Acquisisci</string>
@@ -375,7 +375,7 @@
 
     <!-- Tour Rilevamento dal Vivo -->
     <string name="tour_live_detection_viewfinder_title">Rilevamento in Tempo Reale</string>
-    <string name="tour_live_detection_viewfinder_desc">Punta la fotocamera sui rifiuti — i rilevamenti appaiono come riquadri di delimitazione in tempo reale.</string>
+    <string name="tour_live_detection_viewfinder_desc">Punta la fotocamera sui rifiuti - i rilevamenti appaiono come riquadri di delimitazione in tempo reale.</string>
     <string name="tour_live_detection_fps_title">Prestazioni</string>
     <string name="tour_live_detection_fps_desc">Mostra i fotogrammi al secondo e la latenza di inferenza.</string>
     <string name="tour_live_detection_capture_title">Acquisisci Fotogramma</string>
@@ -415,7 +415,7 @@
 
     <!-- Tour Mappa -->
     <string name="tour_map_view_title">Mappa Rilevamenti</string>
-    <string name="tour_map_view_desc">Tutte le tue analisi sulla mappa. I cluster raggruppano rilevamenti vicini — tocca un cluster per dettagli e tendenze della zona.</string>
+    <string name="tour_map_view_desc">Tutte le tue analisi sulla mappa. I cluster raggruppano rilevamenti vicini - tocca un cluster per dettagli e tendenze della zona.</string>
     <string name="tour_map_heatmap_title">Mappa di Calore</string>
     <string name="tour_map_heatmap_desc">Alterna tra mappa di calore e pin per vedere i pattern di densità dei rifiuti.</string>
     <string name="tour_map_style_title">Stile Mappa</string>
@@ -427,7 +427,7 @@
 
     <!-- Tour Report -->
     <string name="tour_reports_generate_title">Genera Report</string>
-    <string name="tour_reports_generate_desc">Genera un rapporto ambientale IA. Si esegue in background — il progresso appare nelle notifiche. Apri i rapporti salvati per condividere o esportare in PDF.</string>
+    <string name="tour_reports_generate_desc">Genera un rapporto ambientale IA. Si esegue in background - il progresso appare nelle notifiche. Apri i rapporti salvati per condividere o esportare in PDF.</string>
     <string name="tour_reports_language_title">Data e Lingua</string>
     <string name="tour_reports_language_desc">Filtra per intervallo di date e scegli la lingua del rapporto. Supporta 6 lingue.</string>
     <string name="tour_reports_zone_title">Selettore di Zona</string>
@@ -443,11 +443,11 @@
     <string name="tour_settings_language_title">Lingue</string>
     <string name="tour_settings_language_desc">Imposta la lingua dell\'interfaccia, la lingua predefinita per i rapporti IA e il pubblico del rapporto (scientifico, ONG o cittadino).</string>
     <string name="tour_settings_data_title">Gestione Dati</string>
-    <string name="tour_settings_data_desc">Reimposta tutti i dati per ricominciare — rimuove analisi, voci MarineDex e traguardi.</string>
+    <string name="tour_settings_data_desc">Reimposta tutti i dati per ricominciare - rimuove analisi, voci MarineDex e traguardi.</string>
     <string name="tour_settings_tours_title">Tour Guidati</string>
     <string name="tour_settings_tours_desc">Rivedi i tour guidati in qualsiasi momento per esplorare tutte le funzionalità dell\'app.</string>
     <string name="tour_settings_contribution_title">Contributo alla Ricerca</string>
-    <string name="tour_settings_contribution_desc">Scegli di condividere le tue immagini analizzate con il team di ricerca OceanGuard tramite il tuo NAS. Nessun dato GPS o personale — solo l\'immagine e i rilevamenti.</string>
+    <string name="tour_settings_contribution_desc">Scegli di condividere le tue immagini analizzate con il team di ricerca OceanGuard tramite il tuo NAS. Nessun dato GPS o personale - solo l\'immagine e i rilevamenti.</string>
 
     <!-- Tour MarineDex -->
     <string name="tour_marinedex_progress_title">Progresso Collezione</string>
@@ -620,6 +620,6 @@
     <string name="update_later">Più tardi</string>
     <string name="update_data_preserved">I tuoi dati e le analisi verranno conservati durante l\'aggiornamento.</string>
     <string name="update_downloading">Download dell\'aggiornamento in corso…</string>
-    <string name="update_download_started">Download avviato — controlla le notifiche</string>
+    <string name="update_download_started">Download avviato - controlla le notifiche</string>
 
 </resources>
