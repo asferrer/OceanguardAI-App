@@ -165,7 +165,7 @@ class ReportGenerator(
         val prompt = buildVlmPrompt(languageName, summary, language)
         val response = runTextInference(prompt, language, languageName, audience)
         Log.i(TAG, "VLM report generated successfully (${response.length} chars)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     // -----------------------------------------------------------------
@@ -186,7 +186,7 @@ class ReportGenerator(
         val prompt = buildZoneVlmPrompt(languageName, summary, input.locationName, dateRangeLabel, language, allDebris)
         val response = runTextInference(prompt, language, languageName, audience, ReportType.ZONE)
         Log.i(TAG, "Zone VLM report generated (${response.length} chars)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     // -----------------------------------------------------------------
@@ -211,11 +211,10 @@ class ReportGenerator(
             systemMessage = buildSystemMessage(languageName, audience, ReportType.GENERIC, language),
             assistantPrefill = firstHeading,
             thinkingEnabled = false,  // Reports: maximize output tokens, no thinking overhead
-        ) { partial ->
-            onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
-        }
+            onPartialResult = onPartialResult,
+        )
         Log.i(TAG, "Streamed report complete (${response.length} chars)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     suspend fun generateZoneReportStreaming(
@@ -238,11 +237,10 @@ class ReportGenerator(
             systemMessage = buildSystemMessage(languageName, audience, ReportType.ZONE, language),
             assistantPrefill = firstHeading,
             thinkingEnabled = false,  // Reports: maximize output tokens, no thinking overhead
-        ) { partial ->
-            onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
-        }
+            onPartialResult = onPartialResult,
+        )
         Log.i(TAG, "Streamed zone report complete (${response.length} chars)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     // -----------------------------------------------------------------
@@ -440,11 +438,10 @@ Rules:
             systemMessage    = buildSystemMessage(languageName, audience, ReportType.ZONE, language),
             assistantPrefill = firstHeading,
             thinkingEnabled  = false,
-        ) { partial ->
-            onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
-        }
+            onPartialResult  = onPartialResult,
+        )
         Log.i(TAG, "Verified zone report complete (${response.length} chars, ${verifications.size} verified sessions)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     /**
@@ -465,10 +462,10 @@ Rules:
         val enrichedJson = buildEnrichedJsonSummary(sessions, verifications)
         val verifiedCount = verifications.size
         val fpNote = if (verifications.any { it.falsePositives.isNotEmpty() })
-            "\nNOTE: Some sessions have vlm_false_positives — exclude those from counts."
+            "\nNOTE: Some sessions have vlm_false_positives - exclude those from counts."
         else ""
         val matNote = if (verifications.any { it.materialIssues.isNotEmpty() })
-            "\nNOTE: Some sessions have material_issues — flag uncertain material classifications."
+            "\nNOTE: Some sessions have material_issues - flag uncertain material classifications."
         else ""
 
         val verifiedNote = "The JSON includes RT-DETRv2 detections enriched with VLM visual verification " +
@@ -482,11 +479,10 @@ Rules:
             systemMessage    = buildSystemMessage(languageName, audience, ReportType.GENERIC, language),
             assistantPrefill = firstHeading,
             thinkingEnabled  = false,
-        ) { partial ->
-            onPartialResult(QwenPromptFormatter.sanitizePartial(partial))
-        }
+            onPartialResult  = onPartialResult,
+        )
         Log.i(TAG, "Verified generic report complete (${response.length} chars, ${verifications.size} verified)")
-        QwenPromptFormatter.sanitizeOutput(response)
+        response
     }
 
     /**
@@ -579,10 +575,10 @@ Rules:
     ): String {
         val verifiedCount = verifications.size
         val fpNote = if (verifications.any { it.falsePositives.isNotEmpty() })
-            "\nNOTE: Some sessions have vlm_false_positives in the data — exclude those from counts and analysis."
+            "\nNOTE: Some sessions have vlm_false_positives in the data - exclude those from counts and analysis."
         else ""
         val matNote = if (verifications.any { it.materialIssues.isNotEmpty() })
-            "\nNOTE: Some sessions have vlm_verification.material_issues — flag these classes as having uncertain material classification in the report."
+            "\nNOTE: Some sessions have vlm_verification.material_issues - flag these classes as having uncertain material classification in the report."
         else ""
         val verifiedNote = "The JSON includes RT-DETRv2 detections enriched with VLM visual verification " +
             "of $verifiedCount field photographs. Each verified session has a 'vlm_verification' field " +
@@ -641,7 +637,7 @@ Rules:
                 "- Tense: present for findings, imperative for recommendations."
             ReportAudience.CITIZEN ->
                 "Style:\n" +
-                "- Warm, motivating, active voice — never condescending or alarmist.\n" +
+                "- Warm, motivating, active voice - never condescending or alarmist.\n" +
                 "- Convert every abstract metric into a relatable analogy (e.g. '450 years ≈ 6 human lifetimes').\n" +
                 "- Explain jargon the first time it appears: 'microplastics (tiny plastic fragments under 5 mm)'.\n" +
                 "- Use common names for animals, no Latin binomials.\n" +
@@ -650,7 +646,7 @@ Rules:
         val comprehensivenessDirective =
             "COMPREHENSIVENESS MANDATE: This is a formal assessment document, NOT a summary. " +
             "Write at minimum 1200 words of body content. Every section must contain multiple full paragraphs " +
-            "OR a detailed table with ≥4 data rows. Do NOT end the report prematurely — write ALL sections completely. " +
+            "OR a detailed table with ≥4 data rows. Do NOT end the report prematurely - write ALL sections completely. " +
             "If a section has little data, note the limitation and expand adjacent analysis instead.\n\n" +
             "VISUAL ELEMENTS (mandatory):\n" +
             "- Include a detailed collection itinerary table with waypoint IDs, coordinates, priority, and method.\n" +
@@ -663,18 +659,29 @@ Rules:
             comprehensivenessDirective +
             "Consistency: present tense for findings throughout; refer to data points as 'analyzed images' " +
             "not 'samples', 'photos', or 'sessions'; keep terminology uniform.\n\n" +
-            "GROUNDING RULES — mandatory, no exceptions:\n" +
+            "GROUNDING RULES - mandatory, no exceptions:\n" +
             "1. Only mention debris types, materials, and species derivable from the JSON.\n" +
             "2. Percentages must match JSON counts exactly (round to 1 decimal place).\n" +
             "3. Dates must fall within date_range in the JSON.\n" +
-            "4. health_score > 75 means good condition — do not describe it as contaminated.\n" +
+            "4. TONE MUST MATCH the numerical health_score:\n" +
+            "   - health_score >= 80: 'excellent', 'healthy', 'low impact', 'routine monitoring'.\n" +
+            "   - health_score 70-79: 'generally good', 'moderate localized impact', 'targeted cleanup'.\n" +
+            "   - health_score 50-69: 'degraded', 'significant impact', 'urgent intervention'.\n" +
+            "   - health_score < 50: 'compromised', 'critical', 'immediate emergency response'.\n" +
+            "   FORBIDDEN vocabulary when health_score >= 70: 'compromised', 'critical', " +
+            "'alarming', 'emergency', 'severe', 'substantial threat', 'crisis', 'alarmante', " +
+            "'comprometido', 'crítico', 'crítica', 'amenaza sustancial'. Use neutral/constructive " +
+            "language instead.\n" +
             "5. Do not invent GPS coordinates, species names, or ecological pathways not in the data.\n" +
             "6. collection_waypoints in the JSON are the ONLY GPS points you may cite for the itinerary.\n" +
             "7. If a section cannot be substantiated by the JSON data, write exactly: " +
-            "'[Insufficient data for this section]' and proceed — never fabricate content to fill sections.\n" +
-            "8. Each paragraph must contain unique analysis — NEVER repeat the same sentence or near-identical phrasing across sections.\n" +
+            "'[Insufficient data for this section]' and proceed - never fabricate content to fill sections.\n" +
+            "8. Each paragraph must contain unique analysis - NEVER repeat the same sentence or near-identical phrasing across sections.\n" +
             "9. When listing percentages for categories (materials or types), they MUST sum to exactly 100%. Double-check arithmetic before writing.\n" +
-            "10. NEVER write placeholder tags like '[Insert...', '[TODO', or template instructions — generate actual content or omit the section.\n" +
+            "10. NEVER write placeholder tags like '[Insert...', '[TODO', or template instructions - generate actual content or omit the section.\n" +
+            "11. Risk urgency labels ('Critical'/'High'/'Medium'/'Low') belong to individual items in the risk table ONLY. " +
+            "The zone-level narrative (conclusions, overall assessment) must derive its tone from the AVERAGE health_score, " +
+            "not from the single highest-risk item.\n" +
             "Format: ## headings, ### subheadings, bullet points, markdown tables (| col | col |)." +
             "\n\n" + buildSectionTemplate(languageName, reportType, language)
     }
@@ -1259,7 +1266,8 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[langu
                 maxTokens        = 4096,
                 systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE, language = language),
                 assistantPrefill = firstHeading,
-            ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
+                onPartialResult  = onPartialResult,
+            )
         } else {
             val prompt = buildVisionZoneVlmPrompt(languageName, jsonSummary, input.locationName, dateRangeLabel, language)
             visionEngine.generateWithImage(
@@ -1268,13 +1276,14 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING_ZONE[langu
                 maxTokens        = 4096,
                 systemMessage    = buildSystemMessage(languageName, reportType = ReportType.NONE, language = language),
                 assistantPrefill = firstHeading,
-            ) { partial -> onPartialResult(QwenPromptFormatter.sanitizePartial(partial)) }
+                onPartialResult  = onPartialResult,
+            )
         }
 
         bitmaps.forEach { it.recycle() }
 
         Log.i(TAG, "Vision zone report complete (${result.length} chars, ${bitmaps.size} images used)")
-        QwenPromptFormatter.sanitizeOutput(result)
+        result
     }
 
     /**

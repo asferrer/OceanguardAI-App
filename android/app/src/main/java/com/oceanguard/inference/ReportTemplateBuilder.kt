@@ -66,7 +66,7 @@ internal object ReportTemplateBuilder {
         }
 
         return buildString {
-            appendLine("# OceanGuard AI — $title")
+            appendLine("# OceanGuard AI - $title")
             appendLine()
             appendLine("**Survey period:** $dateRange")
             appendLine("**Sessions analysed:** $sessionCount")
@@ -148,7 +148,7 @@ internal object ReportTemplateBuilder {
         }
 
         return buildString {
-            appendLine("# OceanGuard AI — $title")
+            appendLine("# OceanGuard AI - $title")
             appendLine()
             appendLine("**Location:** ${input.locationName}")
             appendLine("**Survey period:** $dateRange")
@@ -204,7 +204,7 @@ internal object ReportTemplateBuilder {
     fun buildNoDataReport(language: String): String {
         val languageName = LANGUAGE_NAMES[language] ?: "English"
         return buildString {
-            appendLine("# OceanGuard AI — Marine Debris Survey Report")
+            appendLine("# OceanGuard AI - Marine Debris Survey Report")
             appendLine()
             appendLine("**Language:** $languageName")
             appendLine()
@@ -269,7 +269,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
             val dayMaterials = buildMaterialMapFromSessions(day.sessions)
             val dominant = dayMaterials.maxByOrNull { it.value }
             appendLine(
-                "**${DAY_FORMAT.format(day.date)}** — ${day.sessions.size} session(s), " +
+                "**${DAY_FORMAT.format(day.date)}** - ${day.sessions.size} session(s), " +
                 "${day.totalDebris} item(s), health score: ${day.avgHealthScore}/100" +
                 (dominant?.let { " (dominant: ${it.key.name.replace("_", " ")})" } ?: "")
             )
@@ -336,7 +336,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
     private fun formatDateRange(sessions: List<DetectionSession>): String {
         val sorted = sessions.sortedBy { it.timestamp }
         return if (sorted.isNotEmpty()) {
-            "${DATE_FORMAT.format(sorted.first().timestamp)} — ${DATE_FORMAT.format(sorted.last().timestamp)}"
+            "${DATE_FORMAT.format(sorted.first().timestamp)} - ${DATE_FORMAT.format(sorted.last().timestamp)}"
         } else "N/A"
     }
 
@@ -380,10 +380,10 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         recs.add(when (audience) {
             ReportAudience.CITIZEN -> when (dominantMaterial) {
                 DebrisMaterial.PLASTIC, null ->
-                    "Organise a beach or dive cleanup with friends — even picking up a few plastic " +
+                    "Organise a beach or dive cleanup with friends - even picking up a few plastic " +
                     "bottles and bags makes a real difference for sea turtles and seabirds."
                 DebrisMaterial.FISHING_NET, DebrisMaterial.FABRIC ->
-                    "Report abandoned nets to your local coastguard or fishing authority — they can " +
+                    "Report abandoned nets to your local coastguard or fishing authority - they can " +
                     "trap dolphins and turtles if left in the water."
                 DebrisMaterial.METAL ->
                     "Join a local dive-club cleanup event to help remove heavy metal debris that " +
@@ -392,7 +392,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
                     "Help identify where rubber waste (old tyres, seals) enters the water and " +
                     "report it to your municipality for proper disposal."
                 DebrisMaterial.GLASS ->
-                    "Wear gloves and collect glass fragments carefully — broken glass injures " +
+                    "Wear gloves and collect glass fragments carefully - broken glass injures " +
                     "marine life and divers alike."
                 DebrisMaterial.OTHER ->
                     "Take photos of unusual debris and share them with a marine conservation group " +
@@ -443,7 +443,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         if (avgHealth < 60) {
             recs.add(when (audience) {
                 ReportAudience.CITIZEN ->
-                    "This area needs help! Consider visiting monthly to track improvements — your " +
+                    "This area needs help! Consider visiting monthly to track improvements - your " +
                     "photos and observations are valuable data for scientists."
                 ReportAudience.NGO_MANAGER ->
                     "LONG-TERM: Establish monthly monitoring at this location. Set a target health " +
@@ -456,7 +456,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         } else {
             recs.add(when (audience) {
                 ReportAudience.CITIZEN ->
-                    "Great news — this area is in decent shape! Keep visiting and sharing your " +
+                    "Great news - this area is in decent shape! Keep visiting and sharing your " +
                     "observations to help maintain it."
                 ReportAudience.NGO_MANAGER ->
                     "Maintain current monitoring frequency. Share results with regional environmental " +
@@ -469,7 +469,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         if (highRiskCount > 0) {
             recs.add(when (audience) {
                 ReportAudience.CITIZEN ->
-                    "There are $highRiskCount dangerous items that could harm marine life — if you " +
+                    "There are $highRiskCount dangerous items that could harm marine life - if you " +
                     "spot them, alert local authorities or a dive team for safe removal."
                 ReportAudience.NGO_MANAGER ->
                     "IMMEDIATE: Prioritise removal of $highRiskCount high-risk items (risk 4–5). " +
@@ -481,7 +481,7 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
         } else {
             recs.add(when (audience) {
                 ReportAudience.CITIZEN ->
-                    "No dangerous items were found — spread the word and invite others to help keep " +
+                    "No dangerous items were found - spread the word and invite others to help keep " +
                     "our oceans clean through community dive events!"
                 ReportAudience.NGO_MANAGER ->
                     "Engage the local community through citizen science events to maintain low debris " +

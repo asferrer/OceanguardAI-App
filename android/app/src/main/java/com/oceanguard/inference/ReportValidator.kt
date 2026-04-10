@@ -695,7 +695,7 @@ object ReportValidator {
                 checks += ValidationCheck(
                     field = "text_repetition",
                     status = CheckStatus.FAIL,
-                    detail = "$totalDuplicates repeated sentences — report contains circular/copied text",
+                    detail = "$totalDuplicates repeated sentences - report contains circular/copied text",
                 )
             }
         }
