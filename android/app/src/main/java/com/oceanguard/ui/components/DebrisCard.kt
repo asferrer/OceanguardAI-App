@@ -209,14 +209,24 @@ fun DebrisCard(
  * Map an RT-DETR [className] string to a [DebrisMaterial] for colour
  * assignment. Returns [DebrisMaterial.OTHER] when no match is found.
  */
-private fun classNameToMaterial(className: String): DebrisMaterial = when (className.lowercase()) {
-    "bottle", "plastic_debris", "mask", "glove" -> DebrisMaterial.PLASTIC
-    "can", "metal_debris"                        -> DebrisMaterial.METAL
-    "fishing_net"                                -> DebrisMaterial.FISHING_NET
-    "fabric_debris"                              -> DebrisMaterial.FABRIC
-    "tire"                                       -> DebrisMaterial.RUBBER
-    "glass_debris"                               -> DebrisMaterial.GLASS
-    else                                         -> DebrisMaterial.OTHER
+private fun classNameToMaterial(className: String): DebrisMaterial = when (className.uppercase()) {
+    "BOTTLE", "PLASTIC_DEBRIS", "BOTTLE_CAP", "PLASTIC_BAG", "FOOD_WRAPPER",
+    "STYROFOAM", "PLASTIC_CUP", "STRAW", "PLASTIC_UTENSIL", "SIX_PACK_RING",
+    "PLASTIC_SHEETING", "DIAPER", "MASK", "CIGARETTE_BUTT",
+    "CIGARETTE_LIGHTER" -> DebrisMaterial.PLASTIC
+    "CAN", "METAL_DEBRIS", "AEROSOL_CAN", "METAL_DRUM", "WIRE_CABLE",
+    "BATTERY", "ELECTRONICS" -> DebrisMaterial.METAL
+    "FISHING_NET", "FISHING_LINE", "ROPE", "FISHING_BUOY",
+    "FISHING_TRAP" -> DebrisMaterial.FISHING_NET
+    "GLOVE", "FABRIC_DEBRIS", "CLOTHING", "SHOE" -> DebrisMaterial.FABRIC
+    "TIRE", "FLIP_FLOP", "RUBBER_HOSE" -> DebrisMaterial.RUBBER
+    "GLASS_DEBRIS", "GLASS_BOTTLE", "GLASS_JAR", "GLASS_FRAGMENT",
+    "LIGHT_BULB" -> DebrisMaterial.GLASS
+    "CARDBOARD", "PAPER" -> DebrisMaterial.PAPER
+    "WOOD_PALLET", "LUMBER" -> DebrisMaterial.WOOD
+    "CERAMIC_FRAGMENT", "BRICK" -> DebrisMaterial.CERAMIC
+    "PAINT_CAN", "OIL_CONTAINER", "SYRINGE", "CHEMICAL_DRUM" -> DebrisMaterial.CHEMICAL
+    else -> DebrisMaterial.OTHER
 }
 
 /**
@@ -227,10 +237,14 @@ private fun detectionRiskScore(detection: DetectionResult): Int {
     val materialRisk = when (classNameToMaterial(detection.className)) {
         DebrisMaterial.PLASTIC     -> 5
         DebrisMaterial.FISHING_NET -> 5
+        DebrisMaterial.CHEMICAL    -> 5
         DebrisMaterial.FABRIC      -> 4
         DebrisMaterial.GLASS       -> 4
+        DebrisMaterial.CERAMIC     -> 3
         DebrisMaterial.METAL       -> 3
         DebrisMaterial.RUBBER      -> 3
+        DebrisMaterial.WOOD        -> 2
+        DebrisMaterial.PAPER       -> 1
         DebrisMaterial.OTHER       -> 2
     }
     // Boost by 1 when confidence > 0.85 (high certainty makes risk more actionable)

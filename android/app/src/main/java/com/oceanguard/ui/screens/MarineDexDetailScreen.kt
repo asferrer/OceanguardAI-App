@@ -532,12 +532,45 @@ private fun RiskLevelBar(riskScore: Int) {
 
 @Composable
 private fun debrisToMaterial(type: DebrisType): String = when (type) {
-    DebrisType.BOTTLE, DebrisType.PLASTIC_DEBRIS -> stringResource(R.string.material_plastic)
-    DebrisType.CAN, DebrisType.METAL_DEBRIS -> stringResource(R.string.material_metal)
-    DebrisType.FISHING_NET -> stringResource(R.string.material_nylon)
-    DebrisType.GLOVE, DebrisType.MASK -> stringResource(R.string.material_mixed)
-    DebrisType.TIRE -> stringResource(R.string.material_rubber)
+    // Plastic types
+    DebrisType.BOTTLE, DebrisType.PLASTIC_DEBRIS, DebrisType.BOTTLE_CAP,
+    DebrisType.PLASTIC_BAG, DebrisType.FOOD_WRAPPER, DebrisType.STYROFOAM,
+    DebrisType.PLASTIC_CUP, DebrisType.STRAW, DebrisType.PLASTIC_UTENSIL,
+    DebrisType.SIX_PACK_RING, DebrisType.PLASTIC_SHEETING, DebrisType.DIAPER,
+    DebrisType.CIGARETTE_BUTT, DebrisType.CIGARETTE_LIGHTER
+        -> stringResource(R.string.material_plastic)
+    // Metal types
+    DebrisType.CAN, DebrisType.METAL_DEBRIS, DebrisType.AEROSOL_CAN,
+    DebrisType.METAL_DRUM, DebrisType.WIRE_CABLE, DebrisType.BATTERY,
+    DebrisType.ELECTRONICS
+        -> stringResource(R.string.material_metal)
+    // Fishing / nylon types
+    DebrisType.FISHING_NET, DebrisType.FISHING_LINE, DebrisType.ROPE,
+    DebrisType.FISHING_BUOY, DebrisType.FISHING_TRAP
+        -> stringResource(R.string.material_nylon)
+    // Mixed / fabric types
+    DebrisType.GLOVE, DebrisType.MASK, DebrisType.CLOTHING, DebrisType.SHOE
+        -> stringResource(R.string.material_mixed)
     DebrisType.FABRIC_DEBRIS -> stringResource(R.string.material_fabric)
-    DebrisType.GLASS_DEBRIS -> stringResource(R.string.material_glass)
+    // Rubber types
+    DebrisType.TIRE, DebrisType.FLIP_FLOP, DebrisType.RUBBER_HOSE
+        -> stringResource(R.string.material_rubber)
+    // Glass types
+    DebrisType.GLASS_DEBRIS, DebrisType.GLASS_BOTTLE, DebrisType.GLASS_JAR,
+    DebrisType.GLASS_FRAGMENT, DebrisType.LIGHT_BULB
+        -> stringResource(R.string.material_glass)
+    // Wood types
+    DebrisType.WOOD_PALLET, DebrisType.LUMBER
+        -> stringResource(R.string.material_unknown) // TODO: add material_wood string
+    // Paper types
+    DebrisType.CARDBOARD, DebrisType.PAPER
+        -> stringResource(R.string.material_unknown) // TODO: add material_paper string
+    // Ceramic types
+    DebrisType.CERAMIC_FRAGMENT, DebrisType.BRICK
+        -> stringResource(R.string.material_unknown) // TODO: add material_ceramic string
+    // Chemical types
+    DebrisType.PAINT_CAN, DebrisType.OIL_CONTAINER, DebrisType.SYRINGE,
+    DebrisType.CHEMICAL_DRUM
+        -> stringResource(R.string.material_unknown) // TODO: add material_chemical string
     DebrisType.OTHER -> stringResource(R.string.material_unknown)
 }

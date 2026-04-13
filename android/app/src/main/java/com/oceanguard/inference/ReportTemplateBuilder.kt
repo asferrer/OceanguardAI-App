@@ -391,9 +391,15 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
                 DebrisMaterial.RUBBER ->
                     "Help identify where rubber waste (old tyres, seals) enters the water and " +
                     "report it to your municipality for proper disposal."
-                DebrisMaterial.GLASS ->
-                    "Wear gloves and collect glass fragments carefully - broken glass injures " +
-                    "marine life and divers alike."
+                DebrisMaterial.GLASS, DebrisMaterial.CERAMIC ->
+                    "Wear gloves and collect glass and ceramic fragments carefully - sharp debris " +
+                    "injures marine life and divers alike."
+                DebrisMaterial.WOOD, DebrisMaterial.PAPER ->
+                    "Collect waterlogged wood and paper debris before it breaks down into " +
+                    "microparticles - even biodegradable waste harms marine habitats."
+                DebrisMaterial.CHEMICAL ->
+                    "Do not touch chemical containers! Report them immediately to your local " +
+                    "coastguard or environmental agency for safe hazmat removal."
                 DebrisMaterial.OTHER ->
                     "Take photos of unusual debris and share them with a marine conservation group " +
                     "to help scientists understand what ends up in the ocean."
@@ -411,9 +417,15 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
                 DebrisMaterial.RUBBER ->
                     "SHORT-TERM: Identify rubber debris sources (tyres, industrial seals) and " +
                     "engage upstream industries to enforce responsible disposal."
-                DebrisMaterial.GLASS ->
+                DebrisMaterial.GLASS, DebrisMaterial.CERAMIC ->
                     "IMMEDIATE: Schedule a fine-debris sweep. SHORT-TERM: Install collection points " +
-                    "at nearby access points to prevent glass entering the water."
+                    "at nearby access points to prevent glass and ceramic entering the water."
+                DebrisMaterial.WOOD, DebrisMaterial.PAPER ->
+                    "SHORT-TERM: Map wood and paper debris sources (construction sites, shipping). " +
+                    "Engage port and coastal authorities for upstream waste management."
+                DebrisMaterial.CHEMICAL ->
+                    "IMMEDIATE: Isolate the area and engage hazmat-certified teams. " +
+                    "SHORT-TERM: Audit nearby industrial and port facilities for chemical discharge."
                 DebrisMaterial.OTHER ->
                     "SHORT-TERM: Commission a detailed debris characterisation study before " +
                     "designing a tailored removal strategy."
@@ -432,9 +444,15 @@ A total of **19 high-risk item(s)** were detected, posing elevated threats of en
                 DebrisMaterial.RUBBER ->
                     "Identify the source of rubber debris (tyres, seals, equipment) and engage with " +
                     "upstream industries to enforce responsible disposal."
-                DebrisMaterial.GLASS ->
-                    "Schedule a fine-debris sweep of the surveyed area to collect glass fragments, " +
-                    "which pose acute injury risk to benthic species and divers alike."
+                DebrisMaterial.GLASS, DebrisMaterial.CERAMIC ->
+                    "Schedule a fine-debris sweep of the surveyed area to collect glass and ceramic " +
+                    "fragments, which pose acute injury risk to benthic species and divers alike."
+                DebrisMaterial.WOOD, DebrisMaterial.PAPER ->
+                    "Quantify wood and paper debris loading to assess terrestrial runoff contribution. " +
+                    "While biodegradable, high volumes indicate upstream waste management failures."
+                DebrisMaterial.CHEMICAL ->
+                    "PRIORITY: Characterise chemical containers (labels, residue) and coordinate with " +
+                    "environmental regulators for hazmat extraction. Assess contamination radius."
                 DebrisMaterial.OTHER ->
                     "Conduct a detailed debris characterisation study to identify the dominant materials " +
                     "present before designing a tailored removal strategy."

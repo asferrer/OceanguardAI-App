@@ -75,6 +75,9 @@ import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
+import com.oceanguard.ai.data.SettingsRepository
+import com.oceanguard.ai.inference.DetectorType
+import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.utils.UpdateInfo
 import kotlinx.coroutines.launch
 
@@ -171,6 +174,19 @@ fun HomeScreen(
         }
     }
 
+    // Gemma 4 download prompt — shown when the user tries to use detection
+    // with Gemma 4 selected but the model is not yet downloaded.
+    var showGemma4DownloadDialog by remember { mutableStateOf(false) }
+    var pendingNavAfterDownload by remember { mutableStateOf<String?>(null) }
+
+    val needsGemma4Download = remember(app) {
+        {
+            val mode = app.settingsRepository.getDetectorModeSync()
+            mode == DetectorType.GEMMA4_VISION.key &&
+                !app.vlmModelManager.isGemma4VisionAvailable()
+        }
+    }
+
     // Dropdown state for the scan source picker
     var showScanMenu by remember { mutableStateOf(false) }
 
@@ -207,8 +223,11 @@ fun HomeScreen(
                 // Model status indicator
                 // ----------------------------------------------------------------
                 val modelState by app.modelLoadingState.collectAsStateWithLifecycle()
+                val detectorModeKey by app.settingsRepository.detectorMode.collectAsStateWithLifecycle(
+                    initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE
+                )
                 Box(modifier = Modifier.spotlightTarget("home_model_status", boundsMap)) {
-                    ModelStatusIndicator(modelState = modelState)
+                    ModelStatusIndicator(modelState = modelState, detectorModeKey = detectorModeKey)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -231,7 +250,14 @@ fun HomeScreen(
                                 label = stringResource(R.string.home_btn_take_photo),
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = Color(0xFF0A0E1A),
-                                onClick = { navController.navigate("camera") },
+                                onClick = {
+                                    if (needsGemma4Download()) {
+                                        pendingNavAfterDownload = "camera"
+                                        showGemma4DownloadDialog = true
+                                    } else {
+                                        navController.navigate("camera")
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 useGradient = true,
                             )
@@ -260,11 +286,16 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             showScanMenu = false
-                                            mediaLauncher.launch(
-                                                PickVisualMediaRequest(
-                                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                                            if (needsGemma4Download()) {
+                                                pendingNavAfterDownload = null
+                                                showGemma4DownloadDialog = true
+                                            } else {
+                                                mediaLauncher.launch(
+                                                    PickVisualMediaRequest(
+                                                        ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                                                    )
                                                 )
-                                            )
+                                            }
                                         },
                                     )
                                     DropdownMenuItem(
@@ -274,7 +305,12 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             showScanMenu = false
-                                            filesLauncher.launch(arrayOf("image/*", "video/*"))
+                                            if (needsGemma4Download()) {
+                                                pendingNavAfterDownload = null
+                                                showGemma4DownloadDialog = true
+                                            } else {
+                                                filesLauncher.launch(arrayOf("image/*", "video/*"))
+                                            }
                                         },
                                     )
                                 }
@@ -405,6 +441,40 @@ fun HomeScreen(
                     updateInfo = null
                 },
                 onDismiss = { updateInfo = null },
+            )
+        }
+        // Gemma 4 model download dialog
+        if (showGemma4DownloadDialog) {
+            AlertDialog(
+                onDismissRequest = { showGemma4DownloadDialog = false },
+                title = { Text(stringResource(R.string.vlm_download_dialog_title)) },
+                text = {
+                    Text(
+                        stringResource(
+                            R.string.vlm_download_dialog_message,
+                            TextModelTier.GEMMA4_E2B.sizeLabel,
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showGemma4DownloadDialog = false
+                        app.launchVlmDownload(TextModelTier.GEMMA4_E2B)
+                        // Navigate anyway -- the model will download in the background
+                        pendingNavAfterDownload?.let { navController.navigate(it) }
+                        pendingNavAfterDownload = null
+                    }) {
+                        Text(stringResource(R.string.vlm_download_dialog_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showGemma4DownloadDialog = false
+                        pendingNavAfterDownload = null
+                    }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
             )
         }
     } // end Box
@@ -638,20 +708,24 @@ private fun GradientActionTile(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ModelStatusIndicator(modelState: ModelLoadingState) {
-    val rtdetrReady = modelState.rtdetr == ModelStatus.Ready
+private fun ModelStatusIndicator(
+    modelState: ModelLoadingState,
+    detectorModeKey: String = SettingsRepository.DEFAULT_DETECTOR_MODE,
+) {
+    val isGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
+    val detectorStatus = if (isGemma4) modelState.gemma4Vision else modelState.rtdetr
+    val detectorReady = detectorStatus == ModelStatus.Ready
 
     val readyText = stringResource(R.string.home_model_ready)
-    val aiDetectionName = stringResource(R.string.home_model_name_detection)
+    val detectorName = if (isGemma4) "Gemma 4" else "AI Detection"
 
     // Glass style matching landing page: rgba(15,23,42,0.5) bg + rgba(148,163,184,0.1) border
     val glassColor = Color(0x800F172A)
     val glassBorderColor = Color(0x1A94A3B8)
 
-    if (rtdetrReady) {
+    if (detectorReady) {
         ReadyBanner(text = readyText)
     } else {
-        // RT-DETR still loading
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -663,7 +737,7 @@ private fun ModelStatusIndicator(modelState: ModelLoadingState) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                ModelStatusRow(name = aiDetectionName, status = modelState.rtdetr)
+                ModelStatusRow(name = detectorName, status = detectorStatus)
             }
         }
     }
@@ -729,6 +803,7 @@ private fun ModelStatusRow(name: String, status: ModelStatus) {
     val readyText = stringResource(R.string.home_model_status_ready)
     val failedText = stringResource(R.string.home_model_status_failed)
     val onDemandText = stringResource(R.string.home_model_status_on_demand)
+    val notDownloadedText = stringResource(R.string.home_model_status_not_downloaded)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -761,7 +836,17 @@ private fun ModelStatusRow(name: String, status: ModelStatus) {
         Spacer(modifier = Modifier.width(12.dp))
 
         when (status) {
-            ModelStatus.NotLoaded, ModelStatus.Loading -> {
+            ModelStatus.NotLoaded -> {
+                Text(
+                    text = notDownloadedText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            ModelStatus.Loading -> {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = loadingText,

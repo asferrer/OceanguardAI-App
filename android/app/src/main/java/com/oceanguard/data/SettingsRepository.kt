@@ -49,6 +49,7 @@ class SettingsRepository(private val context: Context) {
         val VLM_MODEL_TIER = stringPreferencesKey("vlm_model_tier")
         val VLM_PROVIDER = stringPreferencesKey("vlm_provider")
         val REPORT_AUDIENCE = stringPreferencesKey("report_audience")
+        val DETECTOR_MODE = stringPreferencesKey("detector_mode")
 
         // Research contribution
         val CONTRIBUTE_CONSENT_GIVEN = booleanPreferencesKey("contribute_consent_given")
@@ -68,6 +69,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_VLM_MODEL_TIER = "gemma4_e2b"
         const val DEFAULT_VLM_PROVIDER = "gemma4"
         const val DEFAULT_REPORT_AUDIENCE = "scientific"
+        const val DEFAULT_DETECTOR_MODE = "gemma4"
 
         /** Supported audience modes for report generation. Keys match ReportAudience.fromKey(). */
         val REPORT_AUDIENCES = mapOf(
@@ -402,6 +404,23 @@ class SettingsRepository(private val context: Context) {
     fun getVlmProviderSync(): String {
         val prefs = runBlocking { context.dataStore.data.first() }
         return prefs[Keys.VLM_PROVIDER] ?: DEFAULT_VLM_PROVIDER
+    }
+
+    /**
+     * Active detector mode: "rtdetr" (fast, ~30ms) or "gemma4" (deep, ~4-10s).
+     * Controls which ObjectDetector is used for image analysis and live detection.
+     */
+    val detectorMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.DETECTOR_MODE] ?: DEFAULT_DETECTOR_MODE
+    }
+
+    suspend fun setDetectorMode(mode: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.DETECTOR_MODE] = mode }
+    }
+
+    fun getDetectorModeSync(): String {
+        val prefs = runBlocking { context.dataStore.data.first() }
+        return prefs[Keys.DETECTOR_MODE] ?: DEFAULT_DETECTOR_MODE
     }
 
     // -----------------------------------------------------------------------

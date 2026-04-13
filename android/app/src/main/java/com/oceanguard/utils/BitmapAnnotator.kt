@@ -31,18 +31,69 @@ object BitmapAnnotator {
 
     private const val TAG = "BitmapAnnotator"
 
-    // ARGB colour palette matching the Compose theme colours
+    // ARGB colour palette matching the Compose theme colours.
+    // New material colours (Wood/Paper/Ceramic/Chemical) are defined inline
+    // with the same hex values used in BoundingBoxOverlay.kt.
     private val CLASS_COLOR_MAP: Map<String, Int> = mapOf(
-        "bottle"         to 0xFFE91E63.toInt(),   // MaterialPlastic
-        "plastic_debris" to 0xFFE91E63.toInt(),
-        "mask"           to 0xFFE91E63.toInt(),
-        "glove"          to 0xFF3F51B5.toInt(),   // MaterialFabric
-        "can"            to 0xFF9E9E9E.toInt(),   // MaterialMetal
-        "metal_debris"   to 0xFF9E9E9E.toInt(),
-        "fishing_net"    to 0xFFFF6F00.toInt(),   // MaterialFishingNet
-        "fabric_debris"  to 0xFF3F51B5.toInt(),   // MaterialFabric
-        "tire"           to 0xFF795548.toInt(),   // MaterialRubber
-        "glass_debris"   to 0xFF00BCD4.toInt(),   // MaterialGlass
+        // Plastic-family
+        "bottle"            to 0xFFE91E63.toInt(),   // MaterialPlastic
+        "plastic_debris"    to 0xFFE91E63.toInt(),
+        "mask"              to 0xFFE91E63.toInt(),
+        "bottle_cap"        to 0xFFE91E63.toInt(),
+        "plastic_bag"       to 0xFFE91E63.toInt(),
+        "food_wrapper"      to 0xFFE91E63.toInt(),
+        "styrofoam"         to 0xFFE91E63.toInt(),
+        "plastic_cup"       to 0xFFE91E63.toInt(),
+        "straw"             to 0xFFE91E63.toInt(),
+        "plastic_utensil"   to 0xFFE91E63.toInt(),
+        "six_pack_ring"     to 0xFFE91E63.toInt(),
+        "plastic_sheeting"  to 0xFFE91E63.toInt(),
+        "diaper"            to 0xFFE91E63.toInt(),
+        "cigarette_butt"    to 0xFFE91E63.toInt(),
+        "cigarette_lighter" to 0xFFE91E63.toInt(),
+        // Metal-family
+        "can"               to 0xFF9E9E9E.toInt(),   // MaterialMetal
+        "metal_debris"      to 0xFF9E9E9E.toInt(),
+        "aerosol_can"       to 0xFF9E9E9E.toInt(),
+        "metal_drum"        to 0xFF9E9E9E.toInt(),
+        "wire_cable"        to 0xFF9E9E9E.toInt(),
+        "battery"           to 0xFF9E9E9E.toInt(),
+        "electronics"       to 0xFF9E9E9E.toInt(),
+        // Fishing gear
+        "fishing_net"       to 0xFFFF6F00.toInt(),   // MaterialFishingNet
+        "fishing_line"      to 0xFFFF6F00.toInt(),
+        "rope"              to 0xFFFF6F00.toInt(),
+        "fishing_buoy"      to 0xFFFF6F00.toInt(),
+        "fishing_trap"      to 0xFFFF6F00.toInt(),
+        // Glass
+        "glass_debris"      to 0xFF00BCD4.toInt(),   // MaterialGlass
+        "glass_bottle"      to 0xFF00BCD4.toInt(),
+        "glass_jar"         to 0xFF00BCD4.toInt(),
+        "glass_fragment"    to 0xFF00BCD4.toInt(),
+        "light_bulb"        to 0xFF00BCD4.toInt(),
+        // Rubber
+        "tire"              to 0xFF795548.toInt(),   // MaterialRubber
+        "flip_flop"         to 0xFF795548.toInt(),
+        "rubber_hose"       to 0xFF795548.toInt(),
+        // Fabric
+        "glove"             to 0xFF3F51B5.toInt(),   // MaterialFabric
+        "fabric_debris"     to 0xFF3F51B5.toInt(),
+        "clothing"          to 0xFF3F51B5.toInt(),
+        "shoe"              to 0xFF3F51B5.toInt(),
+        // Paper  (0xFFD7CCC8 -- brown 100)
+        "cardboard"         to 0xFFD7CCC8.toInt(),
+        "paper"             to 0xFFD7CCC8.toInt(),
+        // Wood  (0xFF8D6E63 -- brown 400)
+        "wood_pallet"       to 0xFF8D6E63.toInt(),
+        "lumber"            to 0xFF8D6E63.toInt(),
+        // Ceramic  (0xFFFF8A65 -- deep-orange 300)
+        "ceramic_fragment"  to 0xFFFF8A65.toInt(),
+        "brick"             to 0xFFFF8A65.toInt(),
+        // Chemical / hazmat  (0xFFEF5350 -- red 400)
+        "paint_can"         to 0xFFEF5350.toInt(),
+        "oil_container"     to 0xFFEF5350.toInt(),
+        "syringe"           to 0xFFEF5350.toInt(),
+        "chemical_drum"     to 0xFFEF5350.toInt(),
     )
 
     private const val DEFAULT_COLOR = 0xFF607D8B.toInt() // MaterialOther

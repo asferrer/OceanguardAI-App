@@ -68,6 +68,10 @@ private fun debrisMaterialColor(material: DebrisMaterial): Color = when (materia
     DebrisMaterial.RUBBER      -> MaterialRubber
     DebrisMaterial.GLASS       -> MaterialGlass
     DebrisMaterial.FISHING_NET -> MaterialFishingNet
+    DebrisMaterial.WOOD        -> Color(0xFF8D6E63)
+    DebrisMaterial.PAPER       -> Color(0xFFD7CCC8)
+    DebrisMaterial.CERAMIC     -> Color(0xFFFF8A65)
+    DebrisMaterial.CHEMICAL    -> Color(0xFFEF5350)
     DebrisMaterial.OTHER       -> MaterialOther
 }
 
@@ -79,6 +83,10 @@ private fun DebrisMaterial.displayLabel(): String = when (this) {
     DebrisMaterial.RUBBER      -> "Rubber"
     DebrisMaterial.GLASS       -> "Glass"
     DebrisMaterial.FISHING_NET -> "Fishing Net"
+    DebrisMaterial.WOOD        -> "Wood"
+    DebrisMaterial.PAPER       -> "Paper"
+    DebrisMaterial.CERAMIC     -> "Ceramic"
+    DebrisMaterial.CHEMICAL    -> "Hazardous"
     DebrisMaterial.OTHER       -> "Other"
 }
 

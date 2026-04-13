@@ -1,6 +1,7 @@
 package com.oceanguard.ai.inference
 
 import android.graphics.Bitmap
+import com.oceanguard.ai.data.DebrisMaterial
 import kotlin.math.max
 import kotlin.math.min
 
@@ -45,6 +46,12 @@ interface ObjectDetector {
 enum class DetectorType(val key: String, val displayLabel: String) {
     PICODET_S("picodet", "PicoDet-S (Fast, ~1 MB)"),
     RT_DETR_V2("rtdetr", "RT-DETRv2 (Accurate, 83 MB)"),
+    GEMMA4_VISION("gemma4", "Gemma 4 Vision (Deep, ~2.6 GB)");
+
+    companion object {
+        fun fromKey(key: String): DetectorType =
+            entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: RT_DETR_V2
+    }
 }
 
 /** Canonical class names shared by all detectors (must match training labels). */
@@ -60,7 +67,12 @@ object DebrisClasses {
 // Detection result (shared output type for all detectors)
 // -------------------------------------------------------------------------
 
-/** Single detection with normalized [0,1] bounding box coordinates. */
+/**
+ * Single detection with normalized [0,1] bounding box coordinates.
+ *
+ * [material] is optional: Gemma 4 provides it from the VLM response,
+ * RT-DETRv2 leaves it null (inferred later from [className]).
+ */
 data class DetectionResult(
     val x1: Float,
     val y1: Float,
@@ -69,6 +81,7 @@ data class DetectionResult(
     val classId: Int,
     val className: String,
     val confidence: Float,
+    val material: DebrisMaterial? = null,
 ) {
     val width: Float get() = x2 - x1
     val height: Float get() = y2 - y1

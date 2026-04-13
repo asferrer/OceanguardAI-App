@@ -27,23 +27,33 @@ data class Debris(
      */
     fun getRiskScore(): Int {
         val materialRisk = when (material) {
-            DebrisMaterial.PLASTIC -> 5  // High risk - microplastics, ingestion
-            DebrisMaterial.FABRIC -> 4   // High risk - entanglement
+            DebrisMaterial.PLASTIC -> 5      // High risk - microplastics, ingestion
+            DebrisMaterial.FABRIC -> 4       // High risk - entanglement
             DebrisMaterial.FISHING_NET -> 5  // Very high risk - entanglement
-            DebrisMaterial.METAL -> 3    // Medium risk - sharp edges
-            DebrisMaterial.RUBBER -> 3   // Medium risk
-            DebrisMaterial.GLASS -> 4    // High risk - cuts
-            DebrisMaterial.OTHER -> 2    // Unknown risk
+            DebrisMaterial.METAL -> 3        // Medium risk - sharp edges
+            DebrisMaterial.RUBBER -> 3       // Medium risk
+            DebrisMaterial.GLASS -> 4        // High risk - cuts
+            DebrisMaterial.WOOD -> 2         // Low risk
+            DebrisMaterial.PAPER -> 1        // Minimal risk, biodegrades fast
+            DebrisMaterial.CERAMIC -> 3      // Medium risk - sharp edges
+            DebrisMaterial.CHEMICAL -> 5     // Very high risk - toxicity
+            DebrisMaterial.OTHER -> 2        // Unknown risk
         }
 
         val typeRisk = when (type) {
-            DebrisType.FISHING_NET -> 5
-            DebrisType.MASK -> 4
-            DebrisType.GLOVE -> 4
-            DebrisType.PLASTIC_DEBRIS -> 4
+            DebrisType.FISHING_NET, DebrisType.FISHING_LINE -> 5
+            DebrisType.FISHING_TRAP -> 5
+            DebrisType.SIX_PACK_RING -> 5   // Entanglement hazard
+            DebrisType.SYRINGE, DebrisType.CHEMICAL_DRUM -> 5
+            DebrisType.MASK, DebrisType.GLOVE -> 4
+            DebrisType.PLASTIC_DEBRIS, DebrisType.PLASTIC_BAG -> 4
+            DebrisType.CIGARETTE_BUTT -> 4  // Toxic leachate
+            DebrisType.BATTERY -> 5         // Heavy metal contamination
             DebrisType.TIRE -> 3
-            DebrisType.BOTTLE -> 3
+            DebrisType.BOTTLE, DebrisType.GLASS_BOTTLE -> 3
+            DebrisType.STYROFOAM -> 4       // Fragments into microplastics
             DebrisType.CAN -> 2
+            DebrisType.CARDBOARD, DebrisType.PAPER -> 1
             else -> 2
         }
 
@@ -65,7 +75,8 @@ data class BoundingBox(
 }
 
 /**
- * Material types
+ * Material types -- covers all major marine debris material categories
+ * per NOAA MDMAP, OSPAR, and MSFD D10 classification systems.
  */
 enum class DebrisMaterial {
     PLASTIC,
@@ -74,6 +85,10 @@ enum class DebrisMaterial {
     RUBBER,
     GLASS,
     FISHING_NET,
+    WOOD,
+    PAPER,
+    CERAMIC,
+    CHEMICAL,
     OTHER;
 
     companion object {
@@ -88,9 +103,12 @@ enum class DebrisMaterial {
 }
 
 /**
- * Specific debris types
+ * Specific debris types -- the first 8 match RT-DETRv2 trained classes (indices 0-7).
+ * Extended types (from GEMMA4_VISION+) are detected by Gemma 4 open-vocabulary.
+ * Room stores the enum name as a String, so new entries are backward-compatible.
  */
 enum class DebrisType {
+    // --- RT-DETRv2 core classes (0-7) ---
     BOTTLE,
     CAN,
     FISHING_NET,
@@ -99,11 +117,66 @@ enum class DebrisType {
     METAL_DEBRIS,
     PLASTIC_DEBRIS,
     TIRE,
+    // --- Extended types (Gemma 4 open-vocabulary) ---
     FABRIC_DEBRIS,
     GLASS_DEBRIS,
+    // Plastic sub-types
+    BOTTLE_CAP,
+    PLASTIC_BAG,
+    FOOD_WRAPPER,
+    STYROFOAM,
+    PLASTIC_CUP,
+    STRAW,
+    PLASTIC_UTENSIL,
+    SIX_PACK_RING,
+    PLASTIC_SHEETING,
+    DIAPER,
+    // Cigarette / smoking
+    CIGARETTE_BUTT,
+    CIGARETTE_LIGHTER,
+    // Fishing gear
+    FISHING_LINE,
+    ROPE,
+    FISHING_BUOY,
+    FISHING_TRAP,
+    // Metal sub-types
+    AEROSOL_CAN,
+    METAL_DRUM,
+    WIRE_CABLE,
+    BATTERY,
+    ELECTRONICS,
+    // Glass sub-types
+    GLASS_BOTTLE,
+    GLASS_JAR,
+    GLASS_FRAGMENT,
+    LIGHT_BULB,
+    // Rubber sub-types
+    FLIP_FLOP,
+    RUBBER_HOSE,
+    // Textile / fabric
+    CLOTHING,
+    SHOE,
+    // Paper / cardboard
+    CARDBOARD,
+    PAPER,
+    // Wood
+    WOOD_PALLET,
+    LUMBER,
+    // Ceramic
+    CERAMIC_FRAGMENT,
+    BRICK,
+    // Hazardous
+    PAINT_CAN,
+    OIL_CONTAINER,
+    SYRINGE,
+    CHEMICAL_DRUM,
+    // Catch-all
     OTHER;
 
     companion object {
+        /** Core RT-DETRv2 class count (indices 0-7). */
+        const val RTDETR_CLASS_COUNT = 8
+
         fun fromString(value: String): DebrisType {
             return try {
                 valueOf(value.uppercase().replace(" ", "_"))
@@ -111,6 +184,9 @@ enum class DebrisType {
                 OTHER
             }
         }
+
+        /** Returns true if this type is within the RT-DETRv2 8-class set. */
+        fun isRtDetrClass(type: DebrisType): Boolean = type.ordinal < RTDETR_CLASS_COUNT
     }
 }
 

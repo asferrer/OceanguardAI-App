@@ -45,6 +45,7 @@ import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VlmDownloadState
 import com.oceanguard.ai.inference.VlmModelManager
@@ -530,6 +531,7 @@ private fun DeveloperSettingsSection(
     vlmModelManager: VlmModelManager,
     onDownloadTier: (TextModelTier) -> Unit,
 ) {
+    val devContext = LocalContext.current
     val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
@@ -541,6 +543,9 @@ private fun DeveloperSettingsSection(
     )
     val downloadState by vlmModelManager.downloadState.collectAsStateWithLifecycle(
         initialValue = VlmDownloadState.Idle
+    )
+    val detectorModeKey by settings.detectorMode.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE
     )
 
     SettingsSection(
@@ -643,6 +648,55 @@ private fun DeveloperSettingsSection(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.error,
             )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // Detector mode selector (RT-DETRv2 / Gemma 4 Vision)
+        var detectorModeExpanded by remember { mutableStateOf(false) }
+        val currentDetectorType = DetectorType.fromKey(detectorModeKey)
+
+        Text(
+            text = stringResource(R.string.settings_label_detector_mode),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = stringResource(R.string.settings_desc_detector_mode),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = detectorModeExpanded,
+            onExpandedChange = { detectorModeExpanded = it },
+        ) {
+            OutlinedTextField(
+                value = currentDetectorType.displayLabel,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = detectorModeExpanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                shape = RoundedCornerShape(12.dp),
+            )
+            ExposedDropdownMenu(
+                expanded = detectorModeExpanded,
+                onDismissRequest = { detectorModeExpanded = false },
+            ) {
+                listOf(DetectorType.RT_DETR_V2, DetectorType.GEMMA4_VISION).forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type.displayLabel) },
+                        onClick = {
+                            scope.launch { settings.setDetectorMode(type.key) }
+                            detectorModeExpanded = false
+                            (devContext.applicationContext as? OceanGuardApp)?.applyDetectorMode()
+                        },
+                    )
+                }
+            }
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))

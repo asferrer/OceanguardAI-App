@@ -258,12 +258,23 @@ class LiveDetectionManager(
         else -> DebrisType.OTHER
     }
 
-    private fun classNameToMaterial(className: String): DebrisMaterial = when (className.lowercase()) {
-        "bottle", "plastic_debris" -> DebrisMaterial.PLASTIC
-        "can", "metal_debris" -> DebrisMaterial.METAL
-        "fishing_net" -> DebrisMaterial.FISHING_NET
-        "glove", "mask" -> DebrisMaterial.FABRIC
-        "tire" -> DebrisMaterial.RUBBER
+    private fun classNameToMaterial(className: String): DebrisMaterial = when (className.uppercase()) {
+        "BOTTLE", "PLASTIC_DEBRIS", "BOTTLE_CAP", "PLASTIC_BAG", "FOOD_WRAPPER",
+        "STYROFOAM", "PLASTIC_CUP", "STRAW", "PLASTIC_UTENSIL", "SIX_PACK_RING",
+        "PLASTIC_SHEETING", "DIAPER", "MASK", "CIGARETTE_BUTT",
+        "CIGARETTE_LIGHTER" -> DebrisMaterial.PLASTIC
+        "CAN", "METAL_DEBRIS", "AEROSOL_CAN", "METAL_DRUM", "WIRE_CABLE",
+        "BATTERY", "ELECTRONICS" -> DebrisMaterial.METAL
+        "FISHING_NET", "FISHING_LINE", "ROPE", "FISHING_BUOY",
+        "FISHING_TRAP" -> DebrisMaterial.FISHING_NET
+        "GLOVE", "FABRIC_DEBRIS", "CLOTHING", "SHOE" -> DebrisMaterial.FABRIC
+        "TIRE", "FLIP_FLOP", "RUBBER_HOSE" -> DebrisMaterial.RUBBER
+        "GLASS_DEBRIS", "GLASS_BOTTLE", "GLASS_JAR", "GLASS_FRAGMENT",
+        "LIGHT_BULB" -> DebrisMaterial.GLASS
+        "CARDBOARD", "PAPER" -> DebrisMaterial.PAPER
+        "WOOD_PALLET", "LUMBER" -> DebrisMaterial.WOOD
+        "CERAMIC_FRAGMENT", "BRICK" -> DebrisMaterial.CERAMIC
+        "PAINT_CAN", "OIL_CONTAINER", "SYRINGE", "CHEMICAL_DRUM" -> DebrisMaterial.CHEMICAL
         else -> DebrisMaterial.OTHER
     }
 }

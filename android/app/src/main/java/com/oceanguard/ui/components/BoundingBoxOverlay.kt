@@ -77,23 +77,74 @@ private val cachedBorderPaint = android.graphics.Paint().apply {
     isAntiAlias = true
 }
 
+// New material colours not present in the shared theme -- defined locally
+// so they are available for open-vocabulary detections without modifying the
+// theme file.
+private val MaterialWood     = Color(0xFF8D6E63) // brown 400
+private val MaterialPaper    = Color(0xFFD7CCC8) // brown 100
+private val MaterialCeramic  = Color(0xFFFF8A65) // deep-orange 300
+private val MaterialChemical = Color(0xFFEF5350) // red 400
+
 private val CLASS_COLOR_MAP: Map<String, Color> = mapOf(
     // Plastic-family
-    "bottle"         to MaterialPlastic,
-    "plastic_debris" to MaterialPlastic,
-    "mask"           to MaterialPlastic,
-    "glove"          to MaterialFabric,
+    "bottle"           to MaterialPlastic,
+    "plastic_debris"   to MaterialPlastic,
+    "mask"             to MaterialPlastic,
+    "bottle_cap"       to MaterialPlastic,
+    "plastic_bag"      to MaterialPlastic,
+    "food_wrapper"     to MaterialPlastic,
+    "styrofoam"        to MaterialPlastic,
+    "plastic_cup"      to MaterialPlastic,
+    "straw"            to MaterialPlastic,
+    "plastic_utensil"  to MaterialPlastic,
+    "six_pack_ring"    to MaterialPlastic,
+    "plastic_sheeting" to MaterialPlastic,
+    "diaper"           to MaterialPlastic,
+    "cigarette_butt"   to MaterialPlastic,
+    "cigarette_lighter" to MaterialPlastic,
     // Metal-family
-    "can"            to MaterialMetal,
-    "metal_debris"   to MaterialMetal,
+    "can"              to MaterialMetal,
+    "metal_debris"     to MaterialMetal,
+    "aerosol_can"      to MaterialMetal,
+    "metal_drum"       to MaterialMetal,
+    "wire_cable"       to MaterialMetal,
+    "battery"          to MaterialMetal,
+    "electronics"      to MaterialMetal,
     // Fishing gear
-    "fishing_net"    to MaterialFishingNet,
-    // Fabric
-    "fabric_debris"  to MaterialFabric,
-    // Rubber
-    "tire"           to MaterialRubber,
+    "fishing_net"      to MaterialFishingNet,
+    "fishing_line"     to MaterialFishingNet,
+    "rope"             to MaterialFishingNet,
+    "fishing_buoy"     to MaterialFishingNet,
+    "fishing_trap"     to MaterialFishingNet,
     // Glass
-    "glass_debris"   to MaterialGlass,
+    "glass_debris"     to MaterialGlass,
+    "glass_bottle"     to MaterialGlass,
+    "glass_jar"        to MaterialGlass,
+    "glass_fragment"   to MaterialGlass,
+    "light_bulb"       to MaterialGlass,
+    // Rubber
+    "tire"             to MaterialRubber,
+    "flip_flop"        to MaterialRubber,
+    "rubber_hose"      to MaterialRubber,
+    // Fabric
+    "glove"            to MaterialFabric,
+    "fabric_debris"    to MaterialFabric,
+    "clothing"         to MaterialFabric,
+    "shoe"             to MaterialFabric,
+    // Paper
+    "cardboard"        to MaterialPaper,
+    "paper"            to MaterialPaper,
+    // Wood
+    "wood_pallet"      to MaterialWood,
+    "lumber"           to MaterialWood,
+    // Ceramic
+    "ceramic_fragment" to MaterialCeramic,
+    "brick"            to MaterialCeramic,
+    // Chemical / hazmat
+    "paint_can"        to MaterialChemical,
+    "oil_container"    to MaterialChemical,
+    "syringe"          to MaterialChemical,
+    "chemical_drum"    to MaterialChemical,
 )
 
 /**

@@ -186,6 +186,10 @@ fun materialColor(material: DebrisMaterial): Color = when (material) {
     DebrisMaterial.RUBBER      -> MaterialRubber
     DebrisMaterial.GLASS       -> MaterialGlass
     DebrisMaterial.FISHING_NET -> MaterialFishingNet
+    DebrisMaterial.WOOD        -> Color(0xFF8D6E63)  // Brown 400
+    DebrisMaterial.PAPER       -> Color(0xFFD7CCC8)  // Brown 100
+    DebrisMaterial.CERAMIC     -> Color(0xFFFF8A65)  // Deep Orange 300
+    DebrisMaterial.CHEMICAL    -> Color(0xFFEF5350)  // Red 400
     DebrisMaterial.OTHER       -> MaterialOther
 }
 
