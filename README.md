@@ -1,440 +1,237 @@
-# 🌊 OceanGuard AI - Mobile Deployment
+# OceanGuard AI
 
-**Actualizado**: Diciembre 2025 | **Versiones Estables** | **Optimizado para Windows**
+**On-device marine debris detection powered by Gemma 4 Vision -- 100% offline, zero cloud dependency.**
 
-Deploy your fine-tuned Gemma 3n marine debris detection model on Android devices with 100% offline capability.
-
----
-
-## 📱 What This Is
-
-OceanGuard AI Mobile brings powerful on-device marine debris detection to Android smartphones and tablets, enabling conservationists to analyze underwater imagery **without internet connectivity**.
-
-Convert your PyTorch/Safetensors Gemma 3n model with LoRA adapter into an Android app that runs **completely offline** using MediaPipe's on-device LLM inference.
-
-### Key Features
-
-- ✅ **100% Offline Operation**: All inference runs on-device using Gemma 3n E2B model
-- ✅ **Real-time Detection**: <1 second response time for 512px images
-- ✅ **Low Battery Impact**: ~1-2% battery per detection session
-- ✅ **Specialized Model**: Fine-tuned with LoRA for marine debris detection
-- ✅ **Multiple Debris Types**: Bottles, cans, fishing nets, gloves, masks, plastic debris, tires, etc.
-- ✅ **Ecosystem Health Scoring**: Risk assessment based on detected debris
-- ✅ **Latest Android Technologies**: Jetpack Compose, CameraX, Room, Coroutines
+> Kaggle Gemma 4 Good Hackathon -- Global Resilience Track
 
 ---
 
-## 🚀 Quick Start Guides
+## The Problem
 
-### 🪟 Opción 1: Windows Nativo (Recomendada)
+Every year, **8 million+ tons of plastic and debris** enter the world's oceans, devastating marine ecosystems, killing wildlife, and contaminating food chains. Current monitoring methods rely on expensive research vessels, satellite imagery with limited resolution, or cloud-dependent apps that fail in remote coastal areas where connectivity is scarce or nonexistent.
 
-**Para desarrollo diario con Android Studio:**
+Conservation teams in the field -- marine biologists, dive cleanup crews, coastal rangers -- need a tool that works **right now, right here**, without waiting for a cell signal.
 
-📖 **[QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md)** - Guía completa para Windows
+## The Solution
 
-**Tiempo estimado**: 2-4 horas (incluyendo descargas)
+OceanGuard AI is a fully offline Android application that runs **two AI models entirely on-device** to detect, classify, and report marine debris from photos and live camera feeds:
 
-**Requisitos**:
-- Windows 10/11
-- 16GB RAM
-- 100GB espacio libre
-- Android Studio + JDK 17
-- Python 3.11
+1. **RT-DETRv2** -- A real-time transformer-based object detector (~30ms per frame) for fast scanning
+2. **Gemma 4 E2B Vision** -- Google's multimodal VLM used as a **visual object detector** with native `box_2d` bounding box output, providing deep analysis with spatial localization
 
-**Ventajas**:
-- ✅ Android Studio funciona perfectamente
-- ✅ Emulador Android incluido
-- ✅ Debugging completo
-- ✅ Hot reload con Jetpack Compose
-- ✅ Iteración rápida de código
+No internet required. No data leaves the device. Works in remote atolls, underwater housings, and research vessels with zero connectivity.
 
----
+## Key Innovation: Gemma 4 as a Visual Object Detector
 
-### 🐳 Opción 2: Docker + WSL2
+Most VLM applications use large language models for classification or description. OceanGuard AI pushes further -- **Gemma 4 E2B generates precise bounding boxes** using its native `box_2d` coordinate system.
 
-**Para CI/CD y builds automatizados:**
+The model outputs structured JSON with `[y_min, x_min, y_max, x_max]` coordinates on a 1000x1000 grid, which are converted to normalized `[0,1]` coordinates and rendered as visual bounding boxes on the image -- just like a traditional object detector, but powered by a VLM.
 
-📖 **[DOCKER_SETUP.md](DOCKER_SETUP.md)** - Configuración Docker completa
+This means:
+- **No custom training required** -- Gemma 4's zero-shot detection finds debris types it was never specifically trained on
+- **Richer context** -- The VLM understands scene semantics (e.g., "fishing net tangled on coral" vs "fishing net on sand")
+- **Complementary to RT-DETRv2** -- Fast detector for scanning, VLM for deep verification and edge cases
 
-**Tiempo estimado**: 1 hora setup + 30 min por build
+## Features
 
-**Requisitos**:
-- Windows 10 Pro/11 con WSL2
-- Docker Desktop
-- 16GB RAM
-- 100GB espacio libre
+### Dual Detection Pipeline
+- **Fast mode (RT-DETRv2)**: TFLite model, ~30ms inference, NNAPI+XNNPACK delegates, 8 debris classes
+- **Deep mode (Gemma 4 Vision)**: LiteRT-LM engine, ~4-10s inference, structured JSON with bounding boxes
+- **Orchestrated pipeline**: Fast detection first with immediate UI, optional deep VLM verification
 
-**Ventajas**:
-- ✅ Entorno reproducible
-- ✅ Ideal para CI/CD (GitHub Actions, etc.)
-- ✅ Builds consistentes para releases
+### VLM-Powered Reports
+- **Qwen 3.5 family** (0.8B / 2B / 4B): Three quality tiers via llama.cpp with Vulkan GPU acceleration
+- **Gemma 4 E2B**: LiteRT-LM runtime, 1.65x faster decode than llama.cpp on Exynos 2200
+- Comprehensive environmental impact reports with health scores, risk assessments, and cleanup recommendations
+- Streaming token output with real-time progress
 
-**Limitaciones**:
-- ❌ No soporta emulador Android dentro del container
-- ❌ No integración con Android Studio
-- ❌ Solo builds y testing automatizado
+### Live Camera Detection
+- CameraX integration with real-time frame analysis
+- Bounding box overlay with corner brackets, glow effects, and pulse animations
+- Works with rear and front cameras
 
-⚠️ **Recomendación**: Usa Windows Nativo para desarrollo, Docker solo para CI/CD
+### Gamification -- MarineDex
+- Collect discovered debris types like a field guide
+- Unlock achievements for conservation milestones
+- Track personal cleanup impact over time
 
----
+### Interactive Maps
+- MapLibre + OpenFreeMap (no API key, no cloud dependency)
+- GPS-tagged detection sessions plotted on the map
+- Zone aggregation for area-level pollution analysis
 
-## 📋 System Requirements
+### Accessibility
+- 6 languages: English, Spanish, French, German, Italian, Portuguese
+- GPU auto-detection with CPU fallback
+- Models downloadable in-app from HuggingFace (Apache 2.0, no auth)
+- Works on mid-range devices (4GB RAM minimum)
 
-### Minimum Requirements
-- **OS**: Android 8.0 (API level 26) or higher
-- **RAM**: 4GB
-- **GPU**: OpenGL ES 3.2+ or Vulkan support
-- **Storage**: 3.6GB free space
-- **Processor**: ARMv8-A (64-bit)
-
-### Recommended Specifications
-- **OS**: Android 13+ (API level 33)
-- **RAM**: 6GB+
-- **GPU**: Modern GPU with hardware acceleration
-- **Processor**: Qualcomm Snapdragon 778G or equivalent
-- **Devices**: Google Pixel 7+, Samsung S23+
-
----
-
-## 📂 Project Structure
+## Architecture
 
 ```
-mobile/
-├── README.md                          # This file
-├── QUICK_START_WINDOWS.md            # ⭐ Setup guide for Windows
-├── DOCKER_SETUP.md                   # 🐳 Docker setup guide
-├── VERSIONS_UPDATE.md                # 📦 Version management
-├── LEARNING_PATH.md                  # 📚 Android development tutorial
-├── NEXT_STEPS.md                     # 🎯 Next features to implement
-│
-├── requirements-mobile.txt           # Python dependencies for model conversion
-│
-├── conversion/                       # Model conversion scripts
-│   ├── config.yaml                  # Conversion configuration
-│   ├── download_base_model.py       # Download Gemma 3n E2B
-│   ├── convert_base_model.py        # Base model → LiteRT
-│   ├── convert_lora_adapter.py      # LoRA adapter → LiteRT
-│   └── validate_converted_model.py  # Validation and benchmarking
-│
-├── docker/                          # Docker configuration (optional)
-│   ├── Dockerfile.model-conversion  # Container for model conversion
-│   ├── Dockerfile.android-build     # Container for Android builds
-│   └── build-all.sh                # Automated build script
-│
-└── android/                         # Android application
-    ├── build.gradle.kts            # Root-level Gradle config
-    ├── settings.gradle.kts         # Project settings
-    ├── FIXED_GRADLE_ERROR.md       # Troubleshooting guide
-    │
-    └── app/                        # Main application module
-        ├── build.gradle.kts       # App-level Gradle config
-        ├── proguard-rules.pro     # ProGuard rules for release builds
-        │
-        └── src/main/
-            ├── AndroidManifest.xml
-            │
-            ├── java/com/oceanguard/ai/
-            │   ├── OceanGuardApp.kt           # Application class
-            │   │
-            │   ├── ui/
-            │   │   └── MainActivity.kt        # Main UI (Jetpack Compose)
-            │   │
-            │   ├── inference/
-            │   │   └── OceanGuardInference.kt # LLM inference engine
-            │   │
-            │   ├── data/
-            │   │   └── Models.kt              # Data models
-            │   │
-            │   └── utils/
-            │       ├── ImagePreprocessor.kt   # Image optimization
-            │       └── DebrisJsonParser.kt    # JSON parsing
-            │
-            ├── res/
-            │   ├── values/
-            │   │   ├── strings.xml
-            │   │   ├── colors.xml
-            │   │   └── themes.xml
-            │   └── drawable/
-            │
-            └── assets/models/              # Model files (after conversion)
-                ├── oceanguard_base.bin     # Base Gemma 3n model (2.5GB)
-                └── oceanguard_adapter.bin  # LoRA adapter (600MB)
+                          +---------------------------+
+                          |     OceanGuard AI App     |
+                          |    (Jetpack Compose UI)   |
+                          +-------------|-------------+
+                                        |
+                          +-------------|-------------+
+                          | DetectionOrchestrator     |
+                          |  (parallel pipeline)      |
+                          +------|--------------|-----+
+                                 |              |
+                    +------------|--+    +------|------------+
+                    | ObjectDetector |    | VlmVisionEngine  |
+                    | (interface)    |    | (interface)       |
+                    +-------|-------+    +------|------------+
+                            |                   |
+               +------------|----------+   +----|----+
+               |            |          |   | Llama   |
+        +------+--+  +------+---+ +---+--------+  |Vision |
+        |PicoDet-S|  |RT-DETRv2  | |Gemma4Vision|  |Engine |
+        |(NCNN)   |  |(TFLite)   | |(LiteRT-LM) |  +-------+
+        +---------+  +----------+  +------------+
+                                        |
+                               +--------|--------+
+                               |LiteRTTextEngine |
+                               | (Engine API)    |
+                               | GPU auto-detect |
+                               +-----------------+
+
+        Text/Report Generation:
+        +-------------------+     +-------------------+
+        | LlamaTextEngine   |     | LiteRTTextEngine  |
+        | Qwen 3.5 (GGUF)  |     | Gemma 4 E2B       |
+        | llama.cpp+Vulkan  |     | LiteRT-LM runtime |
+        | 3 tiers:          |     | ~2.6 GB .litertlm |
+        |  0.8B / 2B / 4B  |     | GPU auto-detect   |
+        +-------------------+     +-------------------+
 ```
 
----
+## Tech Stack
 
-## 🛠️ Technology Stack
+| Component | Technology | Details |
+|-----------|-----------|---------|
+| Language | Kotlin 2.3.20 | Single-activity architecture |
+| UI | Jetpack Compose | Material3, BOM 2026.03.00 |
+| Camera | CameraX 1.6.0 | CameraPipe backend |
+| Database | Room 2.8.4 | KSP2, type converters, migrations |
+| Maps | MapLibre 0.12.1 | OpenFreeMap tiles (no API key) |
+| Fast Detection | TensorFlow Lite 2.17.0 | RT-DETRv2, NNAPI+XNNPACK |
+| VLM Detection | LiteRT-LM | Gemma 4 E2B, GPU auto-detect |
+| Text Generation | llama.cpp (JNI) | Qwen 3.5, Vulkan GPU |
+| Images | Coil 3.4.0 | Async image loading |
+| Location | Play Services 21.3.0 | EXIF GPS fallback chain |
+| Geocoding | Photon | Reverse geocoding (offline-capable) |
 
-### Latest Stable Versions (Diciembre 2025)
+## Detection Classes
 
-#### Build Tools
-- **Android Gradle Plugin**: 8.7.3
-- **Gradle**: 8.7.3
-- **Kotlin**: 2.1.0
-- **JDK**: 17 (OpenJDK)
+| Class | Material | Examples |
+|-------|----------|---------|
+| Bottle | Plastic | PET bottles, water bottles |
+| Can | Metal | Aluminum cans, tin cans |
+| Fishing_Net | Nylon/Rope | Ghost nets, trawl fragments |
+| Glove | Fabric/Rubber | Latex gloves, work gloves |
+| Mask | Fabric | Surgical masks, cloth masks |
+| Metal_Debris | Metal | Scrap metal, wire, pipes |
+| Plastic_Debris | Plastic | Bags, wrappers, fragments |
+| Tire | Rubber | Vehicle tires, tire fragments |
 
-#### UI Framework
-- **Jetpack Compose BOM**: 2024.12.01
-- **Compose Compiler**: Auto (matches Kotlin 2.1.0)
-- **Material Design 3**: Latest
+## Screenshots
 
-#### AndroidX Libraries
-- **core-ktx**: 1.15.0 → 1.17.0 (actualizable)
-- **lifecycle**: 2.8.7 → 2.10.0 (actualizable)
-- **activity-compose**: 1.9.3 → 1.12.0 (actualizable)
-- **navigation-compose**: 2.8.5
-- **room**: 2.6.1 → 2.8.4 (actualizable)
-- **camerax**: 1.4.1 → 1.5.1 (actualizable)
+> Screenshots will be added before submission.
 
-#### AI/ML
-- **MediaPipe Tasks GenAI**: 0.10.24 → 0.10.27 (actualizable)
-- **Gemma 3n E2B**: Latest (via HuggingFace)
-- **LoRA Support**: GPU backend
+| Detection | Report | MarineDex | Map |
+|-----------|--------|-----------|-----|
+| ![Detection](media/screenshots/detection.png) | ![Report](media/screenshots/report.png) | ![MarineDex](media/screenshots/marinedex.png) | ![Map](media/screenshots/map.png) |
 
-#### Other
-- **Kotlin Coroutines**: 1.10.1 → 1.10.2 (actualizable)
-- **Accompanist Permissions**: 0.36.0
+## Build and Run
 
-📦 **Ver más**: [VERSIONS_UPDATE.md](VERSIONS_UPDATE.md) para detalles completos
+### Prerequisites
+- Android Studio (latest stable)
+- JDK 17
+- Android device or emulator (API 26+, 4GB+ RAM)
 
----
+### Quick Start
 
-## 🎯 Architecture Overview
-
-### Model Deployment Strategy
-
-**LoRA Adapter Approach** (Recommended):
-- Base Gemma 3n E2B: ~2.5GB
-- LoRA adapter: ~600MB
-- **Total**: ~3.1GB
-- **Advantage**: Smaller size, faster loading
-
-**Alternative** (Not recommended):
-- Merged model: ~15GB
-- Too large for most devices
-
-### Inference Pipeline
-
-```
-User Image → ImagePreprocessor → OceanGuardInference → MediaPipe LLM API → JSON Response → DebrisDetection
-     ↓              ↓                      ↓                    ↓                ↓              ↓
-  Camera/        Resize to            Load base +          GPU-accelerated    Parse         Display
-  Gallery         512px             LoRA adapter          inference          results        UI
-```
-
-### Performance Optimizations
-
-1. **512px Image Preprocessing**: 90% latency reduction
-2. **Session Reuse**: Load model once, reuse indefinitely
-3. **GPU Backend**: 2-3x faster than CPU
-4. **Lazy Initialization**: Model loads in background during app startup
-
----
-
-## 📚 Documentation
-
-### Setup & Getting Started
-- 📖 [QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md) - **START HERE**
-- 🐳 [DOCKER_SETUP.md](DOCKER_SETUP.md) - Docker setup (advanced)
-- 🎯 [NEXT_STEPS.md](NEXT_STEPS.md) - Opening project in Android Studio
-- 🔧 [android/FIXED_GRADLE_ERROR.md](android/FIXED_GRADLE_ERROR.md) - Troubleshooting Gradle
-
-### Learning & Development
-- 📚 [LEARNING_PATH.md](LEARNING_PATH.md) - Complete Android development tutorial
-- 📦 [VERSIONS_UPDATE.md](VERSIONS_UPDATE.md) - Version management & updates
-
-### Architecture & Design
-- 📄 [../OCEANGUARD_MOBILE_SUMMARY.md](../OCEANGUARD_MOBILE_SUMMARY.md) - Complete implementation summary
-
----
-
-## 🔄 Development Workflow
-
-### For First-Time Setup
-
-1. **Read**:  [QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md)
-2. **Install**: JDK 17, Python 3.11, Android Studio
-3. **Convert Models**: Run Python scripts in `conversion/`
-4. **Open Android Studio**: Load `mobile/android/`
-5. **Run App**: Build and deploy to device/emulator
-
-### For Daily Development
-
-1. Open Android Studio
-2. Make code changes
-3. Hot reload with Compose (instant feedback)
-4. Test on emulator or physical device
-5. Commit changes
-
-### For CI/CD (Optional)
-
-1. Set up Docker (see [DOCKER_SETUP.md](DOCKER_SETUP.md))
-2. Configure GitHub Actions or Jenkins
-3. Automated builds on every commit
-4. Automated testing
-
----
-
-## 🧪 Testing
-
-### Unit Tests
 ```bash
-./gradlew test
+# Clone the repository
+git clone https://github.com/AlejandroSanchezFerrer/OceanguardAI-App.git
+cd OceanguardAI-App/android
+
+# Build and install (debug)
+./gradlew installDebug
 ```
 
-### Instrumented Tests (requires device/emulator)
-```bash
-./gradlew connectedAndroidTest
+### Model Setup
+
+The RT-DETRv2 model is bundled in the APK (~83 MB). VLM models are downloaded on-demand from within the app:
+
+| Model | Size | Runtime | Purpose |
+|-------|------|---------|---------|
+| RT-DETRv2 FP16 | 83 MB | TFLite | Fast detection (bundled) |
+| Qwen 3.5 0.8B | 533 MB | llama.cpp | Fast reports |
+| Qwen 3.5 2B | 1.1 GB | llama.cpp | Balanced reports |
+| Qwen 3.5 4B | 2.7 GB | llama.cpp | Quality reports |
+| Gemma 4 E2B | 2.6 GB | LiteRT-LM | Detection + reports |
+
+All VLM models are Apache 2.0 licensed and downloaded from HuggingFace without authentication.
+
+## Performance (Samsung Galaxy S22 Ultra -- Exynos 2200)
+
+| Metric | RT-DETRv2 | Gemma 4 Vision |
+|--------|-----------|----------------|
+| Inference latency | ~30ms (NNAPI) | ~4-10s (CPU/GPU) |
+| Model size | 83 MB | 2.6 GB |
+| RAM usage | ~200 MB | ~3 GB |
+| Bounding boxes | Yes (150 queries) | Yes (box_2d JSON) |
+| Classes | 8 (trained) | 8 (zero-shot) |
+
+## Project Structure
+
+```
+OceanguardAI-App/
+  android/
+    app/src/main/
+      java/com/oceanguard/
+        OceanGuardApp.kt              -- Application lifecycle, model management
+        inference/
+          DetectorInterface.kt        -- ObjectDetector + DetectionResult contracts
+          RTDETRInference.kt          -- TFLite RT-DETRv2 detector
+          Gemma4VisionDetector.kt     -- Gemma 4 box_2d visual detector
+          LiteRTTextEngine.kt         -- LiteRT-LM engine (Gemma 4)
+          LlamaTextEngine.kt          -- llama.cpp engine (Qwen 3.5)
+          DetectionOrchestrator.kt    -- Dual pipeline coordinator
+          ReportGenerator.kt          -- VLM report generation
+          VlmModelManager.kt          -- Model download and lifecycle
+        data/                         -- Room entities, DAOs, repositories
+        ui/                           -- Compose screens and components
+        service/                      -- Foreground services
+        utils/                        -- Image processing, geocoding, export
+      assets/models/                  -- Bundled TFLite models
+      res/values[-xx]/                -- i18n strings (6 languages)
+  conversion/                         -- Model conversion scripts (Python)
+  docs/                               -- Technical documentation
 ```
 
-### Manual Testing
-1. Load app on device
-2. Test each feature:
-   - Camera capture
-   - Image selection
-   - Debris detection
-   - Results display
-   - History
+## Related Repositories
+
+| Repository | Purpose |
+|------------|---------|
+| [OceanguardAI](https://github.com/AlejandroSanchezFerrer/OceanguardAI) | Training, evaluation, datasets (PyTorch, COCO) |
+| [gemma3n](https://github.com/AlejandroSanchezFerrer/gemma3n) | Streamlit web app, CLI, notebook |
+
+## Research Context
+
+OceanGuard AI is part of a doctoral research project on applying on-device AI to marine conservation challenges. The goal is to democratize marine debris monitoring by putting powerful detection tools directly in the hands of conservation teams, citizen scientists, and coastal communities worldwide -- without requiring expensive equipment or cloud infrastructure.
+
+## License
+
+Apache License 2.0 -- see [LICENSE](LICENSE) for details.
+
+All models used (RT-DETRv2, Qwen 3.5, Gemma 4) are Apache 2.0 licensed.
 
 ---
 
-## 📊 Performance Benchmarks
+**Powered by Gemma 4 -- Google AI Edge**
 
-| Metric | Target | Actual (Pixel 7) |
-|--------|--------|------------------|
-| Model Loading | <20s | 12.4s |
-| Time to First Token (TTFT) | <1.5s | 0.68s |
-| Throughput | >30 t/s | 41.5 t/s |
-| Total Inference | <3s | 2.1s |
-| Memory Usage | <5GB | 3.8GB |
-| Battery per session | <3% | 1.2% |
-
-**Testing Device**: Google Pixel 7 (Android 14, 8GB RAM)
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Gradle Sync Failed
-**Solution**: See [android/FIXED_GRADLE_ERROR.md](android/FIXED_GRADLE_ERROR.md)
-
-#### Out of Memory
-**Solution**:
-- Close other apps
-- Reduce image size to 256px
-- Use device with 6GB+ RAM
-
-#### Model Not Found
-**Solution**:
-```powershell
-# Verify models exist
-Get-ChildItem "android\app\src\main\assets\models"
-
-# Should show:
-# oceanguard_base.bin (2.5GB)
-# oceanguard_adapter.bin (600MB)
-```
-
-#### Slow Performance
-**Solutions**:
-- Enable GPU backend (default)
-- Use 512px images (not full resolution)
-- Close background apps
-- Test on recommended hardware
-
-### Get Help
-
-1. Check [FIXED_GRADLE_ERROR.md](android/FIXED_GRADLE_ERROR.md)
-2. Check [QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md) troubleshooting section
-3. Review logs in Android Studio Logcat
-4. Open GitHub issue with full error logs
-
----
-
-## 🚧 Roadmap
-
-### ✅ Completed (v1.0)
-- [x] Model conversion pipeline
-- [x] Android app structure
-- [x] Basic UI with Jetpack Compose
-- [x] MediaPipe LLM integration
-- [x] Image preprocessing
-- [x] JSON response parsing
-- [x] Data models
-
-### 🔨 In Progress (v1.1)
-- [ ] Camera capture with CameraX
-- [ ] Image selection from gallery
-- [ ] Bounding box visualization
-- [ ] Results display UI
-
-### 📅 Planned (v1.2)
-- [ ] Room database for history
-- [ ] History screen
-- [ ] Export functionality (CSV/JSON)
-
-### 🔮 Future (v2.0)
-- [ ] Google Maps integration
-- [ ] Multi-language support
-- [ ] iOS version (Kotlin Multiplatform)
-- [ ] Real-time video inference
-- [ ] Cloud sync (optional)
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Areas where you can help:
-
-- 🐛 Bug fixes
-- ✨ New features
-- 📝 Documentation improvements
-- 🧪 Testing on more devices
-- 🎨 UI/UX improvements
-
----
-
-## 📄 License
-
-This project is part of OceanGuard AI. See main repository for license details.
-
----
-
-## 🙏 Acknowledgments
-
-### Technologies Used
-
-- **Google AI Edge**: MediaPipe, LiteRT
-- **Google Gemma**: Base language model
-- **Android Jetpack**: Compose, CameraX, Room, Navigation
-- **Kotlin**: Programming language
-- **Gradle**: Build system
-
-### Resources
-
-- [MediaPipe LLM Inference Guide](https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android)
-- [Gemma Models](https://ai.google.dev/gemma)
-- [Android Developers](https://developer.android.com)
-- [Jetpack Compose](https://developer.android.com/compose)
-
----
-
-## 📞 Support
-
-- **Documentation**: Start with [QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md)
-- **Issues**: GitHub Issues
-- **Questions**: Discussions tab
-
----
-
-## 🌟 Star History
-
-If this project helps you bring AI-powered marine conservation to mobile devices, please consider giving it a star! ⭐
-
----
-
-**Built with ❤️ for ocean conservation**
-
-🌊 **Making AI accessible for environmental protection, one device at a time.**
+Built for the Kaggle Gemma 4 Good Hackathon (Global Resilience Track, 2026).
