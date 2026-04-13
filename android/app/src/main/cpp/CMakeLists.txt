@@ -9,7 +9,9 @@ project(oceanguard_llama)
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -march=armv8.6-a+dotprod+fp16+i8mm -fno-finite-math-only")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=armv8.6-a+dotprod+fp16+i8mm -fno-finite-math-only -std=c++17")
 
-# CPU-only — no GPU backends (Xclipse 920 drivers are buggy; EDEN NPU SDK is private)
+# GPU backends — Vulkan requires host Vulkan SDK (glslc) for shader compilation.
+# Enable GGML_VULKAN ON after installing Vulkan SDK (https://vulkan.lunarg.com/).
+# Falls back to CPU at runtime if Vulkan init fails (e.g. Xclipse 920 driver issues).
 set(GGML_METAL    OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA     OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN   OFF CACHE BOOL "" FORCE)

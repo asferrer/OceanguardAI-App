@@ -44,11 +44,12 @@ object LlamaCppBridge {
      * @param modelPath     Absolute path to .gguf file.
      * @param nCtx          Context window size (e.g. 4096).
      * @param nThreads      CPU threads for token decoding (e.g. 4 big cores).
-     * @param nThreadsBatch CPU threads for prompt prefill batch (e.g. 6 — more parallelism OK).
+     * @param nThreadsBatch CPU threads for prompt prefill batch (e.g. 6 -- more parallelism OK).
+     * @param nGpuLayers    Number of layers to offload to GPU via Vulkan (0 = CPU-only, 99 = all).
      * @return Opaque context handle, or 0L on failure.
      */
     @JvmStatic
-    external fun nativeInitTextModel(modelPath: String, nCtx: Int, nThreads: Int, nThreadsBatch: Int): Long
+    external fun nativeInitTextModel(modelPath: String, nCtx: Int, nThreads: Int, nThreadsBatch: Int, nGpuLayers: Int = 0): Long
 
     /**
      * Generate text from a prompt with token-level streaming.

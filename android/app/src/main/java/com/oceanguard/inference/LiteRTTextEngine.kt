@@ -1,7 +1,9 @@
 package com.oceanguard.ai.inference
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
@@ -13,6 +15,7 @@ import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -44,23 +47,67 @@ class LiteRTTextEngine(
 
     override fun isReady(): Boolean = engine?.isInitialized() == true
 
+    /** Which backend was actually selected after GPU probing. Exposed for UI status. */
+    @Volatile var activeBackendName: String = "CPU"
+        private set
+
     override suspend fun initialize(modelPath: String) = withContext(Dispatchers.IO) {
         if (isReady()) {
             Log.d(TAG, "Already initialized, skipping")
             return@withContext
         }
         Log.i(TAG, "Loading Gemma 4 E2B: $modelPath")
+
+        // Try GPU first, fall back to CPU if unavailable or initialization fails
+        val (backend, visionBackend, backendLabel) = selectBackends()
+
         val config = EngineConfig(
             modelPath = modelPath,
-            backend = Backend.CPU(),
-            visionBackend = Backend.CPU(),
+            backend = backend,
+            visionBackend = visionBackend,
             maxNumTokens = MAX_TOKENS,
             cacheDir = cacheDir,
         )
-        val eng = Engine(config)
-        eng.initialize()
-        engine = eng
-        Log.i(TAG, "Engine initialized")
+        try {
+            val eng = Engine(config)
+            eng.initialize()
+            engine = eng
+            activeBackendName = backendLabel
+            Log.i(TAG, "Engine initialized on $backendLabel")
+        } catch (e: Exception) {
+            if (backendLabel != "CPU") {
+                Log.w(TAG, "GPU init failed ($backendLabel), falling back to CPU: ${e.message}")
+                val cpuConfig = EngineConfig(
+                    modelPath = modelPath,
+                    backend = Backend.CPU(),
+                    visionBackend = Backend.CPU(),
+                    maxNumTokens = MAX_TOKENS,
+                    cacheDir = cacheDir,
+                )
+                val eng = Engine(cpuConfig)
+                eng.initialize()
+                engine = eng
+                activeBackendName = "CPU"
+                Log.i(TAG, "Engine initialized on CPU (GPU fallback)")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
+     * Probes for GPU support. Returns (backend, visionBackend, label).
+     * Tries GPU first; returns CPU if GPU creation throws.
+     */
+    private fun selectBackends(): Triple<Backend, Backend, String> {
+        return try {
+            val gpu = Backend.GPU()
+            val gpuVision = Backend.GPU()
+            Triple(gpu, gpuVision, "GPU")
+        } catch (e: Exception) {
+            Log.i(TAG, "GPU backend not available: ${e.message}")
+            Triple(Backend.CPU(), Backend.CPU(), "CPU")
+        }
     }
 
     override suspend fun warmUp() = withContext(Dispatchers.IO) {
@@ -120,15 +167,7 @@ class LiteRTTextEngine(
             val accumulated = StringBuilder()
             var lastPartialMs = 0L
 
-            val fullPrompt = if (prefill.isNotEmpty()) {
-                "$prompt\n\nIMPORTANT: Your response MUST start with exactly this heading " +
-                "and nothing before it: ${prefill.trim()}\n" +
-                "Do not add any preamble, acknowledgment, or markdown code fences. " +
-                "Do not repeat the heading.\n" +
-                "Write a COMPREHENSIVE report with ALL sections. Minimum 2000 words."
-            } else {
-                "$prompt\nWrite a COMPREHENSIVE report with ALL sections. Minimum 2000 words."
-            }
+            val fullPrompt = prompt
             Log.d(TAG, "Prompt length: ${fullPrompt.length} chars (~${fullPrompt.length / 3} tokens)")
 
             // Callback-based streaming — onMessage receives token deltas
@@ -138,7 +177,7 @@ class LiteRTTextEngine(
                         val token = message.contents.toString()
                         accumulated.append(token)
                         val now = System.currentTimeMillis()
-                        if (now - lastPartialMs >= 200L) {
+                        if (now - lastPartialMs >= 500L) {
                             onPartialResult(accumulated.toString())
                             lastPartialMs = now
                         }
@@ -161,6 +200,94 @@ class LiteRTTextEngine(
         } finally {
             conv.close()
         }
+    }
+
+    /**
+     * Generate text conditioned on an image and a text prompt.
+     *
+     * Converts the [bitmap] to JPEG bytes and sends it alongside the [prompt]
+     * as a multimodal [Contents] message. Requires [EngineConfig.visionBackend]
+     * to be set during [initialize].
+     *
+     * @param bitmap          Input image (any size -- LiteRT-LM handles resizing).
+     * @param prompt          Text prompt describing the task.
+     * @param maxTokens       Hard cap on generated tokens (default 512 for detection).
+     * @param systemMessage   Optional system prompt override.
+     * @param onPartialResult Streaming callback with accumulated text.
+     * @return Complete generated text.
+     */
+    suspend fun generateWithImage(
+        bitmap: Bitmap,
+        prompt: String,
+        maxTokens: Int = 512,
+        systemMessage: String? = null,
+        onPartialResult: ((String) -> Unit)? = null,
+    ): String = withContext(Dispatchers.IO) {
+        val eng = engine
+        check(eng != null && eng.isInitialized()) { "Engine not loaded. Call initialize() first." }
+
+        val imageBytes = bitmapToJpegBytes(bitmap)
+        Log.d(TAG, "Image: ${bitmap.width}x${bitmap.height}, ${imageBytes.size / 1024} KB JPEG")
+
+        val system = systemMessage ?: "You are a precise visual analysis assistant."
+        val conv = eng.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of(system),
+                samplerConfig = SamplerConfig(
+                    topK = 20,
+                    topP = 0.95,
+                    temperature = 0.3,
+                ),
+            )
+        )
+
+        try {
+            val contents = Contents.of(
+                Content.ImageBytes(imageBytes),
+                Content.Text(prompt),
+            )
+
+            val accumulated = StringBuilder()
+            var lastPartialMs = 0L
+
+            suspendCancellableCoroutine { continuation ->
+                conv.sendMessageAsync(contents, object : MessageCallback {
+                    override fun onMessage(message: Message) {
+                        val token = message.contents.toString()
+                        accumulated.append(token)
+                        val now = System.currentTimeMillis()
+                        if (onPartialResult != null && now - lastPartialMs >= 200L) {
+                            onPartialResult(accumulated.toString())
+                            lastPartialMs = now
+                        }
+                    }
+
+                    override fun onDone() {
+                        continuation.resume(Unit)
+                    }
+
+                    override fun onError(error: Throwable) {
+                        continuation.resumeWithException(error)
+                    }
+                })
+            }
+
+            val result = accumulated.toString()
+            onPartialResult?.invoke(result)
+            Log.d(TAG, "Vision generation complete: ${result.length} chars")
+            result
+        } finally {
+            conv.close()
+        }
+    }
+
+    private fun bitmapToJpegBytes(
+        bitmap: Bitmap,
+        quality: Int = 90,
+    ): ByteArray {
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+        return stream.toByteArray()
     }
 
     /**

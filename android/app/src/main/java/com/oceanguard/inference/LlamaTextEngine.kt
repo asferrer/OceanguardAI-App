@@ -136,11 +136,18 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
         private const val N_THREADS       = 4
         private const val N_THREADS_BATCH = 6 // big + medium cores for faster prefill
 
+        /** All layers offloaded to GPU when Vulkan is available. */
+        private const val GPU_ALL_LAYERS  = 99
+
         /** Legacy 0.8B model kept for users who already downloaded it. */
         const val MODEL_FILENAME_LEGACY = "Qwen3.5-0.8B-Q4_K_M.gguf"
     }
 
     override val displayName: String = "Qwen3.5-${tier.displayName} Q4_K_M"
+
+    /** Which backend was actually used after GPU probing. Exposed for UI status. */
+    @Volatile var activeBackendName: String = "CPU"
+        private set
 
     private val initMutex = Mutex()
 
@@ -163,12 +170,28 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
                 return@withLock
             }
             Log.i(TAG, "Loading ${tier.displayName}: $modelPath")
-            val handle = LlamaCppBridge.nativeInitTextModel(modelPath, tier.nCtx, N_THREADS, N_THREADS_BATCH)
+
+            // Try GPU (Vulkan) first with all layers offloaded
+            var handle = LlamaCppBridge.nativeInitTextModel(
+                modelPath, tier.nCtx, N_THREADS, N_THREADS_BATCH, GPU_ALL_LAYERS
+            )
+            if (handle != 0L) {
+                activeBackendName = "Vulkan GPU"
+                Log.i(TAG, "${tier.displayName} loaded on Vulkan GPU (handle=$handle)")
+            } else {
+                // Fallback to CPU-only
+                Log.w(TAG, "Vulkan GPU init failed for ${tier.displayName}, falling back to CPU")
+                handle = LlamaCppBridge.nativeInitTextModel(
+                    modelPath, tier.nCtx, N_THREADS, N_THREADS_BATCH, 0
+                )
+                activeBackendName = "CPU"
+            }
+
             if (handle == 0L) {
                 throw IllegalStateException("Failed to load ${tier.displayName} from: $modelPath")
             }
             contextHandle = handle
-            Log.i(TAG, "${tier.displayName} loaded (handle=$handle)")
+            Log.i(TAG, "${tier.displayName} loaded on $activeBackendName (handle=$handle)")
         }
     }
 
@@ -246,7 +269,7 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
             override fun onToken(piece: String) {
                 accumulated.append(piece)
                 val now = System.currentTimeMillis()
-                if (now - lastPartialMs >= 200L) {
+                if (now - lastPartialMs >= 500L) {
                     onPartialResult(tier.formatter.sanitizePartial(accumulated.toString()))
                     lastPartialMs = now
                 }

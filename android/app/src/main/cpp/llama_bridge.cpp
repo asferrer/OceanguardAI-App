@@ -27,14 +27,15 @@ struct LlamaContext {
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_oceanguard_ai_inference_LlamaCppBridge_nativeInitTextModel(
         JNIEnv* env, jobject /* thiz */,
-        jstring modelPath, jint nCtx, jint nThreads, jint nThreadsBatch) {
+        jstring modelPath, jint nCtx, jint nThreads, jint nThreadsBatch,
+        jint nGpuLayers) {
 
     const char* path = env->GetStringUTFChars(modelPath, nullptr);
-    LOGI("Loading model: %s (nCtx=%d, nThreads=%d, nThreadsBatch=%d)",
-         path, nCtx, nThreads, nThreadsBatch);
+    LOGI("Loading model: %s (nCtx=%d, nThreads=%d, nThreadsBatch=%d, nGpuLayers=%d)",
+         path, nCtx, nThreads, nThreadsBatch, nGpuLayers);
 
     llama_model_params mparams = llama_model_default_params();
-    mparams.n_gpu_layers = 0; // CPU-only
+    mparams.n_gpu_layers = static_cast<int32_t>(nGpuLayers);
 
     llama_model* model = llama_model_load_from_file(path, mparams);
     env->ReleaseStringUTFChars(modelPath, path);
