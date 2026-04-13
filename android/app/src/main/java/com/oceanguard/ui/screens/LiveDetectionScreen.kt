@@ -183,7 +183,7 @@ private fun LiveDetectionContent(
     )
     val liveDetectionManager = remember {
         LiveDetectionManager(
-            detector = app.rtdetrInference,
+            detector = app.getActiveDetector(),
             context = context,
             repository = app.repository,
             locationProvider = app.locationProvider,

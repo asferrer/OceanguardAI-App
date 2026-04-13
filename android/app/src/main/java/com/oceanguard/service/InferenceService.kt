@@ -340,7 +340,7 @@ class InferenceService : LifecycleService() {
                 val threshold = app.settingsRepository.confidenceThreshold.first()
                 val processor = VideoProcessor(
                     context = applicationContext,
-                    detector = app.rtdetrInference,
+                    detector = app.getActiveDetector(),
                     confidenceThreshold = threshold,
                 )
                 videoProcessor = processor

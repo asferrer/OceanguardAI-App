@@ -136,6 +136,8 @@
     <string name="settings_label_detector_precision">Detector Precision</string>
     <string name="settings_desc_detector_precision">INT8 is smaller (43MB vs 83MB) and may be faster. Requires app restart.</string>
     <string name="settings_hint_restart">Restart the app to apply the new model precision</string>
+    <string name="settings_label_detector_mode">Detection Engine</string>
+    <string name="settings_desc_detector_mode">RT-DETRv2 is fast (~30ms). Gemma 4 Vision uses a VLM for deep analysis (~4--10s per image).</string>
     <string name="settings_label_deep_analysis">Deep Analysis</string>
     <string name="settings_desc_deep_analysis">Run deep AI analysis after detection. Disable for faster results (detection only)</string>
     <string name="settings_label_confirm_capture">Confirm Capture</string>

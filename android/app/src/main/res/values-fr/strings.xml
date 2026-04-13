@@ -43,6 +43,7 @@
     <string name="home_model_status_ready">Prêt</string>
     <string name="home_model_status_failed">Échec du chargement</string>
     <string name="home_model_status_on_demand">Disponible à la demande</string>
+    <string name="home_model_status_not_downloaded">Non téléchargé</string>
     <string name="home_model_name_detection">Détection IA</string>
     <string name="home_model_name_deep_analysis">Analyse approfondie</string>
 

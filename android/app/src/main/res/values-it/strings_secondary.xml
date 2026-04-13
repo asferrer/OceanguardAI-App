@@ -135,6 +135,8 @@
     <string name="settings_label_detector_precision">Precisione del Rilevatore</string>
     <string name="settings_desc_detector_precision">INT8 è più piccolo (43MB rispetto a 83MB) e potrebbe essere più veloce. Richiede il riavvio dell\'app.</string>
     <string name="settings_hint_restart">Riavvia l\'app per applicare la nuova precisione del modello</string>
+    <string name="settings_label_detector_mode">Motore di rilevamento</string>
+    <string name="settings_desc_detector_mode">RT-DETRv2 e veloce (~30ms). Gemma 4 Vision usa un VLM per analisi approfondita (~4--10s per immagine).</string>
     <string name="settings_label_deep_analysis">Analisi Approfondita</string>
     <string name="settings_desc_deep_analysis">Esegui l\'analisi approfondita AI dopo il rilevamento. Disabilita per risultati più rapidi (solo rilevamento)</string>
     <string name="settings_label_confirm_capture">Conferma Acquisizione</string>
