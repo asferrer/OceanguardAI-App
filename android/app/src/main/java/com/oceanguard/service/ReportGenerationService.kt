@@ -39,6 +39,7 @@ class ReportGenerationService : LifecycleService() {
     private lateinit var app: OceanGuardApp
     private lateinit var notificationManager: NotificationManager
     private var wakeLock: PowerManager.WakeLock? = null
+    private var lastNotifUpdateMs = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -68,13 +69,16 @@ class ReportGenerationService : LifecycleService() {
                     is ReportGenerationState.LoadingModel -> {
                         updateNotification(getString(R.string.report_notif_loading_model))
                     }
-                    is ReportGenerationState.VerifyingDetections -> {
-                        updateNotification(getString(R.string.report_notif_generating))
-                    }
                     is ReportGenerationState.Generating -> {
                         updateNotification(getString(R.string.report_notif_generating))
                     }
                     is ReportGenerationState.StreamingText -> {
+                        // Throttle notification updates to max 1 every 2s during
+                        // streaming to avoid main-thread jank from PendingIntent
+                        // rebuilds while CPU is saturated by VLM inference.
+                        val now = System.currentTimeMillis()
+                        if (now - lastNotifUpdateMs < 2000L) return@collectLatest
+                        lastNotifUpdateMs = now
                         val pct = if (state.maxTokens > 0) {
                             (state.tokenCount * 100 / state.maxTokens).coerceIn(0, 100)
                         } else 0

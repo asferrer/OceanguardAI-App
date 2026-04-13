@@ -138,7 +138,7 @@ class LlamaVisionEngine(
             override fun onToken(piece: String) {
                 accumulated.append(piece)
                 val now = System.currentTimeMillis()
-                if (now - lastPartialMs >= 200L) {
+                if (now - lastPartialMs >= 500L) {
                     onPartialResult(formatter.sanitizePartial(accumulated.toString()))
                     lastPartialMs = now
                 }
@@ -185,7 +185,7 @@ class LlamaVisionEngine(
             override fun onToken(piece: String) {
                 accumulated.append(piece)
                 val now = System.currentTimeMillis()
-                if (now - lastPartialMs >= 200L) {
+                if (now - lastPartialMs >= 500L) {
                     onPartialResult(formatter.sanitizePartial(accumulated.toString()))
                     lastPartialMs = now
                 }

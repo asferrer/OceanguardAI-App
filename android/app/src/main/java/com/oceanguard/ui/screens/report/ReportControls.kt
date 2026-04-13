@@ -243,7 +243,6 @@ internal fun GeneratingBanner(
     tokenCount: Int = 0,
     tokensPerSec: Float = 0f,
     maxTokens: Int = 0,
-    verifyingProgress: Pair<Int, Int>? = null,
     modifier: Modifier = Modifier,
 ) {
     val currentHeading = remember(streamingText) {
@@ -280,8 +279,6 @@ internal fun GeneratingBanner(
                 )
                 Text(
                     text = when {
-                        verifyingProgress != null ->
-                            stringResource(R.string.report_verifying_detections, verifyingProgress.first, verifyingProgress.second)
                         isLoadingModel -> stringResource(R.string.report_loading_engine)
                         else -> stringResource(R.string.report_btn_generating)
                     },
@@ -290,14 +287,7 @@ internal fun GeneratingBanner(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            if (verifyingProgress != null) {
-                LinearProgressIndicator(
-                    progress = { verifyingProgress.first.toFloat() / verifyingProgress.second.coerceAtLeast(1) },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
-                )
-            } else if (hasTokenMetrics) {
+            if (hasTokenMetrics) {
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.fillMaxWidth(),

@@ -168,18 +168,17 @@ fun ReportScreen(
         derivedStateOf {
             generationState is ReportGenerationState.Generating ||
                 generationState is ReportGenerationState.LoadingModel ||
-                generationState is ReportGenerationState.StreamingText ||
-                generationState is ReportGenerationState.VerifyingDetections
+                generationState is ReportGenerationState.StreamingText
         }
     }
     val isLoadingModel by remember { derivedStateOf { generationState is ReportGenerationState.LoadingModel } }
-    val streamingState = generationState as? ReportGenerationState.StreamingText
-    val streamingText = streamingState?.partialText
-    val tokenCount = streamingState?.tokenCount ?: 0
-    val tokensPerSec = streamingState?.tokensPerSec ?: 0f
-    val maxTokens = streamingState?.maxTokens ?: 0
-    val verifyingProgress = (generationState as? ReportGenerationState.VerifyingDetections)
-        ?.let { it.verified to it.total }
+    // Wrap streaming reads in derivedStateOf so token-level emissions only
+    // recompose the GeneratingBanner, not the entire ReportScreen.
+    val streamingText by remember { derivedStateOf { (generationState as? ReportGenerationState.StreamingText)?.partialText } }
+    val tokenCount by remember { derivedStateOf { (generationState as? ReportGenerationState.StreamingText)?.tokenCount ?: 0 } }
+    val tokensPerSec by remember { derivedStateOf { (generationState as? ReportGenerationState.StreamingText)?.tokensPerSec ?: 0f } }
+    val maxTokens by remember { derivedStateOf { (generationState as? ReportGenerationState.StreamingText)?.maxTokens ?: 0 } }
+
 
     // -----------------------------------------------------------------------
     // Zone clustering + geocoded names (parallel)
@@ -285,13 +284,15 @@ fun ReportScreen(
     }
 
     // Background generation: sync app state → snackbar + auto-view
-    LaunchedEffect(generationState) {
+    // Key on state class, not instance — avoids restarting this effect on every
+    // StreamingText token emission (was causing 5 coroutine restarts/second).
+    val generationStateClass = generationState::class
+    LaunchedEffect(generationStateClass) {
         when (val state = generationState) {
             is ReportGenerationState.Idle -> {}
             is ReportGenerationState.LoadingModel,
             is ReportGenerationState.Generating,
-            is ReportGenerationState.StreamingText,
-            is ReportGenerationState.VerifyingDetections -> {} // inline banner handles this
+            is ReportGenerationState.StreamingText -> {} // inline banner handles this
             is ReportGenerationState.Complete -> {
                 val completedReport = state.report
                 screenState = ReportScreenState.Idle
@@ -518,7 +519,6 @@ fun ReportScreen(
                         tokenCount        = tokenCount,
                         tokensPerSec      = tokensPerSec,
                         maxTokens         = maxTokens,
-                        verifyingProgress = verifyingProgress,
                     )
                 }
 

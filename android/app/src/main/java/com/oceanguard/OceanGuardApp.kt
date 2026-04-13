@@ -13,8 +13,11 @@ import com.oceanguard.ai.data.collection.AchievementChecker
 import com.oceanguard.ai.data.collection.CollectionRepository
 import com.oceanguard.ai.data.collection.DexBackfill
 import com.oceanguard.ai.inference.DetectionOrchestrator
+import com.oceanguard.ai.inference.DetectorType
+import com.oceanguard.ai.inference.Gemma4VisionDetector
 import com.oceanguard.ai.inference.LlamaTextEngine
 import com.oceanguard.ai.inference.LlamaVisionEngine
+import com.oceanguard.ai.inference.ObjectDetector
 import com.oceanguard.ai.inference.RTDETRInference
 import com.oceanguard.ai.inference.ReportAudience
 import com.oceanguard.ai.inference.ReportGenerator
@@ -54,12 +57,13 @@ enum class ModelStatus { NotLoaded, Loading, WarmingUp, Ready, Error, Standby }
 
 data class ModelLoadingState(
     val rtdetr: ModelStatus = ModelStatus.NotLoaded,
-    val qwenText: ModelStatus = ModelStatus.Standby,    // text reports (1.5B or 3B)
-    val qwenVision: ModelStatus = ModelStatus.Standby,  // vision analysis (2B + mmproj)
-    val activeTierName: String = "",                     // e.g. "Fast (1.5B)"
+    val gemma4Vision: ModelStatus = ModelStatus.Standby, // Gemma 4 vision detector
+    val qwenText: ModelStatus = ModelStatus.Standby,     // text reports (1.5B or 3B)
+    val qwenVision: ModelStatus = ModelStatus.Standby,   // vision analysis (2B + mmproj)
+    val activeTierName: String = "",                      // e.g. "Fast (1.5B)"
 ) {
-    /** Detection is ready when RT-DETR is loaded. VLM loads on demand for reports. */
-    val allReady: Boolean get() = rtdetr == ModelStatus.Ready
+    /** Detection is ready when at least one detector is loaded. */
+    val allReady: Boolean get() = rtdetr == ModelStatus.Ready || gemma4Vision == ModelStatus.Ready
 }
 
 // ---------------------------------------------------------------------------
@@ -69,8 +73,6 @@ data class ModelLoadingState(
 sealed class ReportGenerationState {
     data object Idle : ReportGenerationState()
     data object LoadingModel : ReportGenerationState()
-    /** VLM is verifying detections image-by-image before report generation. */
-    data class VerifyingDetections(val verified: Int, val total: Int) : ReportGenerationState()
     data object Generating : ReportGenerationState()
     data class StreamingText(
         val partialText: String,
@@ -131,6 +133,40 @@ class OceanGuardApp : Application() {
         private set
     lateinit var detectionOrchestrator: DetectionOrchestrator
         private set
+
+    // Shared LiteRT-LM engine for Gemma 4 — reused by both detector and report generation.
+    // Avoids loading two ~2.6 GB copies of the same model into RAM.
+    val sharedLiteRTEngine: LiteRTTextEngine by lazy {
+        val cacheDir = java.io.File(vlmModelManager.getModelDirectory(), "litert-cache")
+            .apply { mkdirs() }.absolutePath
+        LiteRTTextEngine(cacheDir)
+    }
+
+    // Gemma 4 Vision detector — uses the shared LiteRTTextEngine for object detection via box_2d
+    val gemma4Detector: Gemma4VisionDetector by lazy {
+        Gemma4VisionDetector(sharedLiteRTEngine)
+    }
+
+    /**
+     * Returns the active detector based on user settings.
+     * "rtdetr" → RT-DETRv2 (fast), "gemma4" → Gemma 4 Vision (deep).
+     */
+    fun getActiveDetector(): ObjectDetector {
+        return when (settingsRepository.getDetectorModeSync()) {
+            DetectorType.GEMMA4_VISION.key -> gemma4Detector
+            else -> rtdetrInference
+        }
+    }
+
+    /**
+     * Switches the orchestrator's detector to match the current setting.
+     * Call after the user changes the detector mode in Settings.
+     */
+    fun applyDetectorMode() {
+        val active = getActiveDetector()
+        detectionOrchestrator.detector = active
+        Log.i(TAG, "Detector switched to: ${active.displayName}")
+    }
 
     // Text engine — one at a time, tier-aware. LlamaTextEngine for Qwen, LiteRTTextEngine for Gemma 4.
     @Volatile private var _vlmTextEngine: VlmTextEngine? = null
@@ -286,6 +322,44 @@ class OceanGuardApp : Application() {
         }
 
         Log.i(TAG, "VLM deferred: will load on demand for report generation")
+
+        // If Gemma 4 Vision is the selected detector, try to initialize it
+        if (settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key) {
+            applicationScope.launch {
+                initializeGemma4DetectorIfAvailable()
+            }
+        }
+    }
+
+    /**
+     * Initializes the Gemma 4 vision detector if the model is downloaded.
+     * Does not block -- emits state updates via [modelLoadingState].
+     */
+    suspend fun initializeGemma4DetectorIfAvailable() {
+        if (gemma4Detector.isReady()) {
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.Ready) }
+            return
+        }
+        val tier = TextModelTier.GEMMA4_E2B
+        if (!vlmModelManager.isModelAvailable(tier)) {
+            Log.i(TAG, "Gemma 4 E2B model not downloaded -- detector not available")
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.NotLoaded) }
+            return
+        }
+        try {
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.Loading) }
+            val modelPath = vlmModelManager.getTextModelPath(tier)
+            Log.i(TAG, "Loading Gemma 4 vision detector: $modelPath")
+            gemma4Detector.textEngine.initialize(modelPath)
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.WarmingUp) }
+            gemma4Detector.warmUp()
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.Ready) }
+            applyDetectorMode()
+            Log.i(TAG, "Gemma 4 vision detector ready")
+        } catch (e: Exception) {
+            Log.e(TAG, "Gemma 4 vision detector init failed", e)
+            modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.Error) }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -336,7 +410,10 @@ class OceanGuardApp : Application() {
         val existing = _vlmTextEngine
         val engine = if (existing != null && _vlmTextEngineTier == tier) existing
                      else {
-                         existing?.release()
+                         // Don't release the shared LiteRT engine if it's backing the active detector
+                         if (existing != null && !(existing === sharedLiteRTEngine && isSharedEngineUsedByDetector())) {
+                             existing.release()
+                         }
                          createTextEngine(tier).also {
                              _vlmTextEngine = it
                              _vlmTextEngineTier = tier
@@ -363,10 +440,8 @@ class OceanGuardApp : Application() {
     /** Create the right engine implementation based on the tier's backend. */
     private fun createTextEngine(tier: TextModelTier): VlmTextEngine =
         if (tier.provider.usesLiteRT) {
-            Log.i(TAG, "Using LiteRT-LM backend for ${tier.displayName}")
-            val cacheDir = java.io.File(vlmModelManager.getModelDirectory(), "litert-cache")
-                .apply { mkdirs() }.absolutePath
-            LiteRTTextEngine(cacheDir)
+            Log.i(TAG, "Reusing shared LiteRT-LM engine for ${tier.displayName}")
+            sharedLiteRTEngine
         } else {
             Log.i(TAG, "Using llama.cpp backend for ${tier.displayName}")
             LlamaTextEngine(tier)
@@ -396,7 +471,9 @@ class OceanGuardApp : Application() {
     private fun getOrCreateTextEngine(tier: TextModelTier): VlmTextEngine {
         val existing = _vlmTextEngine
         if (existing != null && _vlmTextEngineTier == tier) return existing
-        existing?.release()
+        if (existing != null && !(existing === sharedLiteRTEngine && isSharedEngineUsedByDetector())) {
+            existing.release()
+        }
         modelLoadingState.update { it.copy(qwenText = ModelStatus.Standby, activeTierName = "") }
         return createTextEngine(tier).also {
             _vlmTextEngine = it
@@ -422,78 +499,35 @@ class OceanGuardApp : Application() {
     fun launchReportGeneration(sessions: List<DetectionSession>, language: String) {
         val currentState = reportGenerationState.value
         if (currentState is ReportGenerationState.Generating ||
-            currentState is ReportGenerationState.LoadingModel ||
-            currentState is ReportGenerationState.VerifyingDetections) return
+            currentState is ReportGenerationState.LoadingModel) return
         vlmReleaseJob?.cancel()
         startForegroundReportService()
         applicationScope.launch {
             val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
             try {
-                if (vlmModelManager.isVisionModelAvailable()) {
-                    // ── Two-phase: verify images + generate report with same 2B model ─
-                    releaseTextEngineNow()
-                    loadVisionEngineIfNeeded()
-
-                    val candidateCount = sessions.size
-                    reportGenerationState.value = ReportGenerationState.VerifyingDetections(0, candidateCount)
-                    val generator = ReportGenerator(vlmVisionEngine, imagePreprocessor)
-                    val verifications = generator.verifyDetections(
-                        sessions     = sessions,
-                        visionEngine = vlmVisionEngine,
-                        maxImages    = candidateCount,
-                        onProgress   = { verified, total ->
-                            reportGenerationState.value = ReportGenerationState.VerifyingDetections(verified, total)
-                        },
-                    )
-                    reportGenerationState.value = ReportGenerationState.Generating
-                    val tracker = GenerationTracker(maxTokens = 6144)
-                    val reportText = generator.generateVerifiedReportStreaming(
-                        sessions      = sessions,
-                        verifications = verifications,
-                        language      = language,
-                        audience      = audience,
-                    ) { partial ->
-                        reportGenerationState.value = tracker.snapshot(partial)
-                    }
-                    val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
-                    val report = GeneratedReport(
-                        text         = reportText,
-                        language     = language,
-                        sessionCount = sessions.size,
-                        usedAi       = true,
-                        audience     = audience.name.lowercase(),
-                        sessionIds   = sessionIdsCsv,
-                    )
-                    val id = database.generatedReportDao().insert(report)
-                    validateAndPersist(id, reportText, sessions, language)
-                    reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
-                    Log.i(TAG, "Verified report saved (id=$id, verifications=${verifications.size})")
-                } else {
-                    // ── Fallback: text-only report ----
-                    val engine = loadTextEngineIfNeeded()
-                    reportGenerationState.value = ReportGenerationState.Generating
-                    val tracker2 = GenerationTracker(maxTokens = 6144)
-                    val generator = ReportGenerator(engine)
-                    val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
-                        reportGenerationState.value = tracker2.snapshot(partial)
-                    }
-                    val sessionIdsCsv2 = sessions.joinToString(",") { it.id.toString() }
-                    val report = GeneratedReport(
-                        text         = reportText,
-                        language     = language,
-                        sessionCount = sessions.size,
-                        usedAi       = true,
-                        audience     = audience.name.lowercase(),
-                        sessionIds   = sessionIdsCsv2,
-                    )
-                    val id = database.generatedReportDao().insert(report)
-                    validateAndPersist(id, reportText, sessions, language)
-                    reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
-                    Log.i(TAG, "Text-only report saved (id=$id)")
+                val engine = loadTextEngineIfNeeded()
+                reportGenerationState.value = ReportGenerationState.Generating
+                val tracker = GenerationTracker(maxTokens = 6144)
+                val generator = ReportGenerator(engine)
+                val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
+                    reportGenerationState.value = tracker.snapshot(partial)
                 }
+                val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
+                val report = GeneratedReport(
+                    text         = reportText,
+                    language     = language,
+                    sessionCount = sessions.size,
+                    usedAi       = true,
+                    audience     = audience.name.lowercase(),
+                    sessionIds   = sessionIdsCsv,
+                )
+                val id = database.generatedReportDao().insert(report)
+                validateAndPersist(id, reportText, sessions, language)
+                reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
+                Log.i(TAG, "Report saved (id=$id)")
             } catch (e: Exception) {
                 Log.e(TAG, "Report generation failed", e)
-                modelLoadingState.update { it.copy(qwenVision = ModelStatus.Error, qwenText = ModelStatus.Error) }
+                modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
                 reportGenerationState.value = ReportGenerationState.Error(e.message ?: "Unknown error")
             } finally {
                 scheduleVlmRelease()
@@ -502,15 +536,9 @@ class OceanGuardApp : Application() {
     }
 
     /**
-     * Launch zone-based report generation.
-     * Delegates to [launchVerifiedZoneReportGeneration] when the vision model is available;
-     * falls back to text-only when it is not.
+     * Launch zone-based report generation (text-only, no image verification).
      */
     fun launchZoneReportGeneration(input: ZoneReportInput, language: String) {
-        if (vlmModelManager.isVisionModelAvailable()) {
-            launchVerifiedZoneReportGeneration(input, language)
-            return
-        }
         val currentState = reportGenerationState.value
         if (currentState is ReportGenerationState.Generating ||
             currentState is ReportGenerationState.LoadingModel) return
@@ -547,87 +575,6 @@ class OceanGuardApp : Application() {
             } catch (e: Exception) {
                 Log.e(TAG, "Zone report generation failed", e)
                 modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
-                reportGenerationState.value = ReportGenerationState.Error(e.message ?: "Unknown error")
-            } finally {
-                scheduleVlmRelease()
-            }
-        }
-    }
-
-    /**
-     * Two-phase verified zone report using a single model (Qwen3.5-2B Vision):
-     *
-     * **Phase 1 — Visual audit**
-     * Loads the vision model once and verifies detections in ALL filtered sessions
-     * by looking at each field photograph. Produces [VlmVerificationResult] per session
-     * including confirmed classes, false positives, material inconsistencies, and site context.
-     *
-     * **Phase 2 — Report generation (same model, text mode)**
-     * Uses the already-loaded vision model in text-only mode to generate the full zone report,
-     * enriched with the per-session verification data. No model reload between phases.
-     * Peak RAM: ~1.6 GB (2B GGUF + mmproj). Safe on S22 Ultra.
-     */
-    fun launchVerifiedZoneReportGeneration(input: ZoneReportInput, language: String) {
-        val currentState = reportGenerationState.value
-        if (currentState is ReportGenerationState.Generating ||
-            currentState is ReportGenerationState.LoadingModel ||
-            currentState is ReportGenerationState.VerifyingDetections) return
-        vlmReleaseJob?.cancel()
-        startForegroundReportService()
-        applicationScope.launch {
-            val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
-            try {
-                releaseTextEngineNow()
-                loadVisionEngineIfNeeded()
-
-                // ── Phase 1: Visual verification (ALL sessions) ──────────────
-                val candidateCount = input.sessions.size
-                reportGenerationState.value = ReportGenerationState.VerifyingDetections(0, candidateCount)
-
-                val generator = ReportGenerator(vlmVisionEngine, imagePreprocessor)
-                val verifications = generator.verifyDetections(
-                    sessions     = input.sessions,
-                    visionEngine = vlmVisionEngine,
-                    maxImages    = candidateCount,
-                    onProgress   = { verified, total ->
-                        reportGenerationState.value = ReportGenerationState.VerifyingDetections(verified, total)
-                    },
-                )
-                Log.i(TAG, "Verification complete: ${verifications.size}/${candidateCount} sessions verified")
-
-                // ── Phase 2: Report generation (same 2B model, text mode) ----
-                reportGenerationState.value = ReportGenerationState.Generating
-                val tracker = GenerationTracker(maxTokens = 6144)
-                val reportText = generator.generateVerifiedZoneReportStreaming(
-                    input         = input,
-                    verifications = verifications,
-                    language      = language,
-                    audience      = audience,
-                ) { partial ->
-                    reportGenerationState.value = tracker.snapshot(partial)
-                }
-
-                val verifiedZoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
-                val report = GeneratedReport(
-                    text             = reportText,
-                    language         = language,
-                    sessionCount     = input.sessions.size,
-                    usedAi           = true,
-                    locationName     = input.locationName,
-                    centroidLat      = input.centroidLat,
-                    centroidLon      = input.centroidLon,
-                    dateRangeStartMs = input.dateRangeStartMs,
-                    dateRangeEndMs   = input.dateRangeEndMs,
-                    audience         = audience.name.lowercase(),
-                    sessionIds       = verifiedZoneSessionIds,
-                )
-                val id = database.generatedReportDao().insert(report)
-                validateAndPersist(id, reportText, input.sessions, language)
-                reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
-                Log.i(TAG, "Verified zone report saved (id=$id, verifications=${verifications.size})")
-            } catch (e: Exception) {
-                Log.e(TAG, "Verified zone report generation failed", e)
-                modelLoadingState.update { it.copy(qwenVision = ModelStatus.Error) }
                 reportGenerationState.value = ReportGenerationState.Error(e.message ?: "Unknown error")
             } finally {
                 scheduleVlmRelease()
@@ -674,6 +621,12 @@ class OceanGuardApp : Application() {
         applicationScope.launch {
             try {
                 vlmModelManager.downloadModel(tier)
+                // After successful download, initialize Gemma 4 if it is the active detector
+                if (tier == TextModelTier.GEMMA4_E2B &&
+                    settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key
+                ) {
+                    initializeGemma4DetectorIfAvailable()
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "VLM download failed (tier=${tier.displayName})", e)
             }
@@ -716,21 +669,20 @@ class OceanGuardApp : Application() {
         }
     }
 
-    private fun releaseTextEngineNow() {
-        vlmReleaseJob?.cancel()
-        val engine = _vlmTextEngine
-        if (engine?.isReady() == true) {
-            engine.release()
-            Log.i(TAG, "Text engine force-released")
-        }
-        modelLoadingState.update { it.copy(qwenText = ModelStatus.Standby, activeTierName = "") }
-    }
+    /** True when the shared LiteRT engine is backing the active detector -- must not be released. */
+    private fun isSharedEngineUsedByDetector(): Boolean =
+        settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key &&
+            sharedLiteRTEngine.isReady()
 
     private fun releaseAllVlmNow() {
         val engine = _vlmTextEngine
         if (engine?.isReady() == true) {
-            engine.release()
-            Log.i(TAG, "Text VLM auto-released after ${VLM_RETAIN_MS / 1000}s idle")
+            if (engine === sharedLiteRTEngine && isSharedEngineUsedByDetector()) {
+                Log.i(TAG, "Shared LiteRT engine kept alive (active detector)")
+            } else {
+                engine.release()
+                Log.i(TAG, "Text VLM auto-released after ${VLM_RETAIN_MS / 1000}s idle")
+            }
         }
         val vision = _vlmVisionEngine
         if (vision?.isReady() == true) {
