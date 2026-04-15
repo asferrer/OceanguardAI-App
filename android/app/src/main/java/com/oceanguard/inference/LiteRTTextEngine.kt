@@ -12,8 +12,12 @@ import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.ai.edge.litertlm.ToolSet
+import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
@@ -45,6 +49,15 @@ class LiteRTTextEngine(
 
     @Volatile private var engine: Engine? = null
 
+    /**
+     * Serializes [initialize] so that concurrent callers (e.g. Gemma4VisionDetector
+     * AND ToolReportGenerator both touching the shared engine) do not each spin up
+     * a native Engine — the first finishes, the rest see [isReady] and skip.
+     * Without this, the second native Engine() ends up leaked AND competes for the
+     * GPU, slowing inference ~10x.
+     */
+    private val initMutex = Mutex()
+
     override fun isReady(): Boolean = engine?.isInitialized() == true
 
     /** Which backend was actually selected after GPU probing. Exposed for UI status. */
@@ -52,10 +65,16 @@ class LiteRTTextEngine(
         private set
 
     override suspend fun initialize(modelPath: String) = withContext(Dispatchers.IO) {
-        if (isReady()) {
-            Log.d(TAG, "Already initialized, skipping")
-            return@withContext
+        initMutex.withLock {
+            if (isReady()) {
+                Log.d(TAG, "Already initialized, skipping")
+                return@withLock
+            }
+            doInitialize(modelPath)
         }
+    }
+
+    private suspend fun doInitialize(modelPath: String) {
         Log.i(TAG, "Loading Gemma 4 E2B: $modelPath")
 
         // Try GPU first, fall back to CPU if unavailable or initialization fails
@@ -307,6 +326,70 @@ class LiteRTTextEngine(
                 trimmed.removePrefix(heading).trimStart()
             !trimmed.startsWith(heading) -> "$heading\n$trimmed"
             else -> trimmed
+        }
+    }
+
+    /**
+     * Generate text with native LiteRT-LM tool calling.
+     *
+     * Uses `automaticToolCalling = false` so the agent loop can stream tokens,
+     * surface progress to the UI, and cap iterations. The conversation persists
+     * across all rounds so the KV cache is reused (avoids re-prefilling the
+     * system prompt every turn).
+     *
+     * @param prompt              First user-turn prompt.
+     * @param toolSet             [ToolSet] with `@Tool`-annotated methods.
+     * @param systemMessage       System prompt (defaults to a generic one).
+     * @param maxToolRounds       Hard cap on tool dispatch rounds.
+     * @param onPartialResult     Streaming callback for accumulated text.
+     * @param onToolCallStarted   Notified each time a tool invocation begins.
+     */
+    suspend fun generateWithTools(
+        prompt: String,
+        toolSet: ToolSet,
+        systemMessage: String? = null,
+        maxToolRounds: Int = 8,
+        requiredToolNames: Set<String> = emptySet(),
+        onPartialResult: (String) -> Unit = {},
+        onToolCallStarted: (String) -> Unit = {},
+    ): String = withContext(Dispatchers.IO) {
+        val eng = engine
+        check(eng != null && eng.isInitialized()) { "Engine not loaded. Call initialize() first." }
+
+        val system = systemMessage ?: PromptFormatter.DEFAULT_SYSTEM_PROMPT
+        val provider = tool(toolSet)
+        // Numeric reports need enough sampler entropy to keep the model curious about calling
+        // the remaining tools, but low enough to copy tool output verbatim without drifting
+        // into fabricated rows. 0.30 / topK=20 is the sweet spot measured on Gemma 4 E2B:
+        //   0.15 → model stops after 1 tool call and hallucinates the rest
+        //   0.50 → model calls all tools but invents percentages in tables
+        val conv = eng.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of(system),
+                samplerConfig = SamplerConfig(
+                    topK = 20,
+                    topP = 0.9,
+                    temperature = 0.30,
+                ),
+                tools = listOf(provider),
+                automaticToolCalling = false,
+            )
+        )
+        try {
+            Log.d(TAG, "Tool-calling prompt length: ${prompt.length} chars (~${prompt.length / 3} tokens)")
+            val loop = ToolAgentLoop(conv, toolSet)
+            val result = loop.run(
+                prompt = prompt,
+                maxToolRounds = maxToolRounds,
+                requiredToolNames = requiredToolNames,
+                onPartialResult = onPartialResult,
+                onToolCallStarted = onToolCallStarted,
+            )
+            onPartialResult(result)
+            Log.d(TAG, "Tool-calling generation complete: ${result.length} chars")
+            result
+        } finally {
+            conv.close()
         }
     }
 }

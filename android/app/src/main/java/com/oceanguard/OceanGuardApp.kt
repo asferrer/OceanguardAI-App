@@ -21,6 +21,7 @@ import com.oceanguard.ai.inference.ObjectDetector
 import com.oceanguard.ai.inference.RTDETRInference
 import com.oceanguard.ai.inference.ReportAudience
 import com.oceanguard.ai.inference.ReportGenerator
+import com.oceanguard.ai.inference.ToolReportGenerator
 import com.oceanguard.ai.inference.ReportValidator
 import com.oceanguard.ai.inference.Gemma4PromptFormatter
 import com.oceanguard.ai.inference.TextModelTier
@@ -508,9 +509,20 @@ class OceanGuardApp : Application() {
                 val engine = loadTextEngineIfNeeded()
                 reportGenerationState.value = ReportGenerationState.Generating
                 val tracker = GenerationTracker(maxTokens = 6144)
-                val generator = ReportGenerator(engine)
-                val reportText = generator.generateReportStreaming(sessions, language, audience) { partial ->
-                    reportGenerationState.value = tracker.snapshot(partial)
+                val reportText = if (engine is LiteRTTextEngine) {
+                    Log.i(TAG, "Using tool-calling report path (LiteRT-LM / Gemma 4)")
+                    ToolReportGenerator(engine).generateReportWithToolsStreaming(
+                        sessions = sessions,
+                        language = language,
+                        audience = audience,
+                        onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
+                        onToolCallStarted = { name -> Log.d(TAG, "Tool call: $name") },
+                    )
+                } else {
+                    val generator = ReportGenerator(engine)
+                    generator.generateReportStreaming(sessions, language, audience) { partial ->
+                        reportGenerationState.value = tracker.snapshot(partial)
+                    }
                 }
                 val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
                 val report = GeneratedReport(
@@ -550,9 +562,20 @@ class OceanGuardApp : Application() {
                 val engine = loadTextEngineIfNeeded()
                 reportGenerationState.value = ReportGenerationState.Generating
                 val tracker = GenerationTracker(maxTokens = 6144)
-                val generator = ReportGenerator(engine)
-                val reportText = generator.generateZoneReportStreaming(input, language, audience) { partial ->
-                    reportGenerationState.value = tracker.snapshot(partial)
+                val reportText = if (engine is LiteRTTextEngine) {
+                    Log.i(TAG, "Using tool-calling zone report path (LiteRT-LM / Gemma 4)")
+                    ToolReportGenerator(engine).generateZoneReportWithToolsStreaming(
+                        input = input,
+                        language = language,
+                        audience = audience,
+                        onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
+                        onToolCallStarted = { name -> Log.d(TAG, "Tool call: $name") },
+                    )
+                } else {
+                    val generator = ReportGenerator(engine)
+                    generator.generateZoneReportStreaming(input, language, audience) { partial ->
+                        reportGenerationState.value = tracker.snapshot(partial)
+                    }
                 }
                 val zoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
                 val report = GeneratedReport(
