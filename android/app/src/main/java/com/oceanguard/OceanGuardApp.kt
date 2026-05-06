@@ -628,7 +628,11 @@ class OceanGuardApp : Application() {
                 score = confidence,
                 details = validation.toJsonString(),
             )
-            Log.i(TAG, "Report $reportId validated: confidence=$confidence, ${validation.toSummaryString()}")
+            if (validation.failCount > 0 || confidence < 70) {
+                Log.w(TAG, "Report $reportId LOW QUALITY: confidence=$confidence, ${validation.toSummaryString()} -- review prompt/tool enforcement")
+            } else {
+                Log.i(TAG, "Report $reportId validated: confidence=$confidence, ${validation.toSummaryString()}")
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Report validation failed for id=$reportId", e)
         }

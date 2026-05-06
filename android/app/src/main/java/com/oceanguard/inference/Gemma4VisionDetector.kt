@@ -325,8 +325,30 @@ If no debris is found, output: []
         for ((key, type) in LABEL_TO_TYPE) {
             if (normalized.contains(key) || key.contains(normalized)) return type
         }
-        // Last resort: try enum directly
-        return DebrisType.fromString(label)
+        // Semantic fallbacks: map generic terms to the closest catch-all instead of
+        // letting them silently collapse to OTHER (which poisons downstream reports).
+        val semantic: DebrisType? = when {
+            "plastic" in normalized || "polymer" in normalized -> DebrisType.PLASTIC_DEBRIS
+            "metal" in normalized || "aluminum" in normalized || "steel" in normalized -> DebrisType.METAL_DEBRIS
+            "glass" in normalized -> DebrisType.GLASS_DEBRIS
+            "fabric" in normalized || "textile" in normalized || "cloth" in normalized -> DebrisType.FABRIC_DEBRIS
+            "wood" in normalized -> DebrisType.LUMBER
+            "rubber" in normalized -> DebrisType.RUBBER_HOSE
+            "trash" in normalized || "garbage" in normalized || "litter" in normalized ||
+                "rubbish" in normalized || "junk" in normalized || "debris" in normalized ||
+                "fragment" in normalized || "piece" in normalized -> DebrisType.PLASTIC_DEBRIS
+            else -> null
+        }
+        if (semantic != null) {
+            Log.w(TAG, "Label '$label' (normalized='$normalized') fell back to semantic match ${semantic.name}")
+            return semantic
+        }
+        // Last resort: try enum directly (fromString returns OTHER on mismatch).
+        val direct = DebrisType.fromString(label)
+        if (direct == DebrisType.OTHER && normalized != "other") {
+            Log.w(TAG, "Label '$label' (normalized='$normalized') unmapped -> OTHER. Add to LABEL_TO_TYPE or taxonomy.")
+        }
+        return direct
     }
 
     /** Infers [DebrisMaterial] from [DebrisType] when the VLM omits it. */

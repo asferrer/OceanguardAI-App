@@ -350,6 +350,7 @@ class LiteRTTextEngine(
         systemMessage: String? = null,
         maxToolRounds: Int = 8,
         requiredToolNames: Set<String> = emptySet(),
+        dataBundle: String? = null,
         onPartialResult: (String) -> Unit = {},
         onToolCallStarted: (String) -> Unit = {},
     ): String = withContext(Dispatchers.IO) {
@@ -382,6 +383,7 @@ class LiteRTTextEngine(
                 prompt = prompt,
                 maxToolRounds = maxToolRounds,
                 requiredToolNames = requiredToolNames,
+                dataBundle = dataBundle,
                 onPartialResult = onPartialResult,
                 onToolCallStarted = onToolCallStarted,
             )

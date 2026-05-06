@@ -2,9 +2,7 @@ package com.oceanguard.ai.inference
 
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.Tool
-import com.google.ai.edge.litertlm.ToolParam
 import com.google.ai.edge.litertlm.ToolSet
-import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.EnvironmentalImpact
 import kotlin.math.round
 import kotlin.math.sqrt
@@ -41,7 +39,7 @@ class OceanGuardTools(private val ctx: ToolReportContext) : ToolSet {
         )
     }
 
-    @Tool(description = "Get counts and percentages for each debris MATERIAL (Plastic, Metal, Glass, Fishing_Net, Rubber, Fabric, Wood, Paper, Ceramic, Chemical, Other). Percentages sum to 100.0.")
+    @Tool(description = "Get counts and percentages for each debris MATERIAL actually detected in this survey. Returned items array is the authoritative and complete list — do not add other materials. Percentages sum to 100.0.")
     fun getMaterialBreakdown(): Map<String, Any> {
         val total = ctx.materialCounts.values.sum().toDouble().coerceAtLeast(1.0)
         val items = ctx.materialCounts.entries.map { (mat, count) ->
@@ -54,7 +52,7 @@ class OceanGuardTools(private val ctx: ToolReportContext) : ToolSet {
         return mapOf("total" to total.toInt(), "items" to items)
     }
 
-    @Tool(description = "Get counts and percentages for each specific debris TYPE (Bottle, Fishing_Net, Tire, Plastic_Bag, Cigarette_Butt, etc.). Percentages sum to 100.0.")
+    @Tool(description = "Get counts and percentages for each specific debris TYPE actually detected in this survey. Returned items array is the authoritative and complete list — do not mention other debris types. Percentages sum to 100.0.")
     fun getTypeBreakdown(): Map<String, Any> {
         val total = ctx.typeCounts.values.sum().toDouble().coerceAtLeast(1.0)
         val items = ctx.typeCounts.entries.map { (t, count) ->
@@ -116,65 +114,44 @@ class OceanGuardTools(private val ctx: ToolReportContext) : ToolSet {
         )
     }
 
-    @Tool(description = "Get environmental persistence (degradation time), primary risk, risk score, and annual ocean volume for a specific debris type. Use this BEFORE writing about any debris type's ecological impact.")
-    fun getEcologicalImpact(
-        @ToolParam(description = "Debris type name in UPPER_SNAKE_CASE, e.g. FISHING_NET, BOTTLE, TIRE, PLASTIC_DEBRIS.")
-        debrisType: String,
-    ): Map<String, Any> {
-        val type = DebrisType.fromString(debrisType)
-        val impact = EnvironmentalImpact.getImpact(type)
+    @Tool(description = "Get environmental persistence (degradation time), primary risk, risk score, and annual ocean volume for every debris type detected in this survey. Returns items sorted by count desc. Use this BEFORE writing about any debris type's ecological impact.")
+    fun getEcologicalImpacts(): Map<String, Any> {
+        val items = ctx.typeCounts.entries.map { (type, count) ->
+            val impact = EnvironmentalImpact.getImpact(type)
+            mapOf(
+                "type" to type.name,
+                "count" to count,
+                "degradationTime" to impact.degradationTime,
+                "primaryRisk" to impact.primaryRisk,
+                "riskScore" to impact.riskScore,
+                "annualVolumeOcean" to (impact.annualVolumeOcean ?: "Not quantified"),
+            )
+        }
+        return mapOf("count" to items.size, "items" to items)
+    }
+
+    @Tool(description = "Compute statistical metrics (min, max, avg, median, stdDev) for BOTH health_score and debris_count across all sessions in a single call.")
+    fun getSurveyStatistics(): Map<String, Any> {
+        val healthValues = ctx.sessions.map { it.healthScore.toDouble() }
+        val countValues = ctx.sessions.map { it.totalCount.toDouble() }
         return mapOf(
-            "type" to type.name,
-            "degradationTime" to impact.degradationTime,
-            "primaryRisk" to impact.primaryRisk,
-            "riskScore" to impact.riskScore,
-            "annualVolumeOcean" to (impact.annualVolumeOcean ?: "Not quantified"),
+            "health_score" to summarize(healthValues),
+            "debris_count" to summarize(countValues),
         )
     }
 
-    @Tool(description = "Compute statistical metrics (min, max, avg, median, stdDev) over a numeric field across all sessions. Field must be one of: health_score, debris_count.")
-    fun computeStatistics(
-        @ToolParam(description = "Field name: health_score or debris_count.")
-        field: String,
-    ): Map<String, Any> {
-        val values: List<Double> = when (field.lowercase()) {
-            "health_score" -> ctx.sessions.map { it.healthScore.toDouble() }
-            "debris_count" -> ctx.sessions.map { it.totalCount.toDouble() }
-            else -> return mapOf("error" to "Unknown field: $field. Use health_score or debris_count.")
-        }
-        if (values.isEmpty()) return mapOf("error" to "No data available")
+    private fun summarize(values: List<Double>): Map<String, Any> {
+        if (values.isEmpty()) return mapOf("n" to 0)
         val sorted = values.sorted()
         val avg = values.average()
         val variance = values.sumOf { (it - avg) * (it - avg) } / values.size
         return mapOf(
-            "field" to field.lowercase(),
             "n" to values.size,
             "min" to sorted.first(),
             "max" to sorted.last(),
             "avg" to roundTo1(avg),
             "median" to sorted[sorted.size / 2],
             "stdDev" to roundTo1(sqrt(variance)),
-        )
-    }
-
-    @Tool(description = "Get detailed breakdown for a specific detection session by its sequential index (0 = most recent). Returns id, timestamp, debris count, health score, GPS, image quality.")
-    fun getSessionDetail(
-        @ToolParam(description = "Zero-based index of the session (0 = most recent).")
-        index: Int,
-    ): Map<String, Any> {
-        if (index < 0 || index >= ctx.sessionDetails.size) {
-            return mapOf("error" to "Index $index out of range [0, ${ctx.sessionDetails.size - 1}]")
-        }
-        val d = ctx.sessionDetails[index]
-        return mapOf(
-            "index" to d.index,
-            "sessionId" to d.sessionId,
-            "timestampMs" to d.timestampMs,
-            "totalDebris" to d.totalDebris,
-            "healthScore" to d.healthScore,
-            "lat" to (d.lat ?: "unknown"),
-            "lon" to (d.lon ?: "unknown"),
-            "imageQuality" to d.imageQuality,
         )
     }
 

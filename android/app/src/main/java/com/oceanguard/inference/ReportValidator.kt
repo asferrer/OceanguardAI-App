@@ -25,10 +25,18 @@ object ReportValidator {
 
     private const val TAG = "ReportValidator"
 
-    /** All lowercase name variants for a material (raw + translated). */
+    /**
+     * All lowercase name variants for a material (raw + translated). For
+     * non-English output languages the raw English alias is intentionally
+     * omitted: words like "chemical" or "paper" appear inside localized
+     * prose (e.g. "toxic chemical leaching" inside Spanish risk descriptions)
+     * and would otherwise trigger false-positive fabrication alerts.
+     */
     private fun materialNames(key: String, language: String): Set<String> = buildSet {
-        add(key.lowercase())
-        add(key.lowercase().replace("_", " "))
+        if (language == "en") {
+            add(key.lowercase())
+            add(key.lowercase().replace("_", " "))
+        }
         add(ReportGenerator.translateMaterial(key, language).lowercase())
         add(ReportGenerator.translateMaterial(key, "en").lowercase())
     }
@@ -96,6 +104,19 @@ object ReportValidator {
             )
         }
 
+        if (reportText.isBlank()) {
+            return ValidationResult(
+                overallScore = 0,
+                checks = listOf(
+                    ValidationCheck(
+                        field = "report_text",
+                        status = CheckStatus.FAIL,
+                        detail = "Generated report is empty — model produced no prose output",
+                    )
+                ),
+            )
+        }
+
         val checks = mutableListOf<ValidationCheck>()
         val allDebris = sessions.flatMap { it.debrisList }
 
@@ -117,6 +138,9 @@ object ReportValidator {
             "(pass=${checks.count { it.status == CheckStatus.PASS }}, " +
             "warn=${checks.count { it.status == CheckStatus.WARNING }}, " +
             "fail=${checks.count { it.status == CheckStatus.FAIL }})")
+        checks.filter { it.status != CheckStatus.PASS }.forEach { c ->
+            Log.w(TAG, "Check ${c.status.name} [${c.field}]: ${c.detail}")
+        }
 
         return ValidationResult(overallScore = score, checks = checks)
     }
@@ -712,6 +736,12 @@ object ReportValidator {
         val placeholderPatterns = listOf(
             "[Insert", "[insert", "[Insertar", "[insertar",
             "[TODO", "[todo", "[PLACEHOLDER", "[placeholder",
+            "[Valor", "[valor", "[Value", "[value",
+            "[Nombre", "[nombre", "[Name", "[name",
+            "[Mencionar", "[mencionar", "[Mention", "[mention",
+            "[Etiqueta", "[etiqueta", "[Label", "[label",
+            "[Frecuencia", "[frecuencia",
+            "| ... |", "|...|",
         )
 
         val found = placeholderPatterns.filter { text.contains(it) }

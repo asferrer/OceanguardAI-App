@@ -39,7 +39,12 @@ internal class ToolAgentLoop(
     companion object {
         private const val TAG = "ToolAgentLoop"
         private const val PARTIAL_THROTTLE_MS = 500L
-        private const val DEFAULT_MAX_REDIRECTS = 2
+        private const val DEFAULT_MAX_REDIRECTS = 3
+        // When a dataBundle is provided, PHASE 2 happens on a fresh conversation,
+        // so any prose the model emits in the tool-dispatch conversation is
+        // wasted CPU. Cancel the current turn once the model starts writing
+        // more than a handful of characters without tool calls.
+        private const val PHASE1_PROSE_ABORT_CHARS = 64
     }
 
     private val gson = Gson()
@@ -64,9 +69,11 @@ internal class ToolAgentLoop(
         maxToolRounds: Int,
         requiredToolNames: Set<String> = emptySet(),
         maxRedirects: Int = DEFAULT_MAX_REDIRECTS,
+        dataBundle: String? = null,
         onPartialResult: (String) -> Unit,
         onToolCallStarted: (String) -> Unit,
     ): String {
+        val phase1Mode = dataBundle != null
         val accumulated = StringBuilder()
         val calledTools = mutableSetOf<String>()
         var nextInput: Any = prompt   // first turn: text; subsequent: Contents of ToolResponse or redirect String
@@ -74,7 +81,7 @@ internal class ToolAgentLoop(
         var redirects = 0
 
         while (round <= maxToolRounds) {
-            val toolCalls = sendTurn(nextInput, accumulated, onPartialResult)
+            val toolCalls = sendTurn(nextInput, accumulated, onPartialResult, phase1Mode)
 
             if (toolCalls.isNotEmpty()) {
                 if (round >= maxToolRounds) {
@@ -89,10 +96,32 @@ internal class ToolAgentLoop(
             }
 
             // Model produced no tool calls this turn. Decide: allow finish, or redirect
-            // because required tools are still missing.
-            val missing = requiredToolNames - calledTools
+            // because required tools are still missing. Gemma 4 sometimes abbreviates
+            // snake_case names (e.g. `get_temporal` instead of `get_temporal_trend`)
+            // which the SDK dispatcher resolves via prefix; treat any called name
+            // that is a prefix of a required name as satisfying that requirement.
+            val missing = requiredToolNames.filterNot { req ->
+                calledTools.any { called -> req == called || req.startsWith(called) || called.startsWith(req) }
+            }.toSet()
+
+            // PHASE-1 early exit: when a dataBundle was supplied and all required
+            // tools have run, stop immediately. The LiteRT-LM Conversation keeps
+            // the full KV cache across turns — letting the model write prose here
+            // would accumulate a garbled draft (Gemma 4 E2B emits template
+            // placeholders when transcribing raw tool-response JSON) and slow the
+            // next turn by 10x. The caller is expected to invoke generateText()
+            // on a FRESH conversation using the bundle as the prompt, which
+            // collapses PHASE-2 to a simple "copy these tables" task.
+            if (missing.isEmpty() && dataBundle != null) {
+                Log.i(TAG, "PHASE-1 done (tools=$calledTools); exiting agent loop so caller can run PHASE-2 on a fresh conversation")
+                return ""
+            }
             if (missing.isEmpty() || redirects >= maxRedirects) {
-                Log.d(TAG, "Loop done after $round round(s), $redirects redirect(s); called=$calledTools; ${accumulated.length} chars")
+                if (missing.isNotEmpty()) {
+                    Log.w(TAG, "AgentLoop EXHAUSTED redirects=$redirects rounds=$round; STILL MISSING tools=$missing; called=$calledTools; chars=${accumulated.length}")
+                } else {
+                    Log.i(TAG, "AgentLoop summary: rounds=$round redirects=$redirects called=$calledTools chars=${accumulated.length}")
+                }
                 return accumulated.toString()
             }
 
@@ -122,18 +151,30 @@ internal class ToolAgentLoop(
         input: Any,
         accumulated: StringBuilder,
         onPartialResult: (String) -> Unit,
+        phase1Mode: Boolean = false,
     ): List<ToolCall> = suspendCancellableCoroutine { continuation ->
         val collectedToolCalls = mutableListOf<ToolCall>()
         var lastPartialMs = 0L
+        var resumed = false
 
         val callback = object : MessageCallback {
             override fun onMessage(message: Message) {
+                if (resumed) return
                 if (message.toolCalls.isNotEmpty()) {
                     collectedToolCalls.addAll(message.toolCalls)
                 }
                 val token = message.contents.toString()
                 if (token.isNotEmpty()) {
                     accumulated.append(token)
+                    // In PHASE 1 (tool-dispatch only; final writing happens on a
+                    // fresh conversation), any prose past the abort threshold is
+                    // wasted CPU. Resume early so the outer loop can move on.
+                    if (phase1Mode && collectedToolCalls.isEmpty() && accumulated.length >= PHASE1_PROSE_ABORT_CHARS) {
+                        Log.i(TAG, "PHASE-1 prose detected (${accumulated.length} chars); aborting turn to hand off to PHASE-2")
+                        resumed = true
+                        continuation.resume(emptyList())
+                        return
+                    }
                     val now = System.currentTimeMillis()
                     if (now - lastPartialMs >= PARTIAL_THROTTLE_MS) {
                         onPartialResult(accumulated.toString())
@@ -142,9 +183,13 @@ internal class ToolAgentLoop(
                 }
             }
             override fun onDone() {
+                if (resumed) return
+                resumed = true
                 continuation.resume(collectedToolCalls.toList())
             }
             override fun onError(error: Throwable) {
+                if (resumed) return
+                resumed = true
                 // Defensive: tool-call parser failures (LiteRtLmJniException) from Gemma 4
                 // emitting slightly malformed FC syntax must NOT abort the report. Swallow
                 // them unconditionally, log the offending payload, and end the turn — the
