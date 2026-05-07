@@ -58,10 +58,13 @@ object RTDETRBenchmarkRunner {
                     strategy = DelegateStrategy.NNAPI_PREFERRED,
                     label = "FP16",
                 )
+                // INT8 + NNAPI is unsupported on Exynos 2200 (Xclipse 920),
+                // crashes the process during graph build. Use XNNPACK_ONLY which
+                // is the path the production app falls back to on this SoC.
                 results += benchmarkModel(
                     context, testBitmap,
                     modelPath = RTDETRInference.MODEL_PATH_INT8,
-                    strategy = DelegateStrategy.NNAPI_PREFERRED,
+                    strategy = DelegateStrategy.XNNPACK_ONLY,
                     label = "INT8",
                 )
             } finally {
