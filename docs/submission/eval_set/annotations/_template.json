@@ -1,0 +1,29 @@
+{
+  "info": {
+    "description": "OceanGuard AI - Reproducible evaluation set (Kaggle Gemma 4 Good Hackathon submission)",
+    "url": "https://github.com/asferrer/OceanguardAI",
+    "version": "1.0",
+    "year": 2026,
+    "contributor": "Alejandro Sanchez Ferrer - Universidad de Alicante",
+    "date_created": "2026-05-11"
+  },
+  "licenses": [
+    {
+      "id": 1,
+      "name": "CC-BY-4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ],
+  "categories": [
+    { "id": 0, "name": "Bottle",         "supercategory": "debris" },
+    { "id": 1, "name": "Can",            "supercategory": "debris" },
+    { "id": 2, "name": "Fishing_Net",    "supercategory": "debris" },
+    { "id": 3, "name": "Glove",          "supercategory": "debris" },
+    { "id": 4, "name": "Mask",           "supercategory": "debris" },
+    { "id": 5, "name": "Metal_Debris",   "supercategory": "debris" },
+    { "id": 6, "name": "Plastic_Debris", "supercategory": "debris" },
+    { "id": 7, "name": "Tire",           "supercategory": "debris" }
+  ],
+  "images": [],
+  "annotations": []
+}
