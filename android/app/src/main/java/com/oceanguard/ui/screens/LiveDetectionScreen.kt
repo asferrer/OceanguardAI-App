@@ -181,9 +181,12 @@ private fun LiveDetectionContent(
     val threshold by app.settingsRepository.confidenceThreshold.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
+    // Live mode is hard-wired to RT-DETRv2 regardless of the user's "active detector" preference.
+    // Gemma 4 Vision takes 15-25 s/frame on Exynos 2200, which would collapse the camera loop
+    // to ~0.05 FPS. The deep Gemma 4 path runs on demand via single-shot capture instead.
     val liveDetectionManager = remember {
         LiveDetectionManager(
-            detector = app.getActiveDetector(),
+            detector = app.rtdetrInference,
             context = context,
             repository = app.repository,
             locationProvider = app.locationProvider,

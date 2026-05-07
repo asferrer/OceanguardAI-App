@@ -338,9 +338,13 @@ class InferenceService : LifecycleService() {
         inferenceJob = lifecycleScope.launch {
             try {
                 val threshold = app.settingsRepository.confidenceThreshold.first()
+                // Video processing must stay on RT-DETRv2: Gemma 4 Vision needs 15-25 s
+                // per frame on Exynos 2200, which would inflate a 60-frame clip from
+                // 4 minutes (RT-DETR) to ~20 minutes. The deep Gemma 4 path is reserved
+                // for single-shot capture, where one slow inference is acceptable UX.
                 val processor = VideoProcessor(
                     context = applicationContext,
-                    detector = app.getActiveDetector(),
+                    detector = app.rtdetrInference,
                     confidenceThreshold = threshold,
                 )
                 videoProcessor = processor

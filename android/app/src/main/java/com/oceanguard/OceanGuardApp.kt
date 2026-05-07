@@ -149,8 +149,11 @@ class OceanGuardApp : Application() {
     }
 
     /**
-     * Returns the active detector based on user settings.
-     * "rtdetr" → RT-DETRv2 (fast), "gemma4" → Gemma 4 Vision (deep).
+     * Returns the active detector for **single-shot deep analysis**, based on user settings.
+     * "rtdetr" → RT-DETRv2 (~4 s/frame, fast), "gemma4" → Gemma 4 Vision (~20 s/frame, deep).
+     *
+     * **DO NOT use this in real-time loops** (live camera, video processing). Gemma 4 Vision
+     * collapses those to ~0.05 FPS on Exynos 2200. Use [rtdetrInference] directly instead.
      */
     fun getActiveDetector(): ObjectDetector {
         return when (settingsRepository.getDetectorModeSync()) {
