@@ -37,7 +37,7 @@ Format per scene: **[timecode] · VISUAL · ON-SCREEN TEXT · VOICEOVER**
 **[0:38 – 0:55]**
 *Visual*: Whiteboard sketch animation: three icons appear, "edge", "vision", "grounded text".
 *On-screen text*: EDGE · VISION · GROUNDED
-*VO*: "We needed three things at once. Intelligence at the edge, so the field never depends on a network. Multimodal vision, to recognize debris from a single photo. And grounded text, that proves every number it cites. Until Gemma 4, no open model could do all three on a phone."
+*VO*: "We needed three things at once. Intelligence at the edge, so the field never depends on a network. Multimodal vision, to recognize debris from a single photo. And grounded text, that proves every number it cites. With Gemma 4, an open model finally does all three on a phone."
 
 ---
 
@@ -50,8 +50,8 @@ Format per scene: **[timecode] · VISUAL · ON-SCREEN TEXT · VOICEOVER**
 
 **[1:05 – 1:20]**
 *Visual*: Phone screen recording. User opens the app, takes a photo of debris on a beach. Animated bounding boxes appear over plastic bottles, a fishing net, a tire. Health Score gauge animates from 100 down to 42.
-*On-screen text*: 53 debris classes · 6 languages · 100% offline
-*VO*: "One tap. Gemma 4 detects fifty-three classes of marine debris, computes an ecosystem health score, and pins it to the map. Six languages. Zero network calls. Zero cloud bills."
+*On-screen text*: 50 debris classes · 6 languages · 100% offline
+*VO*: "One tap. Gemma 4 detects fifty classes of marine debris, computes an ecosystem health score, and pins it to the map. Six languages. Zero network calls. Zero cloud bills."
 
 ---
 
@@ -68,19 +68,19 @@ Format per scene: **[timecode] · VISUAL · ON-SCREEN TEXT · VOICEOVER**
 **[1:32 – 1:48]**
 *Visual*: Generated report streams in real time. Camera zooms into a percentage table. Numbers highlight green as a tooltip pops up: "from getMaterialBreakdown".
 *On-screen text*: "Every percentage traces back to a tool call."
-*VO*: "Percentages always sum to one hundred. Degradation times always match NOAA reference data. GPS waypoints are real, ranked by impact. Reports went from six hundred to over twelve hundred words, in under ninety seconds, on a phone, with mathematically guaranteed numbers."
+*VO*: "Percentages always sum to one hundred. Degradation times always match NOAA reference data. GPS waypoints are real, ranked by impact. Reports of seven hundred to nine hundred words, fully grounded, on a phone — every number traceable to a tool call."
 
 **[1:48 – 2:05]**
-*Visual*: Code split-screen. Left: 9 `@Tool` Kotlin methods. Right: terminal showing logcat lines `Tool 'getDebrisSummary' executed OK`, `Loop done after 5 tool round(s)`. Highlight `automaticToolCalling = false`.
-*On-screen text*: 9 tools · 17 unit tests · 0 hallucinations
-*VO*: "Nine tools. A custom Kotlin agent loop with manual streaming. Seventeen unit tests prove the contract. The model is grounded and explainable by construction."
+*Visual*: Code split-screen. Left: 8 `@Tool` Kotlin methods. Right: terminal showing logcat lines `Tool 'getDebrisSummary' executed OK`, `Loop done after 5 tool round(s)`. Highlight `automaticToolCalling = false`.
+*On-screen text*: 8 tools · 17 unit tests · grounded by construction
+*VO*: "Eight tools. A custom Kotlin agent loop with manual streaming. Seventeen unit tests prove the contract. The model is grounded and explainable by construction."
 
 ---
 
 ## ACT 5 · Two runtimes, one model (2:05 – 2:25)
 
 **[2:05 – 2:15]**
-*Visual*: Two parallel pipes animate side by side. Left pipe labeled "LiteRT-LM 0.10.0 · Vulkan GPU · @Tool". Right pipe labeled "llama.cpp · Vulkan · mmproj". Both feed into the same Gemma 4 logo in the center.
+*Visual*: Two parallel pipes animate side by side. Left pipe labeled "LiteRT-LM 0.10.0 · CPU XNNPACK · @Tool". Right pipe labeled "llama.cpp · Vulkan · mmproj". Both feed into the same Gemma 4 logo in the center.
 *On-screen text*: One model. Two runtimes. Every device.
 *VO*: "We ship Gemma 4 on two runtimes. LiteRT-LM with native function calling for grounded reports. And llama.cpp with mmproj for portable open-vocabulary vision."
 
@@ -98,7 +98,7 @@ Format per scene: **[timecode] · VISUAL · ON-SCREEN TEXT · VOICEOVER**
 - A coastal NGO coordinator in Senegal showing a heatmap to a colleague.
 - A doctoral researcher in Galicia exporting a peer-review-ready report.
 - A teenage diver in Indonesia uploading a photo to the marine debris map.
-*VO*: "A coordinator in Senegal briefs a minister tomorrow. A researcher in Galicia ships a paper section in ninety seconds. A teenager in Indonesia adds one more photo to the world's largest crowd-sourced marine pollution map."
+*VO*: "A coordinator in Senegal briefs a minister tomorrow. A researcher in Galicia ships a peer-review-ready section without leaving the field. A teenager in Indonesia adds one more photo to the world's largest crowd-sourced marine pollution map."
 
 **[2:40 – 2:50]**
 *Visual*: Pull back from a phone screen showing the OceanGuard map of the world, dots filling in across coastlines. Camera keeps pulling until the phone is in someone's hand on a beach at sunset.
@@ -119,7 +119,7 @@ Powered by Gemma 4.
 
 - **B-roll sources to license or shoot**: free underwater stock (Pexels, Coverr), original footage of a dive in any Mediterranean cove, a beach cleanup, a phone in hand on a coastline at golden hour.
 - **Screen recordings**: capture from Galaxy S22 Ultra at 1080p 60fps. Slow-mo the bounding-box reveal to 1.5×.
-- **Code shots**: use a clean dark theme (Material 3 dark). Highlight `@Tool`, `automaticToolCalling = false`, and the 9 tool names.
+- **Code shots**: use a clean dark theme (Material 3 dark). Highlight `@Tool`, `automaticToolCalling = false`, and the 8 tool names.
 - **Captions**: full English subtitles burnt-in, plus an SRT in Spanish for the YouTube CC track to reinforce the multilingual story.
 - **Thumbnail**: split image, left half a plastic bottle underwater, right half the OceanGuard report on a phone, big "Powered by Gemma 4" in the corner.
 - **Hard cut-off**: the spec says 3:00. Aim for 2:55 with 5 seconds of safety margin.
@@ -128,7 +128,7 @@ Powered by Gemma 4.
 
 - 0:00 – 0:25: low, somber, breath between phrases.
 - 0:55 – 1:20: lift, brighter cadence, optimism enters.
-- 1:20 – 2:05: this is the climax. Crisp, confident, punch the numbers ("ninety seconds", "fifty-three classes", "zero hallucinations").
+- 1:20 – 2:05: this is the climax. Crisp, confident, punch the phrases ("every number traceable", "fifty classes", "grounded by construction").
 - 2:25 – 2:55: warm, slow down 10%, let the visuals breathe.
 
 ## Talking points if you record a presenter cut instead
