@@ -85,3 +85,8 @@ screenshots/
 
 # Claude
 .claude/
+
+# Local artifacts that should never reach a public snapshot
+alex.html
+dumpstate-*.zip
+graphify-out/

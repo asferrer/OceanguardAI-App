@@ -14,10 +14,10 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for git describe version
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Decode keystore
@@ -42,6 +42,14 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk \
              android/app/build/outputs/apk/release/OceanGuard-AI-latest.apk
 
+      - name: Generate model checksums
+        working-directory: android/app/src/main/assets/models
+        run: |
+          sha256sum rtdetrv2_detector.tflite rtdetrv2_detector_int8.tflite \
+            | awk '{print $1"  "$2}' > CHECKSUMS.txt
+          echo "Checksums:"
+          cat CHECKSUMS.txt
+
       - name: Publish release to public repo
         uses: softprops/action-gh-release@v2
         with:
@@ -49,17 +57,35 @@ jobs:
           token: ${{ secrets.RELEASE_REPO_TOKEN }}
           tag_name: ${{ github.ref_name }}
           name: OceanGuard AI ${{ github.ref_name }}
-          files: android/app/build/outputs/apk/release/OceanGuard-AI-*.apk
+          files: |
+            android/app/build/outputs/apk/release/OceanGuard-AI-*.apk
+            android/app/src/main/assets/models/rtdetrv2_detector.tflite
+            android/app/src/main/assets/models/rtdetrv2_detector_int8.tflite
+            android/app/src/main/assets/models/CHECKSUMS.txt
           body: |
             ## OceanGuard AI ${{ github.ref_name }}
 
             On-device marine debris detection for Android.
 
-            ## Installation
+            ## Installation (APK)
 
             1. Download **OceanGuard-AI-${{ github.ref_name }}.apk** below
             2. On your Android device: Settings > Apps > ⋯ > Special access > Install unknown apps > Enable for your browser
             3. Open the downloaded APK and tap **Install**
             4. Google Play Protect may show a warning — tap "Install anyway"
 
-            > **Optional:** The deep analysis model can be downloaded from within the app.
+            ## Build from source
+
+            Clone the repository, then download the bundled detector models:
+
+            ```bash
+            bash setup-models.sh        # Linux / macOS / WSL
+            # or
+            ./setup-models.ps1          # Windows PowerShell
+            ```
+
+            The script fetches `rtdetrv2_detector.tflite` and `rtdetrv2_detector_int8.tflite`
+            from this release and verifies their SHA256 against `models/CHECKSUMS.txt`.
+
+            > **Optional:** The deep analysis model (Gemma 4 E2B via LiteRT-LM, ~3.4 GB) is
+            > downloaded from within the app via Settings > Models > Download.
