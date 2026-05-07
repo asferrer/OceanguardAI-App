@@ -1029,6 +1029,75 @@ private fun DeveloperSettingsSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+        // RT-DETRv2 Detector Benchmark
+        var detectorBenchRunning by remember { mutableStateOf(false) }
+        var detectorBenchResult by remember { mutableStateOf<String?>(null) }
+
+        Text(
+            text = "RT-DETRv2 Detector Benchmark",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = "FP16 + INT8, NNAPI+XNNPACK. 5 warmup + 50 runs. Results logged: adb logcat -s RTDETRBenchmark:I",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        if (detectorBenchRunning) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Text(
+                text = "Running benchmark (5 warmup + 50 runs x 2 models)...",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            OutlinedButton(
+                onClick = {
+                    detectorBenchRunning = true
+                    detectorBenchResult = null
+                    scope.launch {
+                        try {
+                            val results = com.oceanguard.ai.inference.RTDETRBenchmarkRunner.runAll(devContext)
+                            detectorBenchResult = results.joinToString("\n") { r ->
+                                "${r.modelLabel}: p50=${r.p50Ms}ms p95=${r.p95Ms}ms mean=${r.meanMs}ms [${r.delegateLabel}]"
+                            }
+                            Toast.makeText(
+                                devContext,
+                                "Detector p50: ${results.firstOrNull()?.p50Ms ?: "--"}ms (see logcat)",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        } catch (e: Exception) {
+                            detectorBenchResult = "ERROR: ${e.message}"
+                            android.util.Log.e("RTDETRBenchmark", "Benchmark failed", e)
+                        } finally {
+                            detectorBenchRunning = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("Run Detector Benchmark")
+            }
+        }
+        detectorBenchResult?.let { result ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    text = result,
+                    modifier = Modifier.padding(8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                )
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
         // Technical info
         val techLabel = "RT-DETRv2 + VLM (llama.cpp)"
         Text(
