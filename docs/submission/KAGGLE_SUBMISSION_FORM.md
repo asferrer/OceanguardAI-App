@@ -153,7 +153,7 @@ The RT-DETRv2 detector is trained on an 8-class superset (Bottle, Can, Fishing_N
 - [ ] Tagline copied into short-description / subtitle field (Section 2 recommended)
 - [ ] Track selected: Global Resilience
 - [ ] Repository link verified resolvable from incognito browser
-- [ ] APK release v1.0.0 cut and latest asset URL confirmed (M5 deliverable)
+- [ ] Latest beta APK release published and `latest` asset URL resolves (current: v0.0.7-beta)
 - [ ] Kaggle notebook published and URL pasted into Section 5
 - [ ] Demo video uploaded to YouTube and URL pasted into Section 5
 - [ ] All [VERIFY: ...] markers resolved or stripped before final submit

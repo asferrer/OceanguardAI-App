@@ -191,7 +191,7 @@ Every artifact required to reproduce this submission is open-source under permis
 
 **Notebook.** A Kaggle-runnable Jupyter notebook accompanies this submission at `docs/submission/notebook.ipynb`. It walks through dataset loading, RT-DETRv2 evaluation, the Gemma 4 box_2d parsing, and the tool-calling loop in a Python mock, ending with a reproduction of the PHASE-1/PHASE-2 split using a small synthetic survey.
 
-**APK release.** The signed reference APK `OceanGuard-AI-1.0.0.apk` is published as a GitHub Release asset (`https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk`) along with the `.litertlm` and GGUF model URLs documented in the README. The release is built from a tagged commit (`v1.0.0`) by GitHub Actions (`.github/workflows/release.yml`); the workflow uses a CI keystore stored in GitHub Secrets and produces a deterministic, signed APK.
+**APK release.** A signed reference APK is published as a GitHub Release asset on the public repository (`https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk`) along with the `.litertlm` and GGUF model URLs documented in the README. The release is built automatically by GitHub Actions (`.github/workflows/release.yml`) from any pushed `v*` tag; the workflow uses a CI keystore stored in GitHub Secrets and produces a deterministic, signed APK. The build referenced by this submission is the latest beta tag at the time of writing.
 
 **Build steps (local).** With Java 21 (Temurin or Liberica) and the Android SDK 34+ installed:
 
