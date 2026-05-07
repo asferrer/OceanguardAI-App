@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,8 @@ import com.oceanguard.ai.data.EnvironmentalImpact
 import com.oceanguard.ai.inference.AnalysisResult
 import com.oceanguard.ai.inference.DetectionResult
 import com.oceanguard.ai.OceanGuardApp
+import com.oceanguard.ai.data.SettingsRepository
+import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.UiState
 import com.oceanguard.ai.ui.components.BoundingBoxOverlay
@@ -190,13 +193,45 @@ fun ResultsScreen(
         when (val state = uiState) {
 
             // ----------------------------------------------------------------
-            // Detecting: RT-DETRv2 fast pass is running
+            // Detecting: detector pass is running. Wording adapts to which
+            // detector is active — RT-DETRv2 (~4 s) vs Gemma 4 Vision (~22 s).
             // ----------------------------------------------------------------
             is UiState.Detecting, is UiState.ModelLoading -> {
+                val app = LocalContext.current.applicationContext as OceanGuardApp
+                val detectorModeKey by app.settingsRepository.detectorMode
+                    .collectAsStateWithLifecycle(initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE)
+                val isGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
+
+                val message = when {
+                    state is UiState.ModelLoading -> state.progress
+                    isGemma4 -> stringResource(R.string.results_status_detecting_gemma4)
+                    else -> stringResource(R.string.results_status_detecting)
+                }
+                val subMessage = if (isGemma4) {
+                    stringResource(R.string.results_status_gemma4_subtitle)
+                } else {
+                    stringResource(R.string.results_status_fast_detection)
+                }
+
+                // Tick every second so the user sees that the app is alive
+                // during the long Gemma 4 pass.
+                var elapsedSec by remember { mutableIntStateOf(0) }
+                LaunchedEffect(state) {
+                    elapsedSec = 0
+                    while (true) {
+                        delay(1_000)
+                        elapsedSec += 1
+                    }
+                }
+                val timerLine = if (isGemma4 && elapsedSec > 0) {
+                    stringResource(R.string.results_status_elapsed, elapsedSec)
+                } else null
+
                 LoadingContent(
                     modifier = Modifier.padding(paddingValues),
-                    message = if (state is UiState.ModelLoading) state.progress else stringResource(R.string.results_status_detecting),
-                    subMessage = stringResource(R.string.results_status_fast_detection),
+                    message = message,
+                    subMessage = subMessage,
+                    extraLine = timerLine,
                 )
             }
 
@@ -388,6 +423,7 @@ private fun LoadingContent(
     modifier: Modifier,
     message: String,
     subMessage: String,
+    extraLine: String? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -408,7 +444,17 @@ private fun LoadingContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 32.dp),
         )
+        if (extraLine != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = extraLine,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

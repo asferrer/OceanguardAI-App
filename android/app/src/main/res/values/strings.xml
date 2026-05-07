@@ -136,6 +136,11 @@
     <string name="results_title">Detection Results</string>
     <string name="results_status_detecting">Detecting debris...</string>
     <string name="results_status_fast_detection">Running AI fast detection</string>
+    <!-- Shown when the active detector is Gemma 4 Vision (deep open-vocabulary model) -->
+    <string name="results_status_detecting_gemma4">Analyzing with Gemma 4…</string>
+    <string name="results_status_gemma4_subtitle">Open-vocabulary on-device AI · usually 20-30 s on this phone</string>
+    <!-- Format: "Elapsed: 12 s" -->
+    <string name="results_status_elapsed">Elapsed: %1$d s</string>
     <string name="results_status_deep_analysis">Running deep AI analysis...</string>
     <string name="results_status_generating">Generating ecosystem analysis...</string>
     <string name="results_status_preparing">Preparing analysis...</string>
