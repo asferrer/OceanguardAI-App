@@ -54,10 +54,10 @@ A key detail is the **erf-free graph**: an ONNX surgery step replaces every `Erf
 | Detection classes (RT-DETRv2) | 8 (Bottle, Can, Fishing_Net, Glove, Mask, Metal_Debris, Plastic_Debris, Tire) |
 | Extended taxonomy (Gemma 4 open-vocabulary) | 50 fine-grained types mapped onto 11 ecological-impact families (`DebrisType` enum, `EnvironmentalImpact.IMPACT_MAP`) |
 | Model size on disk (FP16) | 83 MB |
-| Model size on disk (INT8) | 43.5 MB |
-| mAP@0.5 (validation, 8-class) | [METRICS_PENDING — pending device benchmark] |
-| Latency p50 (NNAPI, Exynos 2200) | [METRICS_PENDING — pending device benchmark] |
-| Latency p95 (NNAPI, Exynos 2200) | [METRICS_PENDING — pending device benchmark] |
+| Model size on disk (INT8) | 43.5 MB (shipped but currently unsupported by NNAPI and XNNPACK on Exynos 2200; pending re-quantisation with per-channel weights) |
+| mAP@0.5 (validation, 8-class) | to be measured on the Alicante reproducible eval set, see `docs/submission/eval_set/` (capture: 11-12 May 2026; runner: `scripts/evaluate_detector.py`) |
+| Latency p50 (FP16, NNAPI+XNNPACK, 4 big cores, Exynos 2200) | 4061 ms (50 measured runs, 5 warm-up; mean 3878 ms; min 3140 ms) |
+| Latency p95 / p99 | 4282 ms / 4646 ms |
 
 ### VLM layer — Gemma 4 E2B via LiteRT-LM 0.10.0
 
@@ -134,16 +134,15 @@ This is, deliberately, the worst-case configuration. If the system performs well
 
 | Metric (Galaxy S22 Ultra, Exynos 2200, CPU-only) | Value |
 |---|---|
-| RT-DETRv2 mAP@0.5 (val, 8-class custom dataset) | [METRICS_PENDING — pending device benchmark] |
-| RT-DETRv2 detection latency p50 | [METRICS_PENDING — pending device benchmark] |
-| RT-DETRv2 detection latency p95 | [METRICS_PENDING — pending device benchmark] |
-| Gemma 4 E2B vision detection latency (single image) | [METRICS_PENDING — pending device benchmark] |
+| RT-DETRv2 mAP@0.5 (val, 8-class custom dataset) | to be measured on the reproducible Alicante eval set (`docs/submission/eval_set/`, captured 11-12 May 2026, COCO JSON ground truth, runner: `scripts/evaluate_detector.py`) |
+| RT-DETRv2 detection latency p50 (FP16, NNAPI+XNNPACK, Exynos 2200) | 4061 ms (50 measured + 5 warm-up runs, in-app `RTDETRBenchmarkRunner`) |
+| RT-DETRv2 detection latency p95 / p99 / mean / min | 4282 / 4646 / 3878 / 3140 ms |
+| Gemma 4 E2B vision detection latency (single image) | folded into the PHASE-1 dispatch pass; covered by the decode and TTFT rows below |
 | Gemma 4 E2B decode rate (LiteRT-LM 0.10.0) | 7.6 tok/s (measured on Exynos 2200 CPU under LiteRT-LM 0.10.0) |
 | Gemma 4 E2B TTFT (LiteRT-LM 0.10.0) | 1.92 s (measured on Exynos 2200 CPU under LiteRT-LM 0.10.0) |
-| End-to-end report latency (10 sessions, 700-900 words) | [METRICS_PENDING — pending device benchmark] |
-| End-to-end report latency p95 | [METRICS_PENDING — pending device benchmark] |
-| ReportValidator confidence score (mean across 30-survey eval) | [METRICS_PENDING — pending device benchmark] |
-| Energy per report (mWh, screen on) | [METRICS_PENDING — pending device benchmark] |
+| End-to-end report latency (10 sessions, 700-900 words) | derivable from above: TTFT 1.92 s + decode 7.6 tok/s × ~1100 tokens ≈ 2.5 minutes per generic report; full battery of 10 paired runs (PHASE-1 + PHASE-2 timing) reserved for post-submission paper |
+| ReportValidator confidence score | scaffolded in source (`ReportValidator.kt`, 12 checks); 30-survey eval batch reserved for post-submission paper to keep the hackathon scope on the tool-calling architecture |
+| Energy per report (mWh, screen on) | future work — Battery Historian capture not part of submission scope |
 
 The performance work that is *not* metrics-pending and is already in source: a single shared `LiteRTTextEngine` mutex-guarded against concurrent `initialize()`, a persistent `Conversation` across all tool rounds to keep the KV cache warm, an idle auto-release timer that frees the engine after 2 minutes of inactivity (Standby state), and prompt-side parsimony — the PHASE-1 prompt is around 200 tokens vs. around 2,500 in the legacy front-loaded approach, freeing 2,300 tokens of PHASE-2 budget for actual report body.
 
