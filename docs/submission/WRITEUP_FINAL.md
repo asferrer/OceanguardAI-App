@@ -59,9 +59,11 @@ A key detail is the **erf-free graph**: an ONNX surgery step replaces every `Erf
 | Latency p50 (FP16, NNAPI+XNNPACK, 4 big cores, Exynos 2200) | 4061 ms (50 measured runs, 5 warm-up; mean 3878 ms; min 3140 ms) |
 | Latency p95 / p99 | 4282 ms / 4646 ms |
 
-### VLM layer — Gemma 4 E2B via LiteRT-LM 0.10.0
+### VLM layer — Gemma 4 E2B via LiteRT-LM 0.11.0
 
-The VLM layer loads Gemma 4 E2B as a `.litertlm` container through Google AI Edge LiteRT-LM 0.10.0. The runtime negotiates `Backend.GPU()` (Vulkan on Adreno/Xclipse/Mali) and falls back to CPU XNNPACK when the GPU path is unavailable, as it is on the Xclipse 920 (Exynos 2200) due to TFLite GPU delegate limitations. A single shared `LiteRTTextEngine` instance, protected by a Mutex against concurrent `initialize()` races, is used by both the vision detector (`Gemma4VisionDetector`) and the report generator (`ToolReportGenerator`); spawning two native engines on the same accelerator measurably degraded throughput.
+The VLM layer loads Gemma 4 E2B as a `.litertlm` container through Google AI Edge LiteRT-LM 0.11.0 (May 2026; the 0.11 line adds Gemma 4 multi-token-prediction heads and unifies the vision encoder to a single signature, fixing the "exactly one signature but got 3" abort that 0.10.0 raised on legacy preview checkpoints). On this device the runtime successfully negotiates the GPU path (Vulkan on Xclipse 920 / Exynos 2200) — `Engine initialized on GPU` — and falls back to CPU XNNPACK on hardware where Vulkan is unavailable. A single shared `LiteRTTextEngine` instance, protected by a Mutex against concurrent `initialize()` races, is used by both the vision detector (`Gemma4VisionDetector`) and the report generator (`ToolReportGenerator`); spawning two native engines on the same accelerator measurably degraded throughput.
+
+**Pipeline split.** Gemma 4 Vision is wired as the **default detector for single-shot photo capture** (`DEFAULT_DETECTOR_MODE = "gemma4"` in `SettingsRepository`), where one slow inference is acceptable UX and the open-vocabulary surface (50 classes mapped to 11 ecological-impact families, plus material classification) is worth the wait. The live camera loop and the video-frame processor are deliberately **hard-wired to RT-DETRv2** (`LiveDetectionScreen.kt` and `InferenceService.launchVideoInference` both call `app.rtdetrInference` directly, never `getActiveDetector()`); Gemma 4 at ~22 s per frame would collapse a 1-3 FPS preview to ~0.05 FPS and inflate a 60-frame clip from ~4 minutes to ~20. The split is documented at the call sites and in the doc comment of `getActiveDetector()` so the bug class does not regress.
 
 The VLM serves two roles: (i) zero-shot detection, in which Gemma 4 native `box_2d` output (a `[y_min, x_min, y_max, x_max]` integer 0-1000 grid) is parsed into the same `DetectionResult` interface as RT-DETRv2; and (ii) report generation, in which Gemma 4 invokes Kotlin tools to ground every cited number in real database state. Section 4 details the tool-calling stack.
 
@@ -138,8 +140,10 @@ This is, deliberately, the worst-case configuration. If the system performs well
 | RT-DETRv2 detection latency p50 (FP16, NNAPI+XNNPACK, Exynos 2200) | 4061 ms (50 measured + 5 warm-up runs, in-app `RTDETRBenchmarkRunner`) |
 | RT-DETRv2 detection latency p95 / p99 / mean / min | 4282 / 4646 / 3878 / 3140 ms |
 | Gemma 4 E2B vision detection latency (single image) | folded into the PHASE-1 dispatch pass; covered by the decode and TTFT rows below |
-| Gemma 4 E2B decode rate (LiteRT-LM 0.10.0) | 7.6 tok/s (measured on Exynos 2200 CPU under LiteRT-LM 0.10.0) |
-| Gemma 4 E2B TTFT (LiteRT-LM 0.10.0) | 1.92 s (measured on Exynos 2200 CPU under LiteRT-LM 0.10.0) |
+| Gemma 4 E2B decode rate (LiteRT-LM 0.11.0, GPU/Vulkan) | 5.1 tok/s (measured on Exynos 2200 with engine on Xclipse 920 GPU; prior 0.10.0 CPU run was 7.6 tok/s) |
+| Gemma 4 E2B TTFT (LiteRT-LM 0.11.0, GPU/Vulkan) | 2.33 s warm engine (cold first-load 17.34 s; subsequent loads 2.33 s) |
+| Gemma 4 E2B prefill rate (LiteRT-LM 0.11.0) | 48.7 tok/s |
+| Gemma 4 single-shot detection end-to-end (~100-tok bbox JSON) | ~22 s per photo on the reference device — used **only** in the single-shot path; the live camera loop stays on RT-DETRv2 |
 | End-to-end report latency (10 sessions, 700-900 words) | derivable from above: TTFT 1.92 s + decode 7.6 tok/s × ~1100 tokens ≈ 2.5 minutes per generic report; full battery of 10 paired runs (PHASE-1 + PHASE-2 timing) reserved for post-submission paper |
 | ReportValidator confidence score | scaffolded in source (`ReportValidator.kt`, 12 checks); 30-survey eval batch reserved for post-submission paper to keep the hackathon scope on the tool-calling architecture |
 | Energy per report (mWh, screen on) | future work — Battery Historian capture not part of submission scope |
@@ -200,7 +204,7 @@ cd OceanguardAI/android
 ./gradlew installDebug
 ```
 
-For VLM model sideload (3.4 GB, one-time), see `CLAUDE.md` for the `adb push` + `run-as` recipe. The build is reproducible against the pinned dependency versions in `android/app/build.gradle.kts` (Kotlin 2.2.0, Compose BOM 2026.01.01, TFLite 2.17.0, MediaPipe tasks-genai 0.10.32, LiteRT-LM 0.10.0).
+The build is reproducible against the pinned dependency versions in `android/app/build.gradle.kts` (Kotlin 2.2.0, Compose BOM 2026.01.01, TFLite 2.17.0, LiteRT-LM 0.11.0). The Gemma 4 E2B `.litertlm` (~2.6 GB) is **downloaded in-app** by `VlmModelManager` from `huggingface.co/litert-community/gemma-4-E2B-it-litert-lm` the first time the user runs single-shot deep analysis or pulls the in-app benchmark; no `adb push` step is required.
 
 **Licenses.** All ML weights used (RT-DETRv2 finetune, Gemma 4 E2B, Qwen 3.5) are Apache 2.0 / Gemma Terms compatible. There are no GPL or AGPL dependencies anywhere in the application graph.
 
