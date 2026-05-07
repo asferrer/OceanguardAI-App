@@ -206,7 +206,10 @@ dependencies {
     // select-tf-ops removed: both FP16 and INT8 models are now Erf-free (TFLITE_BUILTINS only)
 
     // LiteRT-LM — Gemma 4 E2B inference (dual backend alongside llama.cpp)
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.10.0")
+    // 0.11.0 (May 2026) adds Gemma 4 MTP heads (~2x decode) and unifies vision encoder
+    // to a single signature, fixing the "Vision Encoder model must have exactly one
+    // signature but got 3" crash that 0.10.0 raised on legacy Gemma 3n preview models.
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.11.0")
     // Guava (transitiva de LiteRT-LM) — explicit to expose ListenableFuture at compile time for CameraX 1.6.0
     implementation("com.google.guava:guava:33.3.1-android")
 
