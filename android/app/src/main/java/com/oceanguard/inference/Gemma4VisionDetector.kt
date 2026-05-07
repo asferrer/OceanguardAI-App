@@ -32,21 +32,32 @@ class Gemma4VisionDetector(
 
         /**
          * Open-vocabulary prompt: Gemma 4 identifies ANY marine debris type
-         * and its material. Unlike RT-DETRv2's fixed 8 classes, this covers
-         * all categories from NOAA MDMAP, OSPAR, and ICC classifications.
+         * and its material. Kept deliberately short and permissive — empirical
+         * A/B (memory: feedback_detector_prompt.md) showed that closed-class
+         * lists, chain-of-thought, and confidence fields degrade quality on
+         * Gemma 4 E2B. The taxonomy filtering happens client-side in
+         * [LABEL_TO_TYPE] + [resolveDebrisType], not in the prompt.
+         *
+         * Examples cover diverse materials so the model doesn't bias toward
+         * plastic; the trailing hint nudges it toward `*_debris` fallbacks
+         * when the specific type is unclear, which keeps every detection
+         * routable to a [DebrisType] in the app's taxonomy.
          */
         private val DETECTION_PROMPT = """
 Detect ALL marine debris and litter in this image. Output ONLY a JSON array.
 
 For each object, provide:
 - "box_2d": bounding box as [y_min, x_min, y_max, x_max], integers 0-1000
-- "label": specific object type using snake_case (e.g. Plastic_Bag, Glass_Bottle, Cigarette_Butt, Fishing_Line, Styrofoam, Flip_Flop, Rope, Cardboard, Syringe, etc.)
+- "label": specific object type using snake_case
+  (e.g. plastic_bottle, glass_bottle, aluminum_can, fishing_net, fishing_line, rope, cigarette_butt, plastic_bag, styrofoam, glove, mask, tire, syringe, battery, clothing, cardboard, lumber, ceramic_fragment, paint_can)
 - "material": the primary material (Plastic, Metal, Glass, Rubber, Fabric, Fishing_Net, Wood, Paper, Ceramic, Chemical)
 
 Output format:
 [{"box_2d": [y_min, x_min, y_max, x_max], "label": "object_type", "material": "material_type"}]
 
-Be specific: distinguish Plastic_Bottle from Glass_Bottle, Aluminum_Can from Tin_Can, etc.
+Be specific: distinguish plastic_bottle from glass_bottle, aluminum_can from tin_can, etc.
+If you can't identify the specific type, fall back to a material-based label:
+glass_debris, metal_debris, plastic_debris, fabric_debris (one of these is always correct).
 If no debris is found, output: []
 """.trimIndent()
 
@@ -164,6 +175,34 @@ If no debris is found, output: []
             put("plastic_fragment", DebrisType.PLASTIC_DEBRIS)
             put("tire", DebrisType.TIRE)
             put("tyre", DebrisType.TIRE)
+            // Material-debris catch-alls (matches the prompt's fallback hints)
+            put("fabric_debris", DebrisType.FABRIC_DEBRIS)
+            put("textile_debris", DebrisType.FABRIC_DEBRIS)
+            put("textile", DebrisType.FABRIC_DEBRIS)
+            put("glass_debris", DebrisType.GLASS_DEBRIS)
+            // Common labels Gemma 4 emits that the resolver should not get wrong
+            put("glass_cup", DebrisType.GLASS_DEBRIS)
+            put("glass_mug", DebrisType.GLASS_DEBRIS)
+            put("mug", DebrisType.CERAMIC_FRAGMENT)
+            put("ceramic_mug", DebrisType.CERAMIC_FRAGMENT)
+            put("ceramic_cup", DebrisType.CERAMIC_FRAGMENT)
+            put("dish", DebrisType.CERAMIC_FRAGMENT)
+            put("plate", DebrisType.CERAMIC_FRAGMENT)
+            put("bowl", DebrisType.CERAMIC_FRAGMENT)
+            // Fishing extras (these are sometimes generated as the broad term)
+            put("fishing_rod", DebrisType.FISHING_TRAP)
+            put("fishing_pole", DebrisType.FISHING_TRAP)
+            put("fishing_gear", DebrisType.FISHING_NET)
+            // Plastic bag plurals & generics
+            put("bag", DebrisType.PLASTIC_BAG)
+            put("plastic_grocery_bag", DebrisType.PLASTIC_BAG)
+            put("shopping_bag", DebrisType.PLASTIC_BAG)
+            // Generic litter (model often falls back to these when uncertain)
+            put("litter", DebrisType.PLASTIC_DEBRIS)
+            put("debris", DebrisType.PLASTIC_DEBRIS)
+            put("trash", DebrisType.PLASTIC_DEBRIS)
+            put("garbage", DebrisType.PLASTIC_DEBRIS)
+            put("waste", DebrisType.PLASTIC_DEBRIS)
             // Broad material fallbacks
             put("fabric_debris", DebrisType.FABRIC_DEBRIS)
             put("glass_debris", DebrisType.GLASS_DEBRIS)
@@ -260,8 +299,8 @@ If no debris is found, output: []
                     val label = obj.get("label")?.asString ?: return@mapNotNull null
                     val materialStr = obj.get("material")?.asString
 
-                    // Map label to DebrisType
-                    val debrisType = resolveDebrisType(label)
+                    // Map label to DebrisType (material hint disambiguates "Glass_Cup" vs "Plastic_Cup")
+                    val debrisType = resolveDebrisType(label, materialStr)
                     // Map material string or infer from type
                     val material = if (materialStr != null) {
                         MATERIAL_MAP[materialStr.lowercase().replace(" ", "_")]
@@ -315,40 +354,80 @@ If no debris is found, output: []
 
     /**
      * Resolves a free-form VLM label to a [DebrisType].
-     * Tries exact match, then partial match, falling back to [DebrisType.OTHER].
+     *
+     * Priority:
+     *   1. Exact match in [LABEL_TO_TYPE].
+     *   2. Material-prefixed semantic match (e.g. "Glass_Cup" → GLASS_DEBRIS,
+     *      not PLASTIC_CUP). The material prefix in the label is a stronger
+     *      signal than any sub-string match against generic keys like "cup".
+     *   3. The optional [materialHint] (the JSON `material` field) when the
+     *      label itself contains no material word.
+     *   4. Longest-key-first partial match against [LABEL_TO_TYPE], so that
+     *      "plastic_water_bottle" hits "bottle" instead of "cup".
+     *   5. Plastic-debris catch-all for generic litter words.
+     *   6. [DebrisType.fromString] as last resort, then [DebrisType.OTHER].
      */
-    private fun resolveDebrisType(label: String): DebrisType {
+    private fun resolveDebrisType(label: String, materialHint: String? = null): DebrisType {
         val normalized = label.trim().lowercase().replace(" ", "_")
-        // Exact match in lookup table
+
+        // 1. Exact match
         LABEL_TO_TYPE[normalized]?.let { return it }
-        // Partial match (e.g. "plastic_water_bottle" contains "bottle")
-        for ((key, type) in LABEL_TO_TYPE) {
-            if (normalized.contains(key) || key.contains(normalized)) return type
+
+        // 2. Material-prefixed semantic match (label-driven)
+        materialFromText(normalized)?.let { type ->
+            Log.i(TAG, "Label '$label' resolved by label material prefix to ${type.name}")
+            return type
         }
-        // Semantic fallbacks: map generic terms to the closest catch-all instead of
-        // letting them silently collapse to OTHER (which poisons downstream reports).
-        val semantic: DebrisType? = when {
-            "plastic" in normalized || "polymer" in normalized -> DebrisType.PLASTIC_DEBRIS
-            "metal" in normalized || "aluminum" in normalized || "steel" in normalized -> DebrisType.METAL_DEBRIS
-            "glass" in normalized -> DebrisType.GLASS_DEBRIS
-            "fabric" in normalized || "textile" in normalized || "cloth" in normalized -> DebrisType.FABRIC_DEBRIS
-            "wood" in normalized -> DebrisType.LUMBER
-            "rubber" in normalized -> DebrisType.RUBBER_HOSE
+
+        // 3. Material hint from JSON `material` field
+        if (materialHint != null) {
+            val hintNorm = materialHint.trim().lowercase().replace(" ", "_")
+            materialFromText(hintNorm)?.let { type ->
+                Log.i(TAG, "Label '$label' resolved by material hint '$materialHint' to ${type.name}")
+                return type
+            }
+        }
+
+        // 4. Longest-key-first partial match (so "glass_bottle" beats "bottle")
+        for (key in LABEL_TO_TYPE.keys.sortedByDescending { it.length }) {
+            if (normalized.contains(key) || key.contains(normalized)) {
+                return LABEL_TO_TYPE.getValue(key)
+            }
+        }
+
+        // 5. Plastic-debris catch-all for generic litter words
+        if (
+            "plastic" in normalized || "polymer" in normalized ||
             "trash" in normalized || "garbage" in normalized || "litter" in normalized ||
-                "rubbish" in normalized || "junk" in normalized || "debris" in normalized ||
-                "fragment" in normalized || "piece" in normalized -> DebrisType.PLASTIC_DEBRIS
-            else -> null
+            "rubbish" in normalized || "junk" in normalized || "debris" in normalized ||
+            "fragment" in normalized || "piece" in normalized
+        ) {
+            Log.w(TAG, "Label '$label' fell back to PLASTIC_DEBRIS catch-all")
+            return DebrisType.PLASTIC_DEBRIS
         }
-        if (semantic != null) {
-            Log.w(TAG, "Label '$label' (normalized='$normalized') fell back to semantic match ${semantic.name}")
-            return semantic
-        }
-        // Last resort: try enum directly (fromString returns OTHER on mismatch).
+
+        // 6. Last resort
         val direct = DebrisType.fromString(label)
         if (direct == DebrisType.OTHER && normalized != "other") {
             Log.w(TAG, "Label '$label' (normalized='$normalized') unmapped -> OTHER. Add to LABEL_TO_TYPE or taxonomy.")
         }
         return direct
+    }
+
+    /**
+     * Given a normalized text fragment that may contain a material noun,
+     * return the matching [DebrisType], or null if none match.
+     * Used by both the label and the JSON `material` field.
+     */
+    private fun materialFromText(text: String): DebrisType? = when {
+        "glass" in text -> DebrisType.GLASS_DEBRIS
+        "metal" in text || "aluminum" in text || "aluminium" in text || "steel" in text || "tin" in text ->
+            DebrisType.METAL_DEBRIS
+        "fabric" in text || "textile" in text || "cloth" in text -> DebrisType.FABRIC_DEBRIS
+        "wood" in text -> DebrisType.LUMBER
+        "rubber" in text -> DebrisType.RUBBER_HOSE
+        "ceramic" in text -> DebrisType.CERAMIC_FRAGMENT
+        else -> null
     }
 
     /** Infers [DebrisMaterial] from [DebrisType] when the VLM omits it. */

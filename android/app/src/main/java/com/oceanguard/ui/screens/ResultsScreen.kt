@@ -202,6 +202,16 @@ fun ResultsScreen(
                     .collectAsStateWithLifecycle(initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE)
                 val isGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
 
+                // Diagnostic — log once per state transition so we can confirm
+                // from logcat that this composition path is reached.
+                LaunchedEffect(state, detectorModeKey) {
+                    android.util.Log.i(
+                        "ResultsScreenUI",
+                        "Detecting branch entered. state=${state::class.simpleName} " +
+                            "detectorMode=$detectorModeKey isGemma4=$isGemma4",
+                    )
+                }
+
                 val message = when {
                     state is UiState.ModelLoading -> state.progress
                     isGemma4 -> stringResource(R.string.results_status_detecting_gemma4)
