@@ -1,0 +1,322 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="600" viewBox="0 0 1400 600" role="img" aria-label="Two-phase tool-calling flow diagram">
+  <title>OceanGuard AI — Two-Phase Tool-Calling Flow</title>
+  <defs>
+    <style>
+      text { font-family: Inter, system-ui, -apple-system, sans-serif; }
+    </style>
+    <linearGradient id="bgGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e1a"/>
+      <stop offset="100%" stop-color="#0d1225"/>
+    </linearGradient>
+    <linearGradient id="gradCE" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="phase0Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="phase1Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="phase2Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+    </linearGradient>
+    <marker id="arC" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#00d4ff"/>
+    </marker>
+    <marker id="arE" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+    </marker>
+    <marker id="arS" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+    </marker>
+    <marker id="arV" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arF" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="600" fill="url(#bgGrad2)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.03" stroke="#94A3B8" stroke-width="1">
+    <line x1="0" y1="100" x2="1400" y2="100"/>
+    <line x1="0" y1="200" x2="1400" y2="200"/>
+    <line x1="0" y1="300" x2="1400" y2="300"/>
+    <line x1="0" y1="400" x2="1400" y2="400"/>
+    <line x1="0" y1="500" x2="1400" y2="500"/>
+  </g>
+
+  <!-- ══ TITLE ══ -->
+  <text x="700" y="32" text-anchor="middle" font-size="17" font-weight="700" fill="#FFFFFF" letter-spacing="0.4">Two-Phase Grounded Report Generation</text>
+  <text x="700" y="50" text-anchor="middle" font-size="10.5" fill="#94A3B8">ToolReportGenerator → ToolAgentLoop → Gemma 4 LiteRT-LM · All on-device</text>
+  <rect x="180" y="57" width="1040" height="2" rx="1" fill="url(#gradCE)"/>
+
+  <!-- ══════════════════════════════════════════════
+       SWIMLANE HEADERS (left margin)
+  ══════════════════════════════════════════════ -->
+  <rect x="0" y="70" width="148" height="510" fill="#0a0e1a"/>
+  <line x1="148" y1="70" x2="148" y2="580" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Lane 1: User UI -->
+  <rect x="4" y="108" width="140" height="130" rx="6" fill="#1e293b" fill-opacity="0.5"/>
+  <text x="74" y="130" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">User UI</text>
+  <text x="74" y="148" text-anchor="middle" font-size="9" fill="#94A3B8">Compose screen</text>
+  <text x="74" y="162" text-anchor="middle" font-size="9" fill="#94A3B8">StateFlow collector</text>
+  <text x="74" y="176" text-anchor="middle" font-size="9" fill="#94A3B8">Progress indicator</text>
+  <text x="74" y="190" text-anchor="middle" font-size="9" fill="#94A3B8">Streaming render</text>
+  <text x="74" y="210" text-anchor="middle" font-size="8" fill="#475569">Lane 1</text>
+
+  <!-- Lane 2: Agent Loop -->
+  <rect x="4" y="258" width="140" height="180" rx="6" fill="#1e293b" fill-opacity="0.4"/>
+  <text x="74" y="280" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">Agent Loop</text>
+  <text x="74" y="298" text-anchor="middle" font-size="9" fill="#94A3B8">ToolReportGenerator</text>
+  <text x="74" y="314" text-anchor="middle" font-size="9" fill="#00d4ff">ToolAgentLoop</text>
+  <text x="74" y="330" text-anchor="middle" font-size="9" fill="#94A3B8">OceanGuardTools</text>
+  <text x="74" y="346" text-anchor="middle" font-size="9" fill="#94A3B8">ToolDataBundleFormatter</text>
+  <text x="74" y="376" text-anchor="middle" font-size="8" fill="#475569">Lane 2</text>
+
+  <!-- Lane 3: Gemma 4 LLM -->
+  <rect x="4" y="458" width="140" height="110" rx="6" fill="#0a1628" fill-opacity="0.7"/>
+  <text x="74" y="478" text-anchor="middle" font-size="11" font-weight="700" fill="#00d4ff">Gemma 4 LLM</text>
+  <text x="74" y="496" text-anchor="middle" font-size="9" fill="#94A3B8">LiteRT-LM 0.10.0</text>
+  <text x="74" y="512" text-anchor="middle" font-size="9" fill="#94A3B8">INT4 · 7.6 tok/s</text>
+  <text x="74" y="528" text-anchor="middle" font-size="9" fill="#94A3B8">CPU only</text>
+  <text x="74" y="548" text-anchor="middle" font-size="8" fill="#475569">Lane 3</text>
+
+  <!-- Horizontal dividers between lanes -->
+  <line x1="148" y1="248" x2="1400" y2="248" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="148" y1="448" x2="1400" y2="448" stroke="#1e293b" stroke-width="1.5"/>
+  <!-- Lane labels at right side -->
+  <text x="155" y="90" font-size="9" fill="#475569" font-weight="600">LANE 1 — USER UI</text>
+  <text x="155" y="268" font-size="9" fill="#475569" font-weight="600">LANE 2 — AGENT LOOP</text>
+  <text x="155" y="466" font-size="9" fill="#475569" font-weight="600">LANE 3 — GEMMA 4 LLM (LiteRT-LM)</text>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE BACKGROUNDS
+  ══════════════════════════════════════════════ -->
+  <!-- Phase 0 background -->
+  <rect x="155" y="72" width="240" height="510" fill="url(#phase0Grad)"/>
+  <rect x="155" y="72" width="240" height="510" fill="none" stroke="#8b5cf6" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.4"/>
+
+  <!-- Phase 1 background -->
+  <rect x="405" y="72" width="490" height="510" fill="url(#phase1Grad)"/>
+  <rect x="405" y="72" width="490" height="510" fill="none" stroke="#00d4ff" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+  <!-- Phase 2 background -->
+  <rect x="905" y="72" width="440" height="510" fill="url(#phase2Grad)"/>
+  <rect x="905" y="72" width="440" height="510" fill="none" stroke="#10b981" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+  <!-- Phase labels (top) -->
+  <rect x="165" y="74" width="220" height="22" rx="4" fill="#8b5cf6" fill-opacity="0.2"/>
+  <text x="275" y="88" text-anchor="middle" font-size="11" font-weight="700" fill="#c4b5fd">PHASE 0 — Setup</text>
+
+  <rect x="415" y="74" width="470" height="22" rx="4" fill="#00d4ff" fill-opacity="0.12"/>
+  <text x="650" y="88" text-anchor="middle" font-size="11" font-weight="700" fill="#00d4ff">PHASE 1 — Tool-Call Loop</text>
+  <!-- annotation: automaticToolCalling = false -->
+  <rect x="540" y="96" width="220" height="15" rx="3" fill="#00d4ff" fill-opacity="0.08"/>
+  <text x="650" y="107" text-anchor="middle" font-size="9" font-weight="600" fill="#00d4ff" opacity="0.85">automaticToolCalling = false</text>
+
+  <rect x="915" y="74" width="420" height="22" rx="4" fill="#10b981" fill-opacity="0.12"/>
+  <text x="1125" y="88" text-anchor="middle" font-size="11" font-weight="700" fill="#10b981">PHASE 2 — Free-Text Generation</text>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE 0 NODES
+  ══════════════════════════════════════════════ -->
+
+  <!-- DetectionSessions query (Lane 2, Phase 0) -->
+  <rect x="165" y="275" width="220" height="52" rx="6" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <rect x="165" y="275" width="220" height="18" rx="6" fill="#8b5cf6" fill-opacity="0.18"/>
+  <rect x="165" y="285" width="220" height="8" fill="#8b5cf6" fill-opacity="0.18"/>
+  <text x="275" y="287" text-anchor="middle" font-size="10" font-weight="600" fill="#c4b5fd">DetectionSessions</text>
+  <text x="275" y="304" text-anchor="middle" font-size="9" fill="#94A3B8">query by date / zone / IDs</text>
+  <text x="275" y="317" text-anchor="middle" font-size="9" fill="#475569">Room DB lookup</text>
+
+  <!-- ToolReportContext (Lane 2, Phase 0) -->
+  <rect x="165" y="350" width="220" height="64" rx="6" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <rect x="165" y="350" width="220" height="18" rx="6" fill="#8b5cf6" fill-opacity="0.18"/>
+  <rect x="165" y="360" width="220" height="8" fill="#8b5cf6" fill-opacity="0.18"/>
+  <text x="275" y="362" text-anchor="middle" font-size="10" font-weight="600" fill="#c4b5fd">ToolReportContext</text>
+  <text x="275" y="379" text-anchor="middle" font-size="9" fill="#94A3B8">materialMap · riskMap</text>
+  <text x="275" y="392" text-anchor="middle" font-size="9" fill="#94A3B8">gpsData · sessionCount</text>
+  <text x="275" y="405" text-anchor="middle" font-size="8" fill="#10b981" font-weight="600">aggregates O(1) per tool call</text>
+
+  <!-- Arrow: DetectionSessions → ToolReportContext -->
+  <line x1="275" y1="327" x2="275" y2="348" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arV)"/>
+
+  <!-- "User triggers report" in Lane 1 -->
+  <rect x="168" y="118" width="214" height="44" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1.2"/>
+  <text x="275" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">User triggers report</text>
+  <text x="275" y="150" text-anchor="middle" font-size="9" fill="#94A3B8">select sessions · zone · date range</text>
+
+  <!-- Arrow: User trigger → DetectionSessions (Lane1 → Lane2) -->
+  <line x1="275" y1="162" x2="275" y2="273" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arS)" opacity="0.7"/>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE 1 NODES
+  ══════════════════════════════════════════════ -->
+
+  <!-- System prompt (Lane 2) -->
+  <rect x="418" y="275" width="185" height="52" rx="6" fill="#0f172a" stroke="#00d4ff" stroke-width="1.2"/>
+  <text x="510" y="291" text-anchor="middle" font-size="10" font-weight="600" fill="#00d4ff">System Prompt</text>
+  <text x="510" y="306" text-anchor="middle" font-size="9" fill="#94A3B8">~200 tokens · report rules</text>
+  <text x="510" y="319" text-anchor="middle" font-size="9" fill="#94A3B8">9 tool signatures injected</text>
+
+  <!-- Arrow: Phase0 Context → System Prompt -->
+  <line x1="385" y1="378" x2="416" y2="378" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arC)" opacity="0.8"/>
+  <line x1="416" y1="378" x2="416" y2="305" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.5"/>
+  <line x1="416" y1="305" x2="417" y2="305" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#arC)" opacity="0.5"/>
+
+  <!-- Gemma 4 (Phase 1, Lane 3) -->
+  <rect x="418" y="465" width="185" height="60" rx="6" fill="#0a1628" stroke="#00d4ff" stroke-width="2"/>
+  <rect x="418" y="465" width="185" height="18" rx="6" fill="#00d4ff" fill-opacity="0.14"/>
+  <rect x="418" y="475" width="185" height="8" fill="#00d4ff" fill-opacity="0.14"/>
+  <!-- Star icon -->
+  <g transform="translate(429,470)">
+    <polygon points="7,0 8.8,5.4 14.5,5.4 9.9,8.7 11.6,14 7,10.8 2.4,14 4.1,8.7 -0.5,5.4 5.2,5.4" fill="none" stroke="#00d4ff" stroke-width="1.1"/>
+  </g>
+  <text x="510" y="477" text-anchor="middle" font-size="10" font-weight="600" fill="#00d4ff">Gemma 4 E2B</text>
+  <text x="510" y="493" text-anchor="middle" font-size="9" fill="#94A3B8">generates tool call</text>
+  <text x="510" y="506" text-anchor="middle" font-size="8.5" fill="#94A3B8">e.g. get_material_breakdown()</text>
+  <!-- KV cache annotation -->
+  <rect x="418" y="528" width="185" height="14" rx="3" fill="#00d4ff" fill-opacity="0.08"/>
+  <text x="510" y="538" text-anchor="middle" font-size="8.5" font-weight="600" fill="#00d4ff" opacity="0.9">Persistent KV cache across rounds</text>
+
+  <!-- Arrow: System prompt → Gemma 4 Phase1 -->
+  <line x1="510" y1="327" x2="510" y2="348" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arC)" opacity="0.7"/>
+  <!-- vertical link into Lane 3 -->
+  <line x1="510" y1="350" x2="510" y2="463" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arC)" opacity="0.7" stroke-dasharray="4,3"/>
+  <!-- Lane crossing label -->
+  <rect x="470" y="390" width="82" height="14" rx="3" fill="#0f172a" stroke="#00d4ff" stroke-width="0.7" opacity="0.8"/>
+  <text x="511" y="400" text-anchor="middle" font-size="8" fill="#00d4ff">prompt + tools</text>
+
+  <!-- Tool execution (Lane 2) -->
+  <rect x="630" y="275" width="195" height="66" rx="6" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="630" y="275" width="195" height="18" rx="6" fill="#f59e0b" fill-opacity="0.14"/>
+  <rect x="630" y="285" width="195" height="8" fill="#f59e0b" fill-opacity="0.14"/>
+  <text x="727" y="287" text-anchor="middle" font-size="10" font-weight="600" fill="#fbbf24">Tool Execution</text>
+  <text x="727" y="304" text-anchor="middle" font-size="9" fill="#94A3B8">FC parser → prefix match</text>
+  <text x="727" y="318" text-anchor="middle" font-size="9" fill="#94A3B8">OceanGuardTools.dispatch()</text>
+  <text x="727" y="332" text-anchor="middle" font-size="8.5" fill="#475569">→ JSON response string</text>
+
+  <!-- "9 tools available" annotation -->
+  <rect x="630" y="346" width="195" height="14" rx="3" fill="#f59e0b" fill-opacity="0.1"/>
+  <text x="727" y="356" text-anchor="middle" font-size="8.5" font-weight="600" fill="#fbbf24">9 tools available (no-arg calls)</text>
+
+  <!-- Arrow: Gemma 4 → Tool execution (Lane 3 → Lane 2) -->
+  <line x1="603" y1="492" x2="630" y2="400" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arF)" opacity="0.8" stroke-dasharray="4,2"/>
+  <rect x="596" y="430" width="80" height="14" rx="3" fill="#0f172a" stroke="#f59e0b" stroke-width="0.7" opacity="0.8"/>
+  <text x="636" y="440" text-anchor="middle" font-size="8" fill="#fbbf24">tool call JSON</text>
+
+  <!-- Tool exec → Gemma 4 re-feed (JSON response back) -->
+  <line x1="727" y1="360" x2="727" y2="490" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.6" marker-end="url(#arC)"/>
+  <rect x="694" y="415" width="78" height="14" rx="3" fill="#0f172a" stroke="#00d4ff" stroke-width="0.7" opacity="0.8"/>
+  <text x="733" y="425" text-anchor="middle" font-size="8" fill="#00d4ff">JSON response</text>
+
+  <!-- Loop arrow on Phase 1 -->
+  <path d="M 820 300 Q 870 265 890 295 Q 900 325 870 340 L 828 345" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arC)" opacity="0.55"/>
+  <text x="882" y="284" text-anchor="middle" font-size="9" fill="#00d4ff" opacity="0.7">N ≤ 8 rounds</text>
+  <text x="882" y="296" text-anchor="middle" font-size="8" fill="#475569">until &lt;end_of_function_call&gt;</text>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE TRANSITION ARROW (P1 → P2)
+  ══════════════════════════════════════════════ -->
+  <!-- Arrow Phase 1 → Phase 2 at agent loop level -->
+  <line x1="893" y1="308" x2="914" y2="308" stroke="#475569" stroke-width="2" marker-end="url(#arS)" opacity="0.7"/>
+
+  <!-- "Fresh conversation" separator annotation -->
+  <line x1="905" y1="72" x2="905" y2="582" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+  <rect x="840" y="222" width="130" height="16" rx="3" fill="#10b981" fill-opacity="0.12"/>
+  <text x="905" y="233" text-anchor="middle" font-size="8.5" font-weight="600" fill="#10b981" opacity="0.9">Fresh conversation, no leak</text>
+  <text x="905" y="246" text-anchor="middle" font-size="8" fill="#10b981" opacity="0.7">KV cache cleared</text>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE 2 NODES
+  ══════════════════════════════════════════════ -->
+
+  <!-- ToolDataBundleFormatter (Lane 2) -->
+  <rect x="918" y="275" width="210" height="66" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="918" y="275" width="210" height="18" rx="6" fill="#10b981" fill-opacity="0.14"/>
+  <rect x="918" y="285" width="210" height="8" fill="#10b981" fill-opacity="0.14"/>
+  <text x="1023" y="287" text-anchor="middle" font-size="10" font-weight="600" fill="#10b981">ToolDataBundleFormatter</text>
+  <text x="1023" y="305" text-anchor="middle" font-size="9" fill="#94A3B8">assemble all tool outputs</text>
+  <text x="1023" y="318" text-anchor="middle" font-size="9" fill="#94A3B8">render canonical markdown rows</text>
+  <!-- Bundle annotation -->
+  <rect x="918" y="346" width="210" height="16" rx="3" fill="#10b981" fill-opacity="0.09"/>
+  <text x="1023" y="357" text-anchor="middle" font-size="8.5" font-weight="600" fill="#10b981">Pre-rendered markdown bundle (canonical rows)</text>
+
+  <!-- Narrative prompt (Lane 2) -->
+  <rect x="918" y="378" width="210" height="52" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.2"/>
+  <text x="1023" y="395" text-anchor="middle" font-size="10" font-weight="600" fill="#10b981">Narrative Prompt</text>
+  <text x="1023" y="411" text-anchor="middle" font-size="9" fill="#94A3B8">bundle + report instructions</text>
+  <text x="1023" y="424" text-anchor="middle" font-size="9" fill="#94A3B8">language · zone context</text>
+
+  <!-- Arrow: Bundle → Narrative prompt -->
+  <line x1="1023" y1="362" x2="1023" y2="376" stroke="#10b981" stroke-width="1.3" marker-end="url(#arE)"/>
+
+  <!-- Gemma 4 Phase 2 (Lane 3) -->
+  <rect x="918" y="465" width="210" height="70" rx="6" fill="#0a1628" stroke="#10b981" stroke-width="2"/>
+  <rect x="918" y="465" width="210" height="18" rx="6" fill="#10b981" fill-opacity="0.14"/>
+  <rect x="918" y="475" width="210" height="8" fill="#10b981" fill-opacity="0.14"/>
+  <g transform="translate(929,470)">
+    <polygon points="7,0 8.8,5.4 14.5,5.4 9.9,8.7 11.6,14 7,10.8 2.4,14 4.1,8.7 -0.5,5.4 5.2,5.4" fill="none" stroke="#10b981" stroke-width="1.1"/>
+  </g>
+  <text x="1023" y="477" text-anchor="middle" font-size="10" font-weight="600" fill="#10b981">Gemma 4 E2B</text>
+  <text x="1023" y="493" text-anchor="middle" font-size="9" fill="#94A3B8">free-text narrative generation</text>
+  <text x="1023" y="506" text-anchor="middle" font-size="9" fill="#94A3B8">streaming tokens → UI</text>
+  <!-- Fresh KV annotation -->
+  <rect x="918" y="538" width="210" height="14" rx="3" fill="#10b981" fill-opacity="0.08"/>
+  <text x="1023" y="548" text-anchor="middle" font-size="8.5" font-weight="600" fill="#10b981" opacity="0.9">Fresh conversation · no Phase 1 leak</text>
+
+  <!-- Arrow: Narrative prompt → Gemma 4 Phase 2 -->
+  <line x1="1023" y1="430" x2="1023" y2="463" stroke="#10b981" stroke-width="1.5" marker-end="url(#arE)" opacity="0.8" stroke-dasharray="4,3"/>
+  <rect x="983" y="442" width="82" height="14" rx="3" fill="#0f172a" stroke="#10b981" stroke-width="0.7" opacity="0.8"/>
+  <text x="1024" y="452" text-anchor="middle" font-size="8" fill="#10b981">seeded bundle</text>
+
+  <!-- ══════════════════════════════════════════════
+       OUTPUT — Streaming Markdown (Lane 1)
+  ══════════════════════════════════════════════ -->
+  <!-- Streaming report output (Lane 1, Phase 2) -->
+  <rect x="1155" y="118" width="210" height="70" rx="6" fill="#0f172a" stroke="url(#gradCE)" stroke-width="1.5"/>
+  <text x="1260" y="136" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Streaming Markdown</text>
+  <text x="1260" y="152" text-anchor="middle" font-size="9" fill="#94A3B8">rendered in real-time</text>
+  <text x="1260" y="165" text-anchor="middle" font-size="9" fill="#94A3B8">MarkdownText.kt composable</text>
+  <text x="1260" y="178" text-anchor="middle" font-size="8.5" fill="#10b981">H3 · tables · blockquotes · bullets</text>
+
+  <!-- Export boxes under streaming report -->
+  <rect x="1155" y="198" width="95" height="28" rx="5" fill="#6366f1" fill-opacity="0.18" stroke="#6366f1" stroke-width="1"/>
+  <text x="1202" y="213" text-anchor="middle" font-size="9" font-weight="600" fill="#a5b4fc">PDF Export</text>
+  <text x="1202" y="222" text-anchor="middle" font-size="8" fill="#475569">PdfReportExporter</text>
+
+  <rect x="1270" y="198" width="95" height="28" rx="5" fill="#f59e0b" fill-opacity="0.14" stroke="#f59e0b" stroke-width="1"/>
+  <text x="1317" y="213" text-anchor="middle" font-size="9" font-weight="600" fill="#fbbf24">CSV Export</text>
+  <text x="1317" y="222" text-anchor="middle" font-size="8" fill="#475569">6-language headers</text>
+
+  <rect x="1155" y="236" width="210" height="24" rx="5" fill="#00d4ff" fill-opacity="0.1" stroke="#00d4ff" stroke-width="1"/>
+  <text x="1260" y="251" text-anchor="middle" font-size="9" font-weight="600" fill="#00d4ff">GeoJSON Export · ReportValidator</text>
+
+  <!-- Arrow: Gemma 4 Phase2 → Streaming (Lane 3 → Lane 1) -->
+  <line x1="1128" y1="500" x2="1165" y2="500" stroke="#10b981" stroke-width="1.5" marker-end="url(#arE)" opacity="0.8"/>
+  <line x1="1165" y1="500" x2="1260" y2="500" stroke="#10b981" stroke-width="1.2" opacity="0.6"/>
+  <line x1="1260" y1="500" x2="1260" y2="190" stroke="#10b981" stroke-width="1.5" marker-end="url(#arE)" opacity="0.7" stroke-dasharray="4,3"/>
+  <rect x="1220" y="440" width="82" height="14" rx="3" fill="#0f172a" stroke="#10b981" stroke-width="0.7" opacity="0.8"/>
+  <text x="1261" y="450" text-anchor="middle" font-size="8" fill="#10b981">streaming tokens</text>
+
+  <!-- ══════════════════════════════════════════════
+       PHASE 0 → PHASE 1 TRANSITION ARROW
+  ══════════════════════════════════════════════ -->
+  <line x1="385" y1="375" x2="416" y2="375" stroke="#8b5cf6" stroke-width="1.8" marker-end="url(#arC)" opacity="0.8"/>
+  <rect x="385" y="362" width="32" height="14" rx="3" fill="#0f172a" stroke="#8b5cf6" stroke-width="0.7" opacity="0.8"/>
+  <text x="401" y="372" text-anchor="middle" font-size="8" fill="#8b5cf6">ctx</text>
+
+  <!-- ══════════════════════════════════════════════
+       CAPTION
+  ══════════════════════════════════════════════ -->
+  <text x="700" y="587" text-anchor="middle" font-size="8.5" fill="#475569">Figure 2. Two-phase grounded report generation. Phase 1: tool-calling loop with persistent KV cache (max 8 rounds). Phase 2: free-text narrative on a fresh conversation seeded with pre-rendered tool outputs, eliminating placeholder contamination.</text>
+</svg>
