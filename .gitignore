@@ -85,6 +85,7 @@ screenshots/
 
 # Claude
 .claude/
+CLAUDE.md
 
 # Local artifacts that should never reach a public snapshot
 alex.html

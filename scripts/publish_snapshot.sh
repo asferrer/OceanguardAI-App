@@ -51,6 +51,7 @@ rsync -a \
   --exclude='.gitmodules' \
   --exclude='.github/' \
   --exclude='.claude/' \
+  --exclude='CLAUDE.md' \
   --exclude='.idea/' \
   --exclude='.kotlin/' \
   --exclude='.cxx/' \
