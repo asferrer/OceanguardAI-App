@@ -10,14 +10,14 @@ Best: **exp01_synth100** mAP@0.5=0.1310  Δ=+0.0385
 |---|---|---|---|---|---|---|
 | base | 0.0924 | 0.0000 | 1.000 | 47 | 1.96 | ok |
 | exp01_synth100 | 0.1310 | 0.0000 | 1.000 | 80 | 4.68 | ok |
-| exp02_synth100_real10 | — | — | — | — | — | missing |
-| exp03_synth100_real25 | — | — | — | — | — | missing |
-| exp04_synth100_real50 | — | — | — | — | — | missing |
-| exp05_synth100_real75 | — | — | — | — | — | missing |
-| exp06_synth100_real100 | — | — | — | — | — | missing |
-| exp07_real100 | — | — | — | — | — | missing |
-| exp08_real_synth_minor | — | — | — | — | — | missing |
-| exp09_real_synth_prop | — | — | — | — | — | missing |
+| exp02_synth100_real10 | — | — | — | — | — | fail |
+| exp03_synth100_real25 | — | — | — | — | — | fail |
+| exp04_synth100_real50 | — | — | — | — | — | fail |
+| exp05_synth100_real75 | — | — | — | — | — | fail |
+| exp06_synth100_real100 | — | — | — | — | — | fail |
+| exp07_real100 | — | — | — | — | — | fail |
+| exp08_real_synth_minor | — | — | — | — | — | fail |
+| exp09_real_synth_prop | — | — | — | — | — | fail |
 
 ## Per-class mAP@0.5
 

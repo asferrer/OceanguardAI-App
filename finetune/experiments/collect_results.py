@@ -31,7 +31,7 @@ def main() -> int:
     for k in keys:
         m = load_metrics(k)
         if m is None:
-            rows.append({"key": k, "status": "missing"})
+            rows.append({"key": k, "status": "fail"})
             continue
         per_class = m.get("per_class_mAP_50", {})
         row = {
