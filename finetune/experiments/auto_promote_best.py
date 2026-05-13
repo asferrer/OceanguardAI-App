@@ -42,6 +42,11 @@ def copy_adapter(src: Path, dst: Path) -> None:
 def hf_push(adapter_dir: Path, repo_id: str) -> tuple[bool, str]:
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
     if not token:
+        # fallback to ~/.cache/huggingface/token (set by huggingface-cli login)
+        tok_path = Path.home() / ".cache" / "huggingface" / "token"
+        if tok_path.exists():
+            token = tok_path.read_text(encoding="utf-8").strip()
+    if not token:
         return False, "HF_TOKEN missing"
     try:
         from huggingface_hub import HfApi, create_repo
