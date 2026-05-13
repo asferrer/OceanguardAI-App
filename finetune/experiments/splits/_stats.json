@@ -1,0 +1,56 @@
+{
+  "seed": 42,
+  "real_pool_n": 13637,
+  "real_holdout_n": 1000,
+  "synth_pool_n": 10809,
+  "real_pool_label_dist": {
+    "plastic_debris": 5276,
+    "plastic_bottle": 5801,
+    "metal_can": 549,
+    "metal_debris": 134,
+    "fishing_net": 3762,
+    "glove": 3437,
+    "tire": 4870,
+    "face_mask": 4201
+  },
+  "real_holdout_label_dist": {
+    "plastic_debris": 382,
+    "glove": 248,
+    "face_mask": 308,
+    "plastic_bottle": 410,
+    "tire": 512,
+    "fishing_net": 270,
+    "metal_can": 38,
+    "metal_debris": 12
+  },
+  "synth_pool_label_dist": {
+    "face_mask": 4997,
+    "plastic_bottle": 5003,
+    "tire": 5000,
+    "plastic_debris": 4999,
+    "metal_debris": 5001,
+    "metal_can": 5002,
+    "fishing_net": 5001,
+    "glove": 5001
+  },
+  "real_pool_tag_dist": {
+    "6": 4213,
+    "1": 331,
+    "5": 89,
+    "2": 3514,
+    "0": 2655,
+    "3": 104,
+    "7": 1257,
+    "4": 1474
+  },
+  "real_holdout_tag_dist": {
+    "6": 309,
+    "4": 108,
+    "0": 195,
+    "7": 92,
+    "3": 8,
+    "2": 258,
+    "1": 24,
+    "5": 6
+  }
+}

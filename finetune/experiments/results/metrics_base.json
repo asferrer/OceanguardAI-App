@@ -1,0 +1,22 @@
+{
+  "mAP_50": 0.09241071428571429,
+  "mAP_50_95": 0.0,
+  "mAP_75": 0.0,
+  "per_class_mAP_50": {
+    "Bottle": 0.045454545454545456,
+    "Can": 0.0,
+    "Fishing_Net": 0.0909090909090909,
+    "Glove": 0.30909090909090914,
+    "Mask": 0.09090909090909091,
+    "Metal_Debris": 0.0,
+    "Plastic_Debris": 0.11201298701298701,
+    "Tire": 0.09090909090909091
+  },
+  "n_predictions": 47,
+  "key": "base",
+  "adapter_path": null,
+  "n_samples": 50,
+  "json_validity": 1.0,
+  "mean_latency_s": 1.963640055656433,
+  "elapsed_s": 98.89264988899231
+}

@@ -1,0 +1,13 @@
+{
+  "started_at": 1778714212.103655,
+  "exps": {
+    "exp01_synth100": {
+      "status": "train_done",
+      "started": 1778714212.103655,
+      "train_success": true,
+      "info": "already exists at C:\\Users\\aleja\\Desktop\\Doctorado\\OceanguardAI-App\\finetune\\outputs\\lora_exp01_synth100\\adapter",
+      "ended": 1778714212.104656
+    }
+  },
+  "base_eval": "pending"
+}

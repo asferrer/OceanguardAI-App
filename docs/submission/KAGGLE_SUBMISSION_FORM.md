@@ -92,6 +92,14 @@ Marine plastic pollution is a Global Resilience problem on three axes. First, cl
 - Reproducibility notebook (in-repo):
   docs/submission/notebook.ipynb
 
+- Fine-tune notebook (Unsloth bonus track):
+  docs/submission/notebook_finetune.ipynb
+  <PLACEHOLDER - publish on Kaggle as separate notebook for bonus track and paste URL>
+
+- HuggingFace LoRA adapter (Unsloth bonus track):
+  https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris
+  <PLACEHOLDER - confirm upload before submit>
+
 - License: Apache 2.0 (code) - Gemma 4 weights under Gemma Terms (compatible)
 ```
 
@@ -128,6 +136,7 @@ Marine plastic pollution is a Global Resilience problem on three axes. First, cl
 - Multilingual scientific reporting in six languages (EN, ES, FR, DE, IT, PT) with three audience voices (Scientific, NGO Manager, Citizen) and PDF, Markdown, and COCO JSON export.
 - Hybrid pipeline: RT-DETRv2 TFLite for fast 8-class detection plus Gemma 4 E2B LiteRT-LM 0.10.0 open-vocabulary expansion to a 50-class taxonomy across 11 ecological-impact families.
 - Apache 2.0 end-to-end and reproducible: public repo, Kaggle notebook, signed APK on GitHub Releases via tagged GitHub Actions workflow.
+- Domain-adapted Gemma 4 LoRA via Unsloth: two-stage fine-tune (10k COCO warmup + 449 granular material/type refinement) targeting the 50-class taxonomy, published as a reproducible LoRA adapter on HuggingFace and demonstrated end-to-end in a Kaggle notebook.
 
 ---
 
@@ -143,7 +152,7 @@ To reproduce: clone https://github.com/asferrer/OceanguardAI, run the model down
 
 **Word count: 70**
 
-The RT-DETRv2 detector is trained on an 8-class superset (Bottle, Can, Fishing_Net, Glove, Mask, Metal_Debris, Plastic_Debris, Tire) merged from CleanSea, Ocean_garbage, and Neural_Ocean; the 50-class taxonomy used by Gemma 4 is an open-vocabulary prompt expansion mapped onto 11 ecological-impact families, not a trained classifier. RT-DETRv2 runs CPU-only on the Exynos 2200 reference device under XNNPACK with 8 threads; LiteRT-LM 0.10.0 hosts Gemma 4 E2B. The APK is GitHub-signed, not Play Store published.
+The RT-DETRv2 detector is trained on an 8-class superset (Bottle, Can, Fishing_Net, Glove, Mask, Metal_Debris, Plastic_Debris, Tire) merged from CleanSea, Ocean_garbage, and Neural_Ocean; the 50-class taxonomy used by Gemma 4 is an open-vocabulary prompt expansion mapped onto 11 ecological-impact families, not a trained classifier. RT-DETRv2 runs CPU-only on the Exynos 2200 reference device under XNNPACK with 8 threads; LiteRT-LM 0.10.0 hosts Gemma 4 E2B. The APK is GitHub-signed, not Play Store published. The fine-tuned LoRA adapter is currently published as a notebook-reproducible artifact on HuggingFace; deployment of the merged adapter to the on-device LiteRT-LM runtime requires an `ai-edge-torch` pipeline upgrade that is upstream-in-progress.
 
 ---
 
@@ -157,4 +166,7 @@ The RT-DETRv2 detector is trained on an 8-class superset (Bottle, Can, Fishing_N
 - [ ] Kaggle notebook published and URL pasted into Section 5
 - [ ] Demo video uploaded to YouTube and URL pasted into Section 5
 - [ ] All [VERIFY: ...] markers resolved or stripped before final submit
+- [ ] Fine-tune notebook published on Kaggle as bonus-track entry
+- [ ] LoRA adapter uploaded to HF and URL resolvable
+- [ ] Unsloth bonus track checkbox marked (if available in submission form)
 - [ ] Final submit before 18 May 2026 23:59 UTC

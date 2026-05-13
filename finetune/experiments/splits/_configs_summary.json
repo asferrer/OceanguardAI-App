@@ -1,0 +1,173 @@
+[
+  {
+    "name": "exp01_synth100",
+    "synth_n": 3000,
+    "real_n": 0,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp01_synth100.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp01_synth100/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp01_synth100",
+    "class_dist": {
+      "glove": 1389,
+      "tire": 1391,
+      "face_mask": 1410,
+      "plastic_debris": 1414,
+      "metal_can": 1390,
+      "plastic_bottle": 1400,
+      "fishing_net": 1365,
+      "metal_debris": 1391
+    }
+  },
+  {
+    "name": "exp02_synth100_real10",
+    "synth_n": 2700,
+    "real_n": 300,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp02_synth100_real10.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp02_synth100_real10/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp02_synth100_real10",
+    "class_dist": {
+      "plastic_debris": 1348,
+      "glove": 1307,
+      "tire": 1395,
+      "fishing_net": 1332,
+      "metal_debris": 1265,
+      "plastic_bottle": 1365,
+      "metal_can": 1295,
+      "face_mask": 1361
+    }
+  },
+  {
+    "name": "exp03_synth100_real25",
+    "synth_n": 2250,
+    "real_n": 750,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp03_synth100_real25.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp03_synth100_real25/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp03_synth100_real25",
+    "class_dist": {
+      "plastic_debris": 1318,
+      "glove": 1253,
+      "plastic_bottle": 1356,
+      "metal_can": 1118,
+      "face_mask": 1329,
+      "tire": 1286,
+      "fishing_net": 1258,
+      "metal_debris": 1047
+    }
+  },
+  {
+    "name": "exp04_synth100_real50",
+    "synth_n": 1500,
+    "real_n": 1500,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp04_synth100_real50.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp04_synth100_real50/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp04_synth100_real50",
+    "class_dist": {
+      "plastic_debris": 1298,
+      "metal_debris": 708,
+      "fishing_net": 1099,
+      "metal_can": 758,
+      "face_mask": 1201,
+      "plastic_bottle": 1196,
+      "glove": 1063,
+      "tire": 1236
+    }
+  },
+  {
+    "name": "exp05_synth100_real75",
+    "synth_n": 750,
+    "real_n": 2250,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp05_synth100_real75.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp05_synth100_real75/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp05_synth100_real75",
+    "class_dist": {
+      "metal_debris": 355,
+      "tire": 1093,
+      "fishing_net": 947,
+      "glove": 898,
+      "plastic_bottle": 1319,
+      "face_mask": 1049,
+      "plastic_debris": 1215,
+      "metal_can": 439
+    }
+  },
+  {
+    "name": "exp06_synth100_real100",
+    "synth_n": 1500,
+    "real_n": 1500,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp06_synth100_real100.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp06_synth100_real100/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp06_synth100_real100",
+    "class_dist": {
+      "tire": 1174,
+      "plastic_debris": 1285,
+      "plastic_bottle": 1337,
+      "face_mask": 1195,
+      "fishing_net": 1087,
+      "glove": 1056,
+      "metal_can": 748,
+      "metal_debris": 709
+    }
+  },
+  {
+    "name": "exp07_real100",
+    "synth_n": 0,
+    "real_n": 3000,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp07_real100.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp07_real100/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp07_real100",
+    "class_dist": {
+      "plastic_bottle": 1181,
+      "fishing_net": 823,
+      "plastic_debris": 1164,
+      "face_mask": 955,
+      "glove": 733,
+      "tire": 1123,
+      "metal_can": 113,
+      "metal_debris": 25
+    }
+  },
+  {
+    "name": "exp08_real_synth_minor",
+    "synth_n": 1000,
+    "real_n": 2000,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp08_real_synth_minor.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp08_real_synth_minor/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp08_real_synth_minor",
+    "class_dist": {
+      "plastic_bottle": 1416,
+      "metal_debris": 687,
+      "face_mask": 1120,
+      "tire": 1188,
+      "metal_can": 751,
+      "plastic_debris": 1285,
+      "fishing_net": 1061,
+      "glove": 1040
+    }
+  },
+  {
+    "name": "exp09_real_synth_prop",
+    "synth_n": 1500,
+    "real_n": 1500,
+    "total_train_samples": 3000,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp09_real_synth_prop.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp09_real_synth_prop/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp09_real_synth_prop",
+    "class_dist": {
+      "plastic_bottle": 1428,
+      "plastic_debris": 1482,
+      "glove": 1285,
+      "metal_can": 977,
+      "tire": 1434,
+      "fishing_net": 1284,
+      "metal_debris": 917,
+      "face_mask": 1361
+    }
+  }
+]

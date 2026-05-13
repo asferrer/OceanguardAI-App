@@ -1,0 +1,39 @@
+{
+  "elapsed_total_s": 3720.418961048126,
+  "pipeline_deadline_s": 21600.0,
+  "stages": [
+    {
+      "stage": "run_experiments",
+      "rc": 1,
+      "elapsed_s": 3710.3331377506256,
+      "ts": 1778713815.5147943
+    },
+    {
+      "stage": "collect_results",
+      "rc": 0,
+      "elapsed_s": 0.03899979591369629,
+      "ts": 1778713815.5537941
+    },
+    {
+      "stage": "auto_promote_best",
+      "rc": 0,
+      "elapsed_s": 0.05847644805908203,
+      "ts": 1778713815.6122706
+    },
+    {
+      "stage": "update_docs",
+      "rc": 0,
+      "elapsed_s": 0.04537558555603027,
+      "ts": 1778713815.6576462
+    },
+    {
+      "stage": "smoke_inference",
+      "rc": 1,
+      "elapsed_s": 9.942971467971802,
+      "ts": 1778713825.6006176
+    }
+  ],
+  "results_csv": "C:\\Users\\aleja\\Desktop\\Doctorado\\OceanguardAI-App\\finetune\\experiments\\results\\results.csv",
+  "results_md": "C:\\Users\\aleja\\Desktop\\Doctorado\\OceanguardAI-App\\finetune\\experiments\\results\\results.md",
+  "grid_best": "C:\\Users\\aleja\\Desktop\\Doctorado\\OceanguardAI-App\\finetune\\outputs\\grid_best"
+}
