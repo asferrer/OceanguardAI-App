@@ -589,8 +589,10 @@
     <string name="report_notif_title">Bericht wird erstellt</string>
     <string name="report_notif_loading_model">KI-Modell wird geladen…</string>
     <string name="report_notif_generating">Umweltbericht wird verfasst…</string>
+    <string name="report_notif_querying">Abfrage von %1$s…</string>
     <string name="report_notif_complete">Bericht fertig!</string>
     <string name="report_notif_error">Berichterstellung fehlgeschlagen</string>
+    <string name="report_querying_tool">Abfrage von %1$s…</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">KI-Modell herunterladen</string>

@@ -592,8 +592,12 @@
     <string name="report_notif_title">Generating Report</string>
     <string name="report_notif_loading_model">Loading AI model…</string>
     <string name="report_notif_generating">Writing environmental report…</string>
+    <!-- Format: "Querying Debris Summary…" -->
+    <string name="report_notif_querying">Querying %1$s…</string>
     <string name="report_notif_complete">Report ready!</string>
     <string name="report_notif_error">Report generation failed</string>
+    <!-- Format: "Querying Debris Summary…" (inline banner). -->
+    <string name="report_querying_tool">Querying %1$s…</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Download AI Model</string>

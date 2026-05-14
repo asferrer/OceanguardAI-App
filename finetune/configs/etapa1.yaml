@@ -1,0 +1,92 @@
+# =============================================================================
+# Etapa 1 — Fine-tune Gemma 4 E2B en COCO marine debris (8 clases)
+#
+# Objetivo: enseñar al modelo el dominio de detección de basura marina,
+# el formato box_2d 0-1000, y los labels/materiales específicos del proyecto.
+# Dataset: ~10k imágenes COCO con 21k anotaciones (+ oversampling minoritarios).
+#
+# Hardware probado: RTX 5090 32GB
+# Hardware mínimo estimado: RTX 4090 24GB | Kaggle T4 con Unsloth (grad_accum alto)
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Modelo base
+# ---------------------------------------------------------------------------
+# Nota: el ID en HuggingFace Hub puede variar. Si Unsloth no expone
+# "unsloth/gemma-4-E2B-it", usar "google/gemma-4-E2B-it" con load_in_4bit=True.
+model_name: "unsloth/gemma-4-E2B-it"
+load_in_4bit: true          # QLoRA: reduce VRAM ~4x vs full precision
+dtype: "bfloat16"           # Blackwell (sm_120) soporta BF16 nativo
+
+# ---------------------------------------------------------------------------
+# LoRA — adaptadores de texto
+# ---------------------------------------------------------------------------
+lora_r: 16                  # Rango de LoRA. 16 es buen balance capacidad/VRAM.
+                            # Bajar a 8 si OOM; subir a 32 para convergencia más rápida.
+lora_alpha: 32              # alpha = 2*r es convención común (escala efectiva = alpha/r = 2)
+lora_dropout: 0.0           # Unsloth: 0 obligatorio para fast patching óptimo
+target_modules:             # Módulos de atención + FFN
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+bias: "none"
+vision_lora: false          # En Etapa 1 solo fine-tuneamos el decoder de texto.
+                            # El vision encoder (SigLIP2) ya tiene buenas representaciones.
+                            # vision_lora=true en Etapa 2 para adaptar percepciones finas.
+
+# ---------------------------------------------------------------------------
+# Datos
+# ---------------------------------------------------------------------------
+dataset: "data/etapa1_train_v2.jsonl"      # v2: FULL 9888 samples + prompt simplificado (8 clases)
+eval_dataset: "data/etapa1_val_v2_200.jsonl"   # v2 val subset 200
+dataset_format: "chat"      # TRL SFTTrainer con messages list (multimodal)
+
+# Presupuesto de tokens de imagen por sample.
+# Gemma 4 soporta hasta 1024 image tokens; 560 es el default para 640x640.
+# Subir a 1024 si el modelo falla en objetos pequeños (pero aumenta VRAM).
+image_token_budget: 128     # 256 -> 128 (8x8 patches) por VRAM creep severo con activations vision encoder
+max_seq_length: 1536        # 2560 -> 1536 para limitar peak VRAM y evitar fragmentación CUDA
+
+# ---------------------------------------------------------------------------
+# Hiperparámetros de training
+# ---------------------------------------------------------------------------
+num_train_epochs: 2         # v2: 2 epochs sobre 9888 samples = 618 steps. ETA ~3h con bs=1×grad_accum=32 a ~19s/step.
+per_device_train_batch_size: 1     # 4 -> 1 para evitar OOM swap en RTX 5090 con imágenes 640x480
+per_device_eval_batch_size: 1
+gradient_accumulation_steps: 32    # Effective batch = 1 * 32 = 32 (mismo que antes)
+learning_rate: 1.0e-4       # LR inicial. Cosine scheduler lo anneals.
+warmup_ratio: 0.10          # 10% de steps para warm-up → estabiliza loss inicial
+lr_scheduler_type: "cosine"
+optim: "adamw_8bit"         # 8-bit Adam de bitsandbytes: -60% VRAM vs adam_32bit
+weight_decay: 0.01
+max_grad_norm: 1.0          # Gradient clipping para estabilidad
+
+# ---------------------------------------------------------------------------
+# Checkpointing y logging
+# ---------------------------------------------------------------------------
+output_dir: "outputs/lora_etapa1"
+save_strategy: "steps"
+save_steps: 100             # 6 checkpoints sobre 618 steps total
+save_total_limit: 3
+eval_strategy: "no"         # Eval manual al final
+eval_steps: 999999
+logging_steps: 10           # Log cada 10 steps
+
+# ---------------------------------------------------------------------------
+# Reproducibilidad
+# ---------------------------------------------------------------------------
+seed: 42
+dataloader_num_workers: 4
+report_to: "none"           # Cambiar a "wandb" si quieres tracking (requiere wandb login)
+run_name: "gemma4-e2b-marine-etapa1"
+
+# ---------------------------------------------------------------------------
+# Unsloth específico
+# ---------------------------------------------------------------------------
+use_unsloth: true
+unsloth_optimizations: true   # Flash Attention 2 + fused kernels automáticos
+packing: false                # Sin packing para multimodal (cada sample = 1 imagen)

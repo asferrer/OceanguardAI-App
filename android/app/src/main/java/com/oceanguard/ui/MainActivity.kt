@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -34,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.oceanguard.ai.OceanGuardApp
 import com.oceanguard.ai.ui.screens.BatchResultsScreen
+import com.oceanguard.ai.ui.screens.CameraResultScreen
 import com.oceanguard.ai.ui.screens.CameraScreen
 import com.oceanguard.ai.ui.screens.LiveDetectionScreen
 import com.oceanguard.ai.ui.screens.HistoryScreen
@@ -106,6 +108,29 @@ class MainActivity : AppCompatActivity() {
         if (!route.isNullOrEmpty() && route != "home") {
             _pendingDeepLink.value = route
         }
+    }
+
+    /**
+     * Intercept VOLUME_UP / VOLUME_DOWN while the camera viewfinder is active so
+     * the hardware volume rocker doubles as a physical shutter button — the
+     * familiar behaviour of most stock camera apps. CameraScreen toggles the
+     * [OceanGuardApp.consumeVolumeKeysForCapture] flag on/off as it mounts and
+     * unmounts; the rest of the app keeps the default volume behaviour.
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val app = application as? OceanGuardApp
+        if (app != null && app.consumeVolumeKeysForCapture) {
+            val isVolumeKey = event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+                event.keyCode == KeyEvent.KEYCODE_VOLUME_UP
+            if (isVolumeKey) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    app.requestVolumeShutter()
+                }
+                // Consume both DOWN and UP so the system volume UI never appears.
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -242,6 +267,9 @@ class MainActivity : AppCompatActivity() {
                         }
                         composable("results") {
                             ResultsScreen(navController = navController, viewModel = viewModel)
+                        }
+                        composable("camera_result") {
+                            CameraResultScreen(navController = navController, viewModel = viewModel)
                         }
                         composable("history") {
                             HistoryScreen(navController = navController, viewModel = viewModel)

@@ -52,9 +52,10 @@ class SettingsRepository(private val context: Context) {
         val DETECTOR_MODE = stringPreferencesKey("detector_mode")
 
         // Research contribution
-        val CONTRIBUTE_CONSENT_GIVEN = booleanPreferencesKey("contribute_consent_given")
-        val CONTRIBUTE_WIFI_ONLY     = booleanPreferencesKey("contribute_wifi_only")
-        val CONTRIBUTE_DECLINE_COUNT = intPreferencesKey("contribute_decline_count")
+        val CONTRIBUTE_CONSENT_GIVEN  = booleanPreferencesKey("contribute_consent_given")
+        val CONTRIBUTE_WIFI_ONLY      = booleanPreferencesKey("contribute_wifi_only")
+        val CONTRIBUTE_DECLINE_COUNT  = intPreferencesKey("contribute_decline_count")
+        val CONTRIBUTE_NEVER_PROMPT   = booleanPreferencesKey("contribute_never_prompt")
     }
 
     companion object {
@@ -445,6 +446,16 @@ class SettingsRepository(private val context: Context) {
         prefs[Keys.CONTRIBUTE_DECLINE_COUNT] ?: 0
     }
 
+    /**
+     * Explicit opt-out: once true, the contribution prompt never shows again
+     * after an analysis. Independent from [contributeDeclineCount] so a single
+     * "Don't ask again" tap silences the prompt permanently regardless of how
+     * many times the user dismissed it before. Resets to false from Settings.
+     */
+    val contributeNeverPrompt: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONTRIBUTE_NEVER_PROMPT] ?: false
+    }
+
     suspend fun setContributeConsentGiven(v: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_CONSENT_GIVEN] = v }
     }
@@ -457,5 +468,10 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.CONTRIBUTE_DECLINE_COUNT] = (prefs[Keys.CONTRIBUTE_DECLINE_COUNT] ?: 0) + 1
         }
+    }
+
+    /** Permanently silence the contribution prompt. Reversible from Settings. */
+    suspend fun setContributeNeverPrompt(v: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_NEVER_PROMPT] = v }
     }
 }

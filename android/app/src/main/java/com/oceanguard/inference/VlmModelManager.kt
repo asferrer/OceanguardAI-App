@@ -316,19 +316,44 @@ class VlmModelManager(private val context: Context) {
                     val buffer = ByteArray(BUFFER_SIZE)
                     var downloaded = 0L
 
+                    // Throttle UI emissions to avoid recomposing the Home tree
+                    // ~325 times per download. Emit at most 5 Hz OR whenever the
+                    // integer percent changes — whichever happens first. The
+                    // final-byte emit happens after the loop so 100% is never
+                    // lost to throttling.
+                    var lastEmitMs = 0L
+                    var lastProgressPct = -1
+                    val emitMinIntervalMs = 200L
+
                     while (isActive && !cancelled) {
                         val bytesRead = input.read(buffer)
                         if (bytesRead == -1) break
                         output.write(buffer, 0, bytesRead)
                         downloaded += bytesRead
 
-                        _downloadState.value = VlmDownloadState.Downloading(
-                            progress       = (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f),
-                            downloadedBytes = downloaded,
-                            totalBytes     = totalBytes,
-                            currentFile    = filename,
-                        )
+                        val now = System.currentTimeMillis()
+                        val progress = (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f)
+                        val progressPct = (progress * 100f).toInt()
+                        if (now - lastEmitMs >= emitMinIntervalMs || progressPct != lastProgressPct) {
+                            _downloadState.value = VlmDownloadState.Downloading(
+                                progress       = progress,
+                                downloadedBytes = downloaded,
+                                totalBytes     = totalBytes,
+                                currentFile    = filename,
+                            )
+                            lastEmitMs = now
+                            lastProgressPct = progressPct
+                        }
                     }
+
+                    // Final emit so the UI never freezes on the second-to-last
+                    // throttled snapshot before transitioning to Installing.
+                    _downloadState.value = VlmDownloadState.Downloading(
+                        progress       = (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f),
+                        downloadedBytes = downloaded,
+                        totalBytes     = totalBytes,
+                        currentFile    = filename,
+                    )
                 }
             }
         } finally {

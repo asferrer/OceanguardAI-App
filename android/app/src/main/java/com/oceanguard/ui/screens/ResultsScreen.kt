@@ -45,7 +45,9 @@ import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.UiState
+import com.oceanguard.ai.ui.components.AnalysisProgressIndicator
 import com.oceanguard.ai.ui.components.BoundingBoxOverlay
+import com.oceanguard.ai.ui.components.FitWidthBoundingBoxOverlay
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.HealthScoreGauge
 import com.oceanguard.ai.ui.components.ShimmerLoadingScreen
@@ -102,6 +104,11 @@ fun ResultsScreen(
     // Observe the captured image URI from the ViewModel so the photo stays
     // visible while the pipeline progresses through its stages.
     val capturedImageUri by viewModel.capturedImageUri.collectAsStateWithLifecycle()
+
+    // Pre-rendered annotated thumbnail (bboxes baked into the JPEG) — emitted
+    // once the session is saved. Used to render the results image identically
+    // to the History detail screen (AsyncImage, no live overlay).
+    val annotatedThumbnailUri by viewModel.annotatedThumbnailUri.collectAsStateWithLifecycle()
 
     // Track whether the session has been saved to avoid double-saves.
     var sessionSaved by remember { mutableStateOf(false) }
@@ -242,35 +249,50 @@ fun ResultsScreen(
                     message = message,
                     subMessage = subMessage,
                     extraLine = timerLine,
+                    topSlot = {
+                        AnalysisProgressIndicator(
+                            state = state,
+                            isDeepAnalysis = isGemma4,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
+                        )
+                    },
                 )
             }
 
             // ----------------------------------------------------------------
-            // DetectionsReady: bounding boxes available, VLM pending
+            // DetectionsReady / AnalyzingDeep: keep the progress strip visible
+            // while the post-detection UI animates in. We share the same
+            // PartialResultContent and only swap the status message.
             // ----------------------------------------------------------------
-            is UiState.DetectionsReady -> {
-                PartialResultContent(
-                    modifier = Modifier.padding(paddingValues),
-                    imageUri = capturedImageUri,
-                    detections = state.detections,
-                    statusMessage = stringResource(R.string.results_status_deep_analysis),
-                    showProgress = true,
-                    progressFraction = null, // indeterminate
-                )
-            }
-
-            // ----------------------------------------------------------------
-            // AnalyzingDeep: VLM pass is generating the analysis
-            // ----------------------------------------------------------------
-            is UiState.AnalyzingDeep -> {
-                PartialResultContent(
-                    modifier = Modifier.padding(paddingValues),
-                    imageUri = capturedImageUri,
-                    detections = state.detections,
-                    statusMessage = stringResource(R.string.results_status_generating),
-                    showProgress = true,
-                    progressFraction = null,
-                )
+            is UiState.DetectionsReady, is UiState.AnalyzingDeep -> {
+                val app = LocalContext.current.applicationContext as OceanGuardApp
+                val detectorModeKey by app.settingsRepository.detectorMode
+                    .collectAsStateWithLifecycle(initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE)
+                val isGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
+                val detections = when (state) {
+                    is UiState.DetectionsReady -> state.detections
+                    is UiState.AnalyzingDeep   -> state.detections
+                }
+                val statusMessage = if (state is UiState.AnalyzingDeep) {
+                    stringResource(R.string.results_status_generating)
+                } else {
+                    stringResource(R.string.results_status_deep_analysis)
+                }
+                Column(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                    AnalysisProgressIndicator(
+                        state = state,
+                        isDeepAnalysis = isGemma4,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                    )
+                    PartialResultContent(
+                        modifier = Modifier,
+                        imageUri = capturedImageUri,
+                        detections = detections,
+                        statusMessage = statusMessage,
+                        showProgress = true,
+                        progressFraction = null,
+                    )
+                }
             }
 
             // ----------------------------------------------------------------
@@ -289,6 +311,7 @@ fun ResultsScreen(
                     FullResultContent(
                         modifier = Modifier,
                         imageUri = capturedImageUri,
+                        annotatedThumbnailUri = annotatedThumbnailUri,
                         result = state.result,
                         sessionSaved = sessionSaved,
                         boundsMap = boundsMap,
@@ -414,6 +437,10 @@ fun ResultsScreen(
                     scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
                     viewModel.dismissContributePrompt()
                 },
+                onDontAskAgain = {
+                    showContributeSheet = false
+                    viewModel.setContributeNeverPrompt()
+                },
                 onDismiss = {
                     showContributeSheet = false
                     scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
@@ -434,11 +461,13 @@ private fun LoadingContent(
     message: String,
     subMessage: String,
     extraLine: String? = null,
+    topSlot: @Composable () -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        topSlot()
         ShimmerLoadingScreen(itemCount = 2)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -559,6 +588,7 @@ private fun PartialResultContent(
 private fun FullResultContent(
     modifier: Modifier,
     imageUri: Uri?,
+    annotatedThumbnailUri: String?,
     result: AnalysisResult,
     sessionSaved: Boolean,
     boundsMap: MutableMap<String, androidx.compose.ui.geometry.Rect> = mutableMapOf(),
@@ -581,6 +611,7 @@ private fun FullResultContent(
             Box(modifier = Modifier.spotlightTarget("results_image", boundsMap)) {
                 ImageWithOverlay(
                     imageUri = imageUri,
+                    annotatedThumbnailUri = annotatedThumbnailUri,
                     detections = result.rtdetrDetections,
                     showSaveButton = true,
                 )
@@ -835,33 +866,42 @@ private fun ImageWithOverlay(
     imageUri: Uri?,
     detections: List<DetectionResult>,
     showSaveButton: Boolean = false,
+    annotatedThumbnailUri: String? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val hasAnnotatedThumbnail = annotatedThumbnailUri != null
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(4f / 3f),
-        ) {
-            BoundingBoxOverlay(
+        if (hasAnnotatedThumbnail) {
+            // Pre-rendered annotated JPEG — render identically to SessionDetailScreen
+            // (AsyncImage, FillWidth, no live overlay, no aspectRatio lock).
+            AsyncImage(
+                model = annotatedThumbnailUri,
+                contentDescription = stringResource(R.string.session_detail_cd_annotated_image),
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp)),
+            )
+        } else {
+            // Partial / live state — keep the same FillWidth look as the final
+            // annotated thumbnail (and SessionDetailScreen) so the captured
+            // photo is shown uncropped. Bounding boxes animate on top.
+            FitWidthBoundingBoxOverlay(
                 imageUri = imageUri?.toString(),
                 detections = detections,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            // Detection count badge
             if (detections.isNotEmpty()) {
                 Surface(
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
+                        .align(Alignment.BottomStart)
                         .padding(8.dp),
                     shape = RoundedCornerShape(8.dp),
                     color = Color.Black.copy(alpha = 0.65f),
@@ -874,44 +914,53 @@ private fun ImageWithOverlay(
                     )
                 }
             }
+        }
 
-            // Save to gallery button
-            if (showSaveButton && imageUri != null && detections.isNotEmpty()) {
-                FilledTonalIconButton(
-                    onClick = {
-                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            // Render annotated image and save to gallery
-                            val annotatedPath = BitmapAnnotator.annotateAndSave(
-                                context = context,
-                                imageUri = imageUri,
-                                detections = detections,
-                            )
-                            val saved = annotatedPath?.let {
-                                ImageGallerySaver.saveToGallery(context, it)
-                            }
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                val msg = if (saved != null) {
-                                    context.getString(R.string.save_to_gallery_success)
-                                } else {
-                                    context.getString(R.string.save_to_gallery_error)
-                                }
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        // Save-to-gallery button — match SessionDetailScreen's BottomEnd placement
+        // so the two screens look the same once the analysis completes.
+        val saveSource = annotatedThumbnailUri ?: imageUri?.toString()
+        if (showSaveButton && saveSource != null) {
+            FilledTonalIconButton(
+                onClick = {
+                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        val pathToSave = if (annotatedThumbnailUri != null) {
+                            // Already an annotated JPEG on disk — save directly.
+                            annotatedThumbnailUri
+                        } else {
+                            // Live mode: render annotated image on the fly first.
+                            imageUri?.let { uri ->
+                                BitmapAnnotator.annotateAndSave(
+                                    context = context,
+                                    imageUri = uri,
+                                    detections = detections,
+                                )
                             }
                         }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.SaveAlt,
-                        contentDescription = stringResource(R.string.save_to_gallery_cd),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
+                        val saved = pathToSave?.let {
+                            ImageGallerySaver.saveToGallery(context, it)
+                        }
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            val msg = if (saved != null) {
+                                context.getString(R.string.save_to_gallery_success)
+                            } else {
+                                context.getString(R.string.save_to_gallery_error)
+                            }
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SaveAlt,
+                    contentDescription = stringResource(R.string.save_to_gallery_cd),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
@@ -1033,9 +1082,12 @@ private fun DebrisListItem(debris: com.oceanguard.ai.data.Debris) {
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = impact.icon,
-                            fontSize = 18.sp,
+                        // Match the History detail and MarineDex visuals — the
+                        // pixel sprite is the same icon the user already learned
+                        // in the dex catalogue.
+                        com.oceanguard.ai.ui.components.DexSpriteImage(
+                            debrisType = debris.type.canonical(),
+                            size = 26.dp,
                         )
                     }
                     Column {

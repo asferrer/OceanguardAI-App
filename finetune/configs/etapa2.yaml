@@ -1,0 +1,106 @@
+# =============================================================================
+# Etapa 2 — Fine-tune granular: review_dataset/ (19 clases material+tipo)
+#
+# Objetivo: refinar la capacidad de distinguir subtipos de material
+# (glass_bottle vs plastic_bottle, metal_can vs plastic_container, etc.)
+# usando el dataset curado de 449 imágenes con etiquetas precisas.
+#
+# Se retoma desde el checkpoint de Etapa 1. El mix del 10% de samples de
+# Etapa 1 previene catastrophic forgetting de las clases COCO base.
+#
+# Hardware probado: RTX 5090 32GB
+# Hardware mínimo: RTX 4090 24GB | Kaggle T4 con Unsloth
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Modelo: retomar desde Etapa 1
+# ---------------------------------------------------------------------------
+model_name: "unsloth/gemma-4-E2B-it"
+# etapa1_adapter desactivado: PEFT no soporta layered-LoRA sobre Unsloth Gemma4ClippableLinear modules.
+# Etapa 2 entrena como LoRA independiente sobre mismo base; los 2 adapters viven separados.
+# etapa1_adapter: "outputs/lora_etapa1/adapter"
+# merge_etapa1_first: true
+load_in_4bit: true
+dtype: "bfloat16"
+
+# ---------------------------------------------------------------------------
+# LoRA — se retoman los pesos de Etapa 1, vision_lora activado
+# ---------------------------------------------------------------------------
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.0           # Unsloth: 0 obligatorio para fast patching
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+bias: "none"
+
+# Vision LoRA activado en Etapa 2:
+# El dataset review_dataset tiene imágenes de objetos individuales con
+# iluminación y contexto diferente al COCO base (fotos de producto vs underwater).
+# Adaptar el encoder de visión ayuda a generalizar a estas distribuciones.
+# rank del vision encoder más bajo (8) porque el encoder SigLIP2 ya es robusto.
+vision_lora: true
+vision_lora_r: 8
+vision_lora_alpha: 16
+vision_target_modules:
+  - "vision_tower"    # SigLIP2 en Gemma 4 — nombre exacto depende de versión transformers
+
+# ---------------------------------------------------------------------------
+# Datos
+# ---------------------------------------------------------------------------
+dataset: "data/etapa2_train.jsonl"
+eval_dataset: "data/etapa1_val.jsonl"   # Usamos val de Etapa 1 como proxy de regresión
+dataset_format: "chat"
+
+# Porcentaje de samples de Etapa 1 mezclados en el JSONL de Etapa 2.
+# El valor real se configura en prepare_review_subset.py --mix-pct.
+# Este parámetro es documentativo para el train script.
+mix_general_vqa_pct: 0.10
+
+image_token_budget: 128     # Alineado con etapa1 (estable en RTX 5090)
+max_seq_length: 1536
+
+# ---------------------------------------------------------------------------
+# Hiperparámetros — más conservadores que Etapa 1
+# ---------------------------------------------------------------------------
+num_train_epochs: 3         # Más epochs porque el dataset es pequeño (~449 imgs).
+                            # Con mixing ~10% de Etapa 1: ~494 samples totales.
+per_device_train_batch_size: 1    # 2 -> 1 para evitar OOM en RTX 5090 con vision LoRA
+per_device_eval_batch_size: 1
+gradient_accumulation_steps: 32   # Effective batch = 1 * 32 = 32 (mismo)
+learning_rate: 5.0e-5       # LR más bajo que Etapa 1 para fine-tuning refinado.
+                            # Subir demasiado puede sobreescribir lo aprendido en Etapa 1.
+warmup_ratio: 0.10
+lr_scheduler_type: "cosine"
+optim: "adamw_8bit"
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+# ---------------------------------------------------------------------------
+# Checkpointing y logging
+# ---------------------------------------------------------------------------
+output_dir: "outputs/lora_etapa2"
+save_strategy: "epoch"      # Guarda cada epoch (dataset pequeño = pocos steps)
+save_total_limit: 3
+eval_strategy: "epoch"
+logging_steps: 10           # Más frecuente por dataset pequeño
+
+# ---------------------------------------------------------------------------
+# Reproducibilidad
+# ---------------------------------------------------------------------------
+seed: 42
+dataloader_num_workers: 4
+report_to: "none"           # Cambiar a "wandb" si quieres tracking
+run_name: "gemma4-e2b-marine-etapa2"
+
+# ---------------------------------------------------------------------------
+# Unsloth específico
+# ---------------------------------------------------------------------------
+use_unsloth: true
+unsloth_optimizations: true
+packing: false

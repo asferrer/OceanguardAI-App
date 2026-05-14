@@ -1,8 +1,11 @@
 package com.oceanguard.ai.ui.screens
 
 import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
+import android.view.OrientationEventListener
+import android.view.Surface
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -38,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -116,6 +120,13 @@ fun CameraScreen(
         if (!tourComplete) tourController.start()
     }
 
+    // Pre-warm Gemma 4 vision detector in background so the first capture does
+    // not pay the 5-10 s cold-start cost while the user frames the shot.
+    // No-op when Gemma 4 is not selected / not downloaded / already loaded.
+    LaunchedEffect(Unit) {
+        app.prewarmGemma4DetectorIfAvailable()
+    }
+
     // Request location permission alongside camera so GPS data is available
     // when saving sessions. Location is optional — the app works without it.
     val locationPermissions = rememberMultiplePermissionsState(
@@ -145,9 +156,12 @@ fun CameraScreen(
                 },
                 onImageCaptured = { uri ->
                     viewModel.analyzeImage(uri)
-                    navController.navigate("results") {
-                        // Pop CameraScreen off the back stack so pressing back
-                        // from results goes home, not back to the viewfinder.
+                    // Camera flow lands on the dedicated immersive result screen
+                    // (image full-screen + bounding boxes painted on top, with
+                    // a live inference animation while the model runs). Gallery
+                    // and batch flows continue to use "results"/"batch".
+                    navController.navigate("camera_result") {
+                        // Pop the viewfinder so back from the result goes home.
                         popUpTo("camera") { inclusive = true }
                     }
                 },
@@ -190,6 +204,9 @@ private fun CameraPreviewContent(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val app = remember(context) { context.applicationContext as OceanGuardApp }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // ImageCapture use case — kept in state so the capture button lambda
     // can reference it without recomposition.
@@ -213,8 +230,71 @@ private fun CameraPreviewContent(
         label = "shutter_border_width",
     )
 
+    // Drive ImageCapture.targetRotation from the device orientation sensor so
+    // the saved JPEG carries EXIF orientation that matches how the diver was
+    // actually holding the phone. This works *independently* of the system's
+    // auto-rotate setting (which on Samsung often stays locked to portrait),
+    // and so the picture sent to the detector lands in the user's natural
+    // orientation regardless of how the device was tilted at capture time.
     DisposableEffect(Unit) {
-        onDispose { cameraExecutor.shutdown() }
+        val orientationListener = object : OrientationEventListener(context) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+                imageCapture.targetRotation = when (orientation) {
+                    in 45..134 -> Surface.ROTATION_270
+                    in 135..224 -> Surface.ROTATION_180
+                    in 225..314 -> Surface.ROTATION_90
+                    else -> Surface.ROTATION_0
+                }
+            }
+        }
+        if (orientationListener.canDetectOrientation()) {
+            orientationListener.enable()
+        }
+        onDispose {
+            orientationListener.disable()
+            cameraExecutor.shutdown()
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Shared capture trigger (on-screen shutter + volume rocker)
+    // ----------------------------------------------------------------
+    val triggerCapture: () -> Unit = {
+        if (!isCapturing && pendingUri == null) {
+            isCapturing = true
+            imageCapture.flashMode = flashMode
+            capturePhoto(
+                context = context,
+                imageCapture = imageCapture,
+                executor = cameraExecutor,
+                onSuccess = { uri ->
+                    isCapturing = false
+                    if (confirmCapture) {
+                        pendingUri = uri
+                    } else {
+                        onImageCaptured(uri)
+                    }
+                },
+                onError = { exc ->
+                    isCapturing = false
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                },
+            )
+        }
+    }
+
+    // Make VOLUME_UP / VOLUME_DOWN behave like a hardware shutter while this
+    // screen is mounted. The flag tells MainActivity.dispatchKeyEvent to
+    // intercept the keys (instead of letting them change the system volume),
+    // and each KEY_DOWN fires through the shared SharedFlow below.
+    val latestTrigger by rememberUpdatedState(triggerCapture)
+    DisposableEffect(Unit) {
+        app.consumeVolumeKeysForCapture = true
+        onDispose { app.consumeVolumeKeysForCapture = false }
+    }
+    LaunchedEffect(Unit) {
+        app.volumeShutterRequests.collect { latestTrigger() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -294,6 +374,10 @@ private fun CameraPreviewContent(
         } else {
             // ----------------------------------------------------------------
             // Top overlay: back button + grid toggle + flash toggle
+            //
+            // Floating circular buttons with their own translucent backgrounds —
+            // no full-width chrome — so the viewfinder underneath is never
+            // covered by a solid bar.
             // ----------------------------------------------------------------
             Row(
                 modifier = Modifier
@@ -303,43 +387,28 @@ private fun CameraPreviewContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(
+                CameraCircleButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDesc = stringResource(R.string.cd_go_back),
                     onClick = onBack,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.50f),
-                            shape = CircleShape,
-                        ),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.cd_go_back),
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
+                )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(
+                    CameraCircleButton(
+                        icon = Icons.Filled.GridOn,
+                        contentDesc = stringResource(R.string.cd_toggle_grid),
                         onClick = { showGrid = !showGrid },
-                        modifier = Modifier
-                            .size(52.dp)
-                            .background(
-                                color = Color.Black.copy(alpha = 0.50f),
-                                shape = CircleShape,
-                            )
-                            .spotlightTarget("camera_grid", boundsMap),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.GridOn,
-                            contentDescription = stringResource(R.string.cd_toggle_grid),
-                            tint = Color.White.copy(alpha = if (showGrid) 1f else 0.8f),
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
+                        active = showGrid,
+                        modifier = Modifier.spotlightTarget("camera_grid", boundsMap),
+                    )
 
-                    IconButton(
+                    CameraCircleButton(
+                        icon = when (flashMode) {
+                            ImageCapture.FLASH_MODE_ON -> Icons.Filled.FlashOn
+                            ImageCapture.FLASH_MODE_AUTO -> Icons.Filled.FlashAuto
+                            else -> Icons.Filled.FlashOff
+                        },
+                        contentDesc = stringResource(R.string.cd_flash_mode),
                         onClick = {
                             flashMode = when (flashMode) {
                                 ImageCapture.FLASH_MODE_OFF -> ImageCapture.FLASH_MODE_ON
@@ -347,117 +416,150 @@ private fun CameraPreviewContent(
                                 else -> ImageCapture.FLASH_MODE_OFF
                             }
                         },
-                        modifier = Modifier
-                            .size(52.dp)
-                            .background(
-                                color = Color.Black.copy(alpha = 0.50f),
-                                shape = CircleShape,
-                            )
-                            .spotlightTarget("camera_flash", boundsMap),
-                    ) {
-                        Icon(
-                            imageVector = when (flashMode) {
-                                ImageCapture.FLASH_MODE_ON -> Icons.Filled.FlashOn
-                                ImageCapture.FLASH_MODE_AUTO -> Icons.Filled.FlashAuto
-                                else -> Icons.Filled.FlashOff
-                            },
-                            contentDescription = stringResource(R.string.cd_flash_mode),
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
+                        modifier = Modifier.spotlightTarget("camera_flash", boundsMap),
+                    )
                 }
             }
 
             // ----------------------------------------------------------------
-            // Bottom overlay: mode toggle + shutter button + hint label
+            // Capture controls — adaptive to device orientation.
+            //
+            // Portrait: stacked at the bottom (mode toggle → hint → shutter).
+            // Landscape: anchored to the right edge (mode toggle + hint on the
+            // left, shutter on the right) so the rocker hand naturally falls
+            // on the shutter when the phone is held horizontally.
+            //
+            // No bottom gradient — the buttons sit directly on top of the
+            // viewfinder so the underwater scene is fully visible everywhere
+            // outside the actual control bounds.
             // ----------------------------------------------------------------
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
-                        ),
-                    )
-                    .navigationBarsPadding()
-                    .padding(bottom = 36.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Mode toggle: Capture | Live
-                CameraModeToggle(
-                    liveEnabled = liveEnabled,
-                    onNavigateToLive = onNavigateToLive,
-                    modifier = Modifier.spotlightTarget("camera_mode_toggle", boundsMap),
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.camera_hint_tap_to_capture),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White.copy(alpha = 0.80f),
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Shutter button — 72 dp circular target, well above the 48 dp
-                // minimum, sized for gloved fingers at depth.
-                Box(
-                    contentAlignment = Alignment.Center,
+            // Capture controls — no mode toggle for now (live mode is hidden
+            // until it's stable; default is plain capture). Hint sits BELOW
+            // the shutter in both orientations so the button is always the
+            // visual anchor.
+            if (isLandscape) {
+                Column(
                     modifier = Modifier
-                        .size(80.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.30f),
-                            shape = CircleShape,
-                        )
-                        .border(width = shutterBorderWidth.dp, color = Color.White, shape = CircleShape)
-                        .spotlightTarget("camera_shutter", boundsMap),
+                        .align(Alignment.CenterEnd)
+                        .navigationBarsPadding()
+                        .padding(end = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    IconButton(
-                        onClick = {
-                            if (!isCapturing) {
-                                isCapturing = true
-                                imageCapture.flashMode = flashMode
-                                capturePhoto(
-                                    context = context,
-                                    imageCapture = imageCapture,
-                                    executor = cameraExecutor,
-                                    onSuccess = { uri ->
-                                        isCapturing = false
-                                        if (confirmCapture) {
-                                            pendingUri = uri
-                                        } else {
-                                            onImageCaptured(uri)
-                                        }
-                                    },
-                                    onError = { exc ->
-                                        isCapturing = false
-                                        Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                                    },
-                                )
-                            }
-                        },
-                        modifier = Modifier.size(72.dp),
-                        enabled = !isCapturing,
-                    ) {
-                        if (isCapturing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                color = Color.White,
-                                strokeWidth = 3.dp,
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Filled.CameraAlt,
-                                contentDescription = stringResource(R.string.cd_capture_photo),
-                                tint = Color.White,
-                                modifier = Modifier.size(36.dp),
-                            )
-                        }
-                    }
+                    ShutterButton(
+                        isCapturing = isCapturing,
+                        borderWidthDp = shutterBorderWidth,
+                        onClick = triggerCapture,
+                        modifier = Modifier.spotlightTarget("camera_shutter", boundsMap),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.camera_hint_tap_to_capture),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    ShutterButton(
+                        isCapturing = isCapturing,
+                        borderWidthDp = shutterBorderWidth,
+                        onClick = triggerCapture,
+                        modifier = Modifier.spotlightTarget("camera_shutter", boundsMap),
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = stringResource(R.string.camera_hint_tap_to_capture),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Floating circular icon button used by the camera top bar.
+//
+// Each button carries its own translucent dark background and circular hit
+// target so it stays legible against any backdrop without needing a full-width
+// gradient strip across the screen.
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun CameraCircleButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDesc: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    active: Boolean = false,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(50.dp)
+            .background(
+                color = Color.Black.copy(alpha = 0.45f),
+                shape = CircleShape,
+            ),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDesc,
+            tint = Color.White.copy(alpha = if (active) 1f else 0.85f),
+            modifier = Modifier.size(26.dp),
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shutter button — extracted so portrait and landscape layouts share one
+// definition and the on-screen target stays identical regardless of where it
+// is placed on the screen.
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ShutterButton(
+    isCapturing: Boolean,
+    borderWidthDp: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(80.dp)
+            .background(
+                color = Color.Black.copy(alpha = 0.30f),
+                shape = CircleShape,
+            )
+            .border(width = borderWidthDp.dp, color = Color.White, shape = CircleShape),
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(72.dp),
+            enabled = !isCapturing,
+        ) {
+            if (isCapturing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = Color.White,
+                    strokeWidth = 3.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.CameraAlt,
+                    contentDescription = stringResource(R.string.cd_capture_photo),
+                    tint = Color.White,
+                    modifier = Modifier.size(36.dp),
+                )
             }
         }
     }

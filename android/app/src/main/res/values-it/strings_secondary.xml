@@ -589,8 +589,10 @@
     <string name="report_notif_title">Generazione del rapporto</string>
     <string name="report_notif_loading_model">Caricamento del modello IA…</string>
     <string name="report_notif_generating">Scrittura del rapporto ambientale…</string>
+    <string name="report_notif_querying">Interrogazione di %1$s…</string>
     <string name="report_notif_complete">Rapporto pronto!</string>
     <string name="report_notif_error">Generazione del rapporto fallita</string>
+    <string name="report_querying_tool">Interrogazione di %1$s…</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Scarica modello IA</string>

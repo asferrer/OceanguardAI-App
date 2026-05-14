@@ -31,6 +31,8 @@ sealed class InferenceServiceState {
         val sessionId: Long = 0,
         /** True when the image was automatically enqueued for contribution (consent given). */
         val contributionQueued: Boolean = false,
+        /** URI of the pre-rendered annotated thumbnail (bboxes baked in). Null when no debris was detected. */
+        val annotatedUri: String? = null,
     ) : InferenceServiceState()
 
     /** A batch of images is being processed sequentially. */

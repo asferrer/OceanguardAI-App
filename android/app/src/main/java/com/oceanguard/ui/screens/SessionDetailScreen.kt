@@ -46,6 +46,7 @@ import com.oceanguard.ai.data.ZoneAggregator
 import com.oceanguard.ai.inference.DetectionResult
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.components.BoundingBoxOverlay
+import com.oceanguard.ai.ui.components.DexSpriteImage
 import com.oceanguard.ai.ui.components.PlaceNameText
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.HealthScoreGauge
@@ -692,7 +693,14 @@ private fun SessionDebrisItem(debris: Debris) {
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(text = impact.icon, fontSize = 18.sp)
+                        // Pixel-art sprite of the canonical debris type. Consistent
+                        // across vendors (no emoji glyph drift) and matches the
+                        // MarineDex catalogue 1:1 so users see the same icon they
+                        // already learned in the dex.
+                        DexSpriteImage(
+                            debrisType = debris.type.canonical(),
+                            size = 26.dp,
+                        )
                     }
                     Column {
                         Text(

@@ -44,8 +44,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -75,6 +79,15 @@ sealed class ReportGenerationState {
     data object Idle : ReportGenerationState()
     data object LoadingModel : ReportGenerationState()
     data object Generating : ReportGenerationState()
+    /**
+     * The model has issued a tool call and we are about to run the Kotlin
+     * function backing it. Lets the UI announce "Querying debris summary…"
+     * during the otherwise-silent PHASE 1 of the agentic loop.
+     */
+    data class ToolExecuting(
+        val toolName: String,
+        val sequence: Int,
+    ) : ReportGenerationState()
     data class StreamingText(
         val partialText: String,
         val tokenCount: Int = 0,
@@ -120,8 +133,14 @@ class OceanGuardApp : Application() {
     companion object {
         private const val TAG = "OceanGuardApp"
 
-        /** Keep VLM loaded 2 min after last use to avoid reloading on consecutive reports. */
-        private const val VLM_RETAIN_MS = 120_000L
+        /**
+         * Keep VLM loaded for 30 minutes after last use so consecutive reports
+         * within the same diving session don't pay the 5-30 s reload cost.
+         * `onTrimMemory` / `onLowMemory` still release the engine eagerly if
+         * the OS reports real memory pressure, so the long retain is bounded
+         * by available RAM rather than by a fixed timer.
+         */
+        private const val VLM_RETAIN_MS = 30L * 60L * 1000L
 
         // REPORT_TIER is now dynamic — see bestAvailableTier()
     }
@@ -150,14 +169,25 @@ class OceanGuardApp : Application() {
 
     /**
      * Returns the active detector for **single-shot deep analysis**, based on user settings.
-     * "rtdetr" → RT-DETRv2 (~4 s/frame, fast), "gemma4" → Gemma 4 Vision (~20 s/frame, deep).
+     * "rtdetr" → RT-DETRv2 (~30 ms, fast), "gemma4" → Gemma 4 Vision (~4-10 s, deep).
      *
-     * **DO NOT use this in real-time loops** (live camera, video processing). Gemma 4 Vision
-     * collapses those to ~0.05 FPS on Exynos 2200. Use [rtdetrInference] directly instead.
+     * When the user selects Gemma 4 but the model is not downloaded yet, this falls
+     * back to RT-DETRv2 so the camera capture pipeline keeps working — the canonical
+     * taxonomy is the same on both paths.
+     *
+     * **DO NOT use this in real-time loops** (live camera, video processing). Gemma 4
+     * Vision collapses those to ~0.05 FPS on Exynos 2200. Use [rtdetrInference] directly.
      */
     fun getActiveDetector(): ObjectDetector {
         return when (settingsRepository.getDetectorModeSync()) {
-            DetectorType.GEMMA4_VISION.key -> gemma4Detector
+            DetectorType.GEMMA4_VISION.key -> {
+                if (vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B)) {
+                    gemma4Detector
+                } else {
+                    Log.w(TAG, "Gemma 4 Vision selected but not downloaded — falling back to RT-DETRv2")
+                    rtdetrInference
+                }
+            }
             else -> rtdetrInference
         }
     }
@@ -278,6 +308,29 @@ class OceanGuardApp : Application() {
 
     val currentVideoProcessor = MutableStateFlow<VideoProcessor?>(null)
 
+    // -----------------------------------------------------------------------
+    // Volume-key shutter trigger
+    // -----------------------------------------------------------------------
+    //
+    // CameraScreen toggles [consumeVolumeKeysForCapture] while it is mounted
+    // so MainActivity.dispatchKeyEvent knows to intercept VOLUME_UP/DOWN as a
+    // shutter trigger instead of letting the system change the audio volume.
+    // When the flag is on, each KEY_DOWN emits an event on [volumeShutterRequests]
+    // which CameraScreen collects to fire a capture identical to tapping the
+    // on-screen shutter.
+    private val _volumeShutterRequests = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    val volumeShutterRequests: SharedFlow<Unit> = _volumeShutterRequests.asSharedFlow()
+
+    @Volatile
+    var consumeVolumeKeysForCapture: Boolean = false
+
+    fun requestVolumeShutter() {
+        _volumeShutterRequests.tryEmit(Unit)
+    }
+
     override fun onCreate() {
         super.onCreate()
 
@@ -291,7 +344,7 @@ class OceanGuardApp : Application() {
         }
         Log.i(TAG, "Detector model: $detectorModel (precision=$precision)")
         rtdetrInference = RTDETRInference(this, detectorModel)
-        detectionOrchestrator = DetectionOrchestrator(this, rtdetrInference, null)
+        detectionOrchestrator = DetectionOrchestrator(this, getActiveDetector())
 
         applicationScope.launch {
             try {
@@ -325,7 +378,41 @@ class OceanGuardApp : Application() {
             }
         }
 
-        Log.i(TAG, "VLM deferred: will load on demand for report generation")
+        // Preload the text model in the background so the first "Generate
+        // report" tap doesn't pay a cold-start (5-30 s) and the user never sees
+        // the "Loading model…" banner for an already-installed model. Runs at
+        // low OS thread priority so it doesn't compete with the foreground UI
+        // or the RT-DETR warm-up that's already in flight.
+        applicationScope.launch {
+            try {
+                // Let the RT-DETR loader settle first so the two big native
+                // initialisations don't fight for IO at the same moment.
+                delay(1_500L)
+                val tier = bestAvailableTier()
+                if (!isTextModelAvailable(tier)) {
+                    Log.i(TAG, "Text VLM preload skipped — model not downloaded (tier=${tier.displayName})")
+                    return@launch
+                }
+                val tid = android.os.Process.myTid()
+                val originalPriority = runCatching { android.os.Process.getThreadPriority(tid) }
+                    .getOrDefault(android.os.Process.THREAD_PRIORITY_DEFAULT)
+                runCatching {
+                    android.os.Process.setThreadPriority(tid, android.os.Process.THREAD_PRIORITY_BACKGROUND)
+                }
+                try {
+                    Log.i(TAG, "Preloading text VLM in background: ${tier.displayName}")
+                    val startMs = System.currentTimeMillis()
+                    // silentPreload = true so the report UI doesn't briefly
+                    // flash "Loading model…" at app start.
+                    loadTextEngineIfNeeded(forceTier = tier, silentPreload = true)
+                    Log.i(TAG, "Text VLM preload complete in ${System.currentTimeMillis() - startMs}ms")
+                } finally {
+                    runCatching { android.os.Process.setThreadPriority(tid, originalPriority) }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Text VLM preload failed (non-fatal): ${e.message}", e)
+            }
+        }
 
         // If Gemma 4 Vision is the selected detector, try to initialize it
         if (settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key) {
@@ -333,6 +420,27 @@ class OceanGuardApp : Application() {
                 initializeGemma4DetectorIfAvailable()
             }
         }
+    }
+
+    /**
+     * Pre-warms the Gemma 4 vision detector in the background when:
+     *  - it is the user-selected detector, AND
+     *  - the model file is downloaded, AND
+     *  - it is not already loading / loaded.
+     *
+     * Idempotent and non-blocking. Designed to be called from
+     * `LaunchedEffect(Unit)` inside CameraScreen so the first capture does not
+     * pay the 5-10 s cold-start cost while the user is already framing a shot
+     * underwater. Safe to invoke even when none of the conditions hold — it
+     * silently returns.
+     */
+    fun prewarmGemma4DetectorIfAvailable() {
+        if (settingsRepository.getDetectorModeSync() != DetectorType.GEMMA4_VISION.key) return
+        val currentStatus = modelLoadingState.value.gemma4Vision
+        if (currentStatus != ModelStatus.NotLoaded && currentStatus != ModelStatus.Standby) return
+        if (!vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B)) return
+        Log.i(TAG, "Pre-warming Gemma 4 vision detector in background")
+        applicationScope.launch { initializeGemma4DetectorIfAvailable() }
     }
 
     /**
@@ -405,12 +513,17 @@ class OceanGuardApp : Application() {
     }
 
     /**
-     * Loads the best available text tier if not already ready.
-     * Sets [ReportGenerationState.LoadingModel] while loading.
+     * Loads the best available text tier (or the one passed in [forceTier]) if
+     * not already ready. Sets [ReportGenerationState.LoadingModel] while
+     * loading, unless [silentPreload] is true (used by the background preload
+     * at app start, which must not show the "Loading model…" UI banner).
      * Must be called from a coroutine inside [applicationScope].
      */
-    private suspend fun loadTextEngineIfNeeded(): VlmTextEngine {
-        val tier = bestAvailableTier()
+    private suspend fun loadTextEngineIfNeeded(
+        forceTier: TextModelTier? = null,
+        silentPreload: Boolean = false,
+    ): VlmTextEngine {
+        val tier = forceTier ?: bestAvailableTier()
         val existing = _vlmTextEngine
         val engine = if (existing != null && _vlmTextEngineTier == tier) existing
                      else {
@@ -424,13 +537,15 @@ class OceanGuardApp : Application() {
                          }
                      }
         if (!engine.isReady()) {
-            reportGenerationState.value = ReportGenerationState.LoadingModel
+            if (!silentPreload) {
+                reportGenerationState.value = ReportGenerationState.LoadingModel
+            }
             modelLoadingState.update {
                 it.copy(qwenText = ModelStatus.Loading, activeTierName = tier.displayName)
             }
             // Both GGUF and .litertlm files live at `tier.filename` inside the models dir.
             val modelPath = vlmModelManager.getTextModelPath(tier)
-            Log.i(TAG, "Loading ${engine.displayName} on demand...")
+            Log.i(TAG, "Loading ${engine.displayName} ${if (silentPreload) "(preload)" else "on demand"}...")
             engine.initialize(modelPath)
             modelLoadingState.update { it.copy(qwenText = ModelStatus.WarmingUp) }
             engine.warmUp()
@@ -439,6 +554,23 @@ class OceanGuardApp : Application() {
             Log.i(TAG, "${engine.displayName} already loaded — skipping")
         }
         return engine
+    }
+
+    /**
+     * Build the ordered list of tiers to try for a report. First the best
+     * available (matching the user's preference), then the smaller fallback
+     * if it is distinct AND downloaded. Used by both single-session and zone
+     * report generation to recover from OOM / timeout / init crash without
+     * burdening the user with a manual retry.
+     */
+    private fun reportRetryTiers(): List<TextModelTier> {
+        val primary = bestAvailableTier()
+        val fallback = primary.smallerFallback()
+        return if (fallback != primary && vlmModelManager.isModelAvailable(fallback)) {
+            listOf(primary, fallback)
+        } else {
+            listOf(primary)
+        }
     }
 
     /** Create the right engine implementation based on the tier's backend. */
@@ -508,45 +640,68 @@ class OceanGuardApp : Application() {
         startForegroundReportService()
         applicationScope.launch {
             val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
-            try {
-                val engine = loadTextEngineIfNeeded()
-                reportGenerationState.value = ReportGenerationState.Generating
-                val tracker = GenerationTracker(maxTokens = 6144)
-                val reportText = if (engine is LiteRTTextEngine) {
-                    Log.i(TAG, "Using tool-calling report path (LiteRT-LM / Gemma 4)")
-                    ToolReportGenerator(engine).generateReportWithToolsStreaming(
-                        sessions = sessions,
-                        language = language,
-                        audience = audience,
-                        onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
-                        onToolCallStarted = { name -> Log.d(TAG, "Tool call: $name") },
+            val tiers = reportRetryTiers()
+            var lastError: Throwable? = null
+            for ((attempt, tier) in tiers.withIndex()) {
+                try {
+                    val engine = loadTextEngineIfNeeded(forceTier = tier)
+                    reportGenerationState.value = ReportGenerationState.Generating
+                    val tracker = GenerationTracker(maxTokens = 6144)
+                    val toolCounter = java.util.concurrent.atomic.AtomicInteger(0)
+                    val reportText = if (engine is LiteRTTextEngine) {
+                        Log.i(TAG, "Using tool-calling report path (LiteRT-LM / Gemma 4) tier=${tier.displayName}")
+                        ToolReportGenerator(engine).generateReportWithToolsStreaming(
+                            sessions = sessions,
+                            language = language,
+                            audience = audience,
+                            onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
+                            onToolCallStarted = { name ->
+                                val seq = toolCounter.incrementAndGet()
+                                Log.d(TAG, "Tool call: $name (#$seq)")
+                                // Surface "Querying <tool>…" to the UI so the user sees
+                                // progress during the agentic PHASE-1, before report
+                                // tokens start streaming.
+                                reportGenerationState.value =
+                                    ReportGenerationState.ToolExecuting(name, seq)
+                            },
+                        )
+                    } else {
+                        val generator = ReportGenerator(engine)
+                        generator.generateReportStreaming(sessions, language, audience) { partial ->
+                            reportGenerationState.value = tracker.snapshot(partial)
+                        }
+                    }
+                    val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
+                    val report = GeneratedReport(
+                        text         = reportText,
+                        language     = language,
+                        sessionCount = sessions.size,
+                        usedAi       = true,
+                        audience     = audience.name.lowercase(),
+                        sessionIds   = sessionIdsCsv,
                     )
-                } else {
-                    val generator = ReportGenerator(engine)
-                    generator.generateReportStreaming(sessions, language, audience) { partial ->
-                        reportGenerationState.value = tracker.snapshot(partial)
+                    val id = database.generatedReportDao().insert(report)
+                    validateAndPersist(id, reportText, sessions, language)
+                    reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
+                    Log.i(TAG, "Report saved (id=$id, tier=${tier.displayName}, attempt=${attempt + 1})")
+                    lastError = null
+                    break
+                } catch (e: Exception) {
+                    lastError = e
+                    Log.w(TAG, "Report attempt ${attempt + 1}/${tiers.size} with ${tier.displayName} failed: ${e.message}", e)
+                    if (attempt < tiers.lastIndex) {
+                        // Backoff before falling back to the smaller tier so any
+                        // partial state from the failed engine clears cleanly.
+                        delay(1_500L * (attempt + 1))
                     }
                 }
-                val sessionIdsCsv = sessions.joinToString(",") { it.id.toString() }
-                val report = GeneratedReport(
-                    text         = reportText,
-                    language     = language,
-                    sessionCount = sessions.size,
-                    usedAi       = true,
-                    audience     = audience.name.lowercase(),
-                    sessionIds   = sessionIdsCsv,
-                )
-                val id = database.generatedReportDao().insert(report)
-                validateAndPersist(id, reportText, sessions, language)
-                reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
-                Log.i(TAG, "Report saved (id=$id)")
-            } catch (e: Exception) {
-                Log.e(TAG, "Report generation failed", e)
-                modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
-                reportGenerationState.value = ReportGenerationState.Error(e.message ?: "Unknown error")
-            } finally {
-                scheduleVlmRelease()
             }
+            if (lastError != null) {
+                Log.e(TAG, "Report generation failed after ${tiers.size} attempt(s)", lastError)
+                modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
+                reportGenerationState.value = ReportGenerationState.Error(lastError.message ?: "Unknown error")
+            }
+            scheduleVlmRelease()
         }
     }
 
@@ -561,50 +716,68 @@ class OceanGuardApp : Application() {
         startForegroundReportService()
         applicationScope.launch {
             val audience = ReportAudience.fromKey(settingsRepository.getReportAudienceSync())
-            try {
-                val engine = loadTextEngineIfNeeded()
-                reportGenerationState.value = ReportGenerationState.Generating
-                val tracker = GenerationTracker(maxTokens = 6144)
-                val reportText = if (engine is LiteRTTextEngine) {
-                    Log.i(TAG, "Using tool-calling zone report path (LiteRT-LM / Gemma 4)")
-                    ToolReportGenerator(engine).generateZoneReportWithToolsStreaming(
-                        input = input,
-                        language = language,
-                        audience = audience,
-                        onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
-                        onToolCallStarted = { name -> Log.d(TAG, "Tool call: $name") },
+            val tiers = reportRetryTiers()
+            var lastError: Throwable? = null
+            for ((attempt, tier) in tiers.withIndex()) {
+                try {
+                    val engine = loadTextEngineIfNeeded(forceTier = tier)
+                    reportGenerationState.value = ReportGenerationState.Generating
+                    val tracker = GenerationTracker(maxTokens = 6144)
+                    val toolCounter = java.util.concurrent.atomic.AtomicInteger(0)
+                    val reportText = if (engine is LiteRTTextEngine) {
+                        Log.i(TAG, "Using tool-calling zone report path (LiteRT-LM / Gemma 4) tier=${tier.displayName}")
+                        ToolReportGenerator(engine).generateZoneReportWithToolsStreaming(
+                            input = input,
+                            language = language,
+                            audience = audience,
+                            onPartialResult = { partial -> reportGenerationState.value = tracker.snapshot(partial) },
+                            onToolCallStarted = { name ->
+                                val seq = toolCounter.incrementAndGet()
+                                Log.d(TAG, "Tool call: $name (#$seq)")
+                                reportGenerationState.value =
+                                    ReportGenerationState.ToolExecuting(name, seq)
+                            },
+                        )
+                    } else {
+                        val generator = ReportGenerator(engine)
+                        generator.generateZoneReportStreaming(input, language, audience) { partial ->
+                            reportGenerationState.value = tracker.snapshot(partial)
+                        }
+                    }
+                    val zoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
+                    val report = GeneratedReport(
+                        text             = reportText,
+                        language         = language,
+                        sessionCount     = input.sessions.size,
+                        usedAi           = true,
+                        locationName     = input.locationName,
+                        centroidLat      = input.centroidLat,
+                        centroidLon      = input.centroidLon,
+                        dateRangeStartMs = input.dateRangeStartMs,
+                        dateRangeEndMs   = input.dateRangeEndMs,
+                        audience         = audience.name.lowercase(),
+                        sessionIds       = zoneSessionIds,
                     )
-                } else {
-                    val generator = ReportGenerator(engine)
-                    generator.generateZoneReportStreaming(input, language, audience) { partial ->
-                        reportGenerationState.value = tracker.snapshot(partial)
+                    val id = database.generatedReportDao().insert(report)
+                    validateAndPersist(id, reportText, input.sessions, language)
+                    reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
+                    Log.i(TAG, "Zone report saved (id=$id, tier=${tier.displayName}, attempt=${attempt + 1})")
+                    lastError = null
+                    break
+                } catch (e: Exception) {
+                    lastError = e
+                    Log.w(TAG, "Zone report attempt ${attempt + 1}/${tiers.size} with ${tier.displayName} failed: ${e.message}", e)
+                    if (attempt < tiers.lastIndex) {
+                        delay(1_500L * (attempt + 1))
                     }
                 }
-                val zoneSessionIds = input.sessions.joinToString(",") { it.id.toString() }
-                val report = GeneratedReport(
-                    text             = reportText,
-                    language         = language,
-                    sessionCount     = input.sessions.size,
-                    usedAi           = true,
-                    locationName     = input.locationName,
-                    centroidLat      = input.centroidLat,
-                    centroidLon      = input.centroidLon,
-                    dateRangeStartMs = input.dateRangeStartMs,
-                    dateRangeEndMs   = input.dateRangeEndMs,
-                    audience         = audience.name.lowercase(),
-                    sessionIds       = zoneSessionIds,
-                )
-                val id = database.generatedReportDao().insert(report)
-                validateAndPersist(id, reportText, input.sessions, language)
-                reportGenerationState.value = ReportGenerationState.Complete(report.copy(id = id))
-                Log.i(TAG, "Zone report saved (id=$id)")
-            } catch (e: Exception) {
-                Log.e(TAG, "Zone report generation failed", e)
-                modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
-                reportGenerationState.value = ReportGenerationState.Error(e.message ?: "Unknown error")
-            } finally {
-                scheduleVlmRelease()
             }
+            if (lastError != null) {
+                Log.e(TAG, "Zone report generation failed after ${tiers.size} attempt(s)", lastError)
+                modelLoadingState.update { it.copy(qwenText = ModelStatus.Error) }
+                reportGenerationState.value = ReportGenerationState.Error(lastError.message ?: "Unknown error")
+            }
+            scheduleVlmRelease()
         }
     }
 

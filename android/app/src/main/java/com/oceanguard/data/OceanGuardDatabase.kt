@@ -60,7 +60,7 @@ import com.oceanguard.ai.data.converters.LocationConverter
         VideoAnalysis::class,
         ContributionQueueItem::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(
@@ -248,13 +248,136 @@ abstract class OceanGuardDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v10 -> v11: Collapse marine_dex_entries to the 11 canonical types.
+         *
+         * Pre-v11, the dex stored extended Gemma 4 types (PLASTIC_BAG, STYROFOAM, ...)
+         * alongside the 11 canonical types, producing the inconsistent
+         * "X / 11" counter and the achievement dex_11 reachable with extended types.
+         *
+         * This migration merges every non-canonical row into its canonical parent:
+         *   firstSeenAt           = MIN across the merged group
+         *   firstSeenSessionId    = the one paired with that MIN firstSeenAt
+         *   timesDetected         = SUM
+         *   lastSeenAt            = MAX
+         *   isFavorite            = MAX (any favourite => merged stays favourite)
+         *
+         * The mapping mirrors [DebrisType.canonical] / `CANONICAL_PARENT` in
+         * Models.kt; keep both in sync if the taxonomy changes.
+         */
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Temp table with the mapping. Canonical types map to themselves.
+                db.execSQL("CREATE TEMPORARY TABLE _dex_canon_map (extended TEXT PRIMARY KEY, canonical TEXT NOT NULL)")
+                val mappings = listOf(
+                    // plastic family
+                    "BOTTLE_CAP" to "PLASTIC_DEBRIS",
+                    "PLASTIC_BAG" to "PLASTIC_DEBRIS",
+                    "FOOD_WRAPPER" to "PLASTIC_DEBRIS",
+                    "STYROFOAM" to "PLASTIC_DEBRIS",
+                    "PLASTIC_CUP" to "PLASTIC_DEBRIS",
+                    "STRAW" to "PLASTIC_DEBRIS",
+                    "PLASTIC_UTENSIL" to "PLASTIC_DEBRIS",
+                    "SIX_PACK_RING" to "PLASTIC_DEBRIS",
+                    "PLASTIC_SHEETING" to "PLASTIC_DEBRIS",
+                    "DIAPER" to "PLASTIC_DEBRIS",
+                    // metal family
+                    "AEROSOL_CAN" to "METAL_DEBRIS",
+                    "METAL_DRUM" to "METAL_DEBRIS",
+                    "WIRE_CABLE" to "METAL_DEBRIS",
+                    "BATTERY" to "METAL_DEBRIS",
+                    "ELECTRONICS" to "METAL_DEBRIS",
+                    "PAINT_CAN" to "METAL_DEBRIS",
+                    "OIL_CONTAINER" to "METAL_DEBRIS",
+                    "CHEMICAL_DRUM" to "METAL_DEBRIS",
+                    // glass family
+                    "GLASS_BOTTLE" to "GLASS_DEBRIS",
+                    "GLASS_JAR" to "GLASS_DEBRIS",
+                    "GLASS_FRAGMENT" to "GLASS_DEBRIS",
+                    "LIGHT_BULB" to "GLASS_DEBRIS",
+                    // fishing family
+                    "FISHING_LINE" to "FISHING_NET",
+                    "ROPE" to "FISHING_NET",
+                    "FISHING_BUOY" to "FISHING_NET",
+                    "FISHING_TRAP" to "FISHING_NET",
+                    // rubber family
+                    "FLIP_FLOP" to "TIRE",
+                    "RUBBER_HOSE" to "TIRE",
+                    // fabric family
+                    "CLOTHING" to "FABRIC_DEBRIS",
+                    "SHOE" to "FABRIC_DEBRIS",
+                    // hazardous & natural -> OTHER
+                    "CIGARETTE_BUTT" to "OTHER",
+                    "CIGARETTE_LIGHTER" to "OTHER",
+                    "SYRINGE" to "OTHER",
+                    "CARDBOARD" to "OTHER",
+                    "PAPER" to "OTHER",
+                    "WOOD_PALLET" to "OTHER",
+                    "LUMBER" to "OTHER",
+                    "CERAMIC_FRAGMENT" to "OTHER",
+                    "BRICK" to "OTHER",
+                )
+                for ((ext, canon) in mappings) {
+                    db.execSQL(
+                        "INSERT INTO _dex_canon_map (extended, canonical) VALUES (?, ?)",
+                        arrayOf<Any>(ext, canon),
+                    )
+                }
+
+                // Snapshot of every dex row with its target canonical type.
+                db.execSQL(
+                    """
+                    CREATE TEMPORARY TABLE _dex_new AS
+                    SELECT
+                        COALESCE(
+                            (SELECT canonical FROM _dex_canon_map WHERE extended = e.debrisType),
+                            e.debrisType
+                        ) AS new_type,
+                        e.firstSeenAt,
+                        e.firstSeenSessionId,
+                        e.timesDetected,
+                        e.lastSeenAt,
+                        e.isFavorite
+                    FROM marine_dex_entries e
+                    """.trimIndent()
+                )
+
+                // Replace the live table with the aggregated canonical rows.
+                db.execSQL("DELETE FROM marine_dex_entries")
+                db.execSQL(
+                    """
+                    INSERT INTO marine_dex_entries
+                        (debrisType, firstSeenAt, firstSeenSessionId, timesDetected, lastSeenAt, isFavorite)
+                    SELECT
+                        new_type,
+                        MIN(firstSeenAt),
+                        (
+                            SELECT firstSeenSessionId
+                            FROM _dex_new b
+                            WHERE b.new_type = a.new_type
+                            ORDER BY firstSeenAt ASC
+                            LIMIT 1
+                        ),
+                        SUM(timesDetected),
+                        MAX(lastSeenAt),
+                        MAX(isFavorite)
+                    FROM _dex_new a
+                    GROUP BY new_type
+                    """.trimIndent()
+                )
+
+                db.execSQL("DROP TABLE _dex_new")
+                db.execSQL("DROP TABLE _dex_canon_map")
+            }
+        }
+
         private fun buildDatabase(appContext: Context): OceanGuardDatabase {
             return Room.databaseBuilder(
                 appContext,
                 OceanGuardDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 // -----------------------------------------------------------------
                 // WAL mode
                 // -----------------------------------------------------------------

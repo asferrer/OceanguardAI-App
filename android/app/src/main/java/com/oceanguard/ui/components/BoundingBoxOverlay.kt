@@ -10,7 +10,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -509,6 +511,83 @@ fun BoundingBoxOverlay(
                     color     = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Overload 3 — FillWidth bounding-box overlay
+// ---------------------------------------------------------------------------
+
+/**
+ * URI-based overload that renders with [ContentScale.FillWidth] and lets the
+ * height grow to match the image's aspect ratio. Used by the Results screen
+ * while the inference is still running, so the captured photo is shown
+ * uncropped (matching the look of SessionDetailScreen's annotated-thumbnail
+ * branch). Bounding boxes are drawn on top with the same brackets/glow/pulse
+ * animation as the canonical overlay.
+ *
+ * The caller is responsible for placing this inside a `Modifier.fillMaxWidth()`
+ * container — height adapts automatically to the loaded image.
+ */
+@Composable
+fun FitWidthBoundingBoxOverlay(
+    imageUri  : String?,
+    detections: List<DetectionResult>,
+    modifier  : Modifier = Modifier,
+) {
+    if (imageUri == null) {
+        // Without an image, fall back to the centred placeholder used by the
+        // canonical overlay; a 4:3 aspectRatio gives it sensible height.
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .aspectRatio(4f / 3f)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text      = "No image available",
+                style     = MaterialTheme.typography.bodyMedium,
+                color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        return
+    }
+
+    var displaySize by remember { mutableStateOf(IntSize.Zero) }
+    val anim = rememberBboxAnimState(detections)
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUri)
+                .build(),
+            contentDescription = "Captured image for debris analysis",
+            contentScale       = ContentScale.FillWidth,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { displaySize = it },
+        )
+
+        if (displaySize != IntSize.Zero && detections.isNotEmpty()) {
+            val scaleX = displaySize.width.toFloat()
+            val scaleY = displaySize.height.toFloat()
+            Canvas(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer(
+                        scaleX = anim.entranceScale,
+                        scaleY = anim.entranceScale,
+                        alpha  = anim.entranceAlpha,
+                    ),
+            ) {
+                val strokePx = 3.dp.toPx()
+                for (detection in detections) {
+                    drawDetection(detection, scaleX, scaleY, strokePx, anim.pulseAlpha)
+                }
             }
         }
     }

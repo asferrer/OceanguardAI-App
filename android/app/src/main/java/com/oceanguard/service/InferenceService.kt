@@ -238,6 +238,7 @@ class InferenceService : LifecycleService() {
                     result = result,
                     sessionId = sessionId,
                     contributionQueued = contributionQueued,
+                    annotatedUri = annotatedUri,
                 )
                 updateNotification(
                     "Complete! ${result.totalDebrisCount} debris found.",
@@ -267,6 +268,11 @@ class InferenceService : LifecycleService() {
             val threshold = app.settingsRepository.confidenceThreshold.first()
             val timeoutMs = if (skipVLM) BATCH_ITEM_TIMEOUT_NO_VLM_MS else BATCH_ITEM_TIMEOUT_MS
 
+            // Strictly sequential loop: each item runs analyze → persist →
+            // annotate → save → enqueue completely before the next iteration
+            // starts. No pipelining, no concurrent post-process. Keeps memory
+            // pressure predictable (only one bitmap + one inference in flight)
+            // and makes the per-image progress bar match what the user sees.
             for ((index, uri) in job.uris.withIndex()) {
                 updateNotification(
                     "Image ${index + 1}/${job.uris.size}: analyzing...",
@@ -468,11 +474,12 @@ class InferenceService : LifecycleService() {
         when (state) {
             is AnalysisState.Idle -> null
             is AnalysisState.LoadingImage -> "Loading image..."
+            is AnalysisState.WarmingUpModel -> "Warming up model..."
             is AnalysisState.Detecting -> "Running AI detection..."
             is AnalysisState.DetectionsReady ->
-                "${state.detections.size} objects found. Starting deep analysis..."
+                "${state.detections.size} objects found"
             is AnalysisState.AnalyzingDeep ->
-                "Running deep ecosystem analysis (this may take several minutes)..."
+                "Running deep visual analysis (may take several seconds)..."
             is AnalysisState.Complete -> "Analysis complete!"
             is AnalysisState.Error -> "Analysis failed: ${state.message}"
         }

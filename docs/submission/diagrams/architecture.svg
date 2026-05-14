@@ -1,11 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-label="OceanGuard AI Architecture Diagram">
-  <title>OceanGuard AI — Architecture</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="900" viewBox="0 0 1300 900" role="img" aria-label="OceanGuard AI on-device architecture (Gemma 4)">
+  <title>OceanGuard AI — On-Device Architecture (Gemma 4)</title>
   <defs>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-      text { font-family: Inter, system-ui, -apple-system, sans-serif; }
+      text { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; dominant-baseline: middle; }
     </style>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0a0e1a"/>
       <stop offset="100%" stop-color="#0d1225"/>
     </linearGradient>
@@ -13,304 +12,215 @@
       <stop offset="0%" stop-color="#00d4ff"/>
       <stop offset="100%" stop-color="#10b981"/>
     </linearGradient>
-    <linearGradient id="cyanEmeraldV" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#00d4ff"/>
-      <stop offset="100%" stop-color="#10b981"/>
-    </linearGradient>
-    <linearGradient id="headerCyan" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.18"/>
+    <linearGradient id="hdrCyan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.20"/>
       <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.04"/>
     </linearGradient>
-    <linearGradient id="headerEmerald" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#10b981" stop-opacity="0.18"/>
+    <linearGradient id="hdrEmerald" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.20"/>
       <stop offset="100%" stop-color="#10b981" stop-opacity="0.04"/>
     </linearGradient>
-    <linearGradient id="headerBlue" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18"/>
+    <linearGradient id="hdrBlue" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.20"/>
       <stop offset="100%" stop-color="#6366f1" stop-opacity="0.04"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <filter id="glowStrong" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <marker id="arrowCyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#00d4ff"/>
+    <linearGradient id="hdrViolet" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="hdrAmber" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.04"/>
+    </linearGradient>
+    <marker id="arrowCyan" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#00d4ff"/>
     </marker>
-    <marker id="arrowEmerald" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#6366f1"/>
     </marker>
-    <marker id="arrowSlate" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+    <marker id="arrowSlate" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#64748b"/>
     </marker>
-    <marker id="arrowGrad" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#00d4ff"/>
+    <marker id="arrowViolet" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#f59e0b"/>
     </marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="700" fill="url(#bgGrad)"/>
-
-  <!-- Subtle grid lines -->
-  <g opacity="0.04" stroke="#94A3B8" stroke-width="1">
-    <line x1="0" y1="100" x2="1200" y2="100"/>
-    <line x1="0" y1="200" x2="1200" y2="200"/>
-    <line x1="0" y1="300" x2="1200" y2="300"/>
-    <line x1="0" y1="400" x2="1200" y2="400"/>
-    <line x1="0" y1="500" x2="1200" y2="500"/>
-    <line x1="0" y1="600" x2="1200" y2="600"/>
-    <line x1="200" y1="0" x2="200" y2="700"/>
-    <line x1="400" y1="0" x2="400" y2="700"/>
-    <line x1="600" y1="0" x2="600" y2="700"/>
-    <line x1="800" y1="0" x2="800" y2="700"/>
-    <line x1="1000" y1="0" x2="1000" y2="700"/>
-  </g>
+  <rect width="1300" height="900" fill="url(#bg)"/>
 
   <!-- Title -->
-  <text x="600" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">OceanGuard AI — On-Device Architecture</text>
-  <text x="600" y="54" text-anchor="middle" font-size="11" fill="#94A3B8">All inference runs on-device · No cloud dependency · Apache 2.0</text>
+  <text x="650" y="42" text-anchor="middle" font-size="22" font-weight="700" fill="#FFFFFF" letter-spacing="0.4">OceanGuard AI — On-Device Architecture</text>
+  <text x="650" y="68" text-anchor="middle" font-size="13" fill="#94A3B8">Powered by Gemma 4 E2B · 100% Offline · Apache 2.0</text>
+  <rect x="350" y="80" width="600" height="2" rx="1" fill="url(#cyanEmerald)"/>
 
-  <!-- Gradient accent line under title -->
-  <rect x="200" y="63" width="800" height="2" rx="1" fill="url(#cyanEmerald)"/>
+  <!-- ============================================================
+       ROW 1 — Camera / Gallery Input  (y: 110-180)
+       ============================================================ -->
+  <rect x="490" y="110" width="320" height="70" rx="10" fill="#0f172a" stroke="#00d4ff" stroke-width="1.6"/>
+  <rect x="490" y="110" width="320" height="28" rx="10" fill="url(#hdrCyan)"/>
+  <rect x="490" y="130" width="320" height="8" fill="url(#hdrCyan)"/>
+  <text x="650" y="128" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">Camera · Gallery · Batch Input</text>
+  <text x="650" y="156" text-anchor="middle" font-size="11" fill="#94A3B8">JPEG capture · Multi-pick · Underwater housing UI</text>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 1: User Input (top center)
-  ══════════════════════════════════════════════ -->
-  <!-- Node 1: Camera/Gallery Input -->
-  <rect x="460" y="85" width="280" height="64" rx="8" fill="#0f172a" stroke="#00d4ff" stroke-width="1.5" opacity="0.95"/>
-  <rect x="460" y="85" width="280" height="26" rx="8" fill="url(#headerCyan)"/>
-  <rect x="460" y="103" width="280" height="8" fill="url(#headerCyan)"/>
-  <!-- Camera icon -->
-  <g transform="translate(480, 97)">
-    <rect x="0" y="3" width="18" height="13" rx="2" fill="none" stroke="#00d4ff" stroke-width="1.4"/>
-    <circle cx="9" cy="9.5" r="3.5" fill="none" stroke="#00d4ff" stroke-width="1.2"/>
-    <rect x="5" y="0" width="8" height="4" rx="1" fill="none" stroke="#00d4ff" stroke-width="1.2"/>
+  <line x1="650" y1="182" x2="650" y2="216" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrowCyan)"/>
+
+  <!-- ============================================================
+       ROW 2 — Gemma 4 Vision E2B  (y: 220-340)
+       ============================================================ -->
+  <rect x="320" y="220" width="660" height="120" rx="12" fill="#0a1628" stroke="#00d4ff" stroke-width="2"/>
+  <rect x="320" y="220" width="660" height="32" rx="12" fill="url(#hdrCyan)"/>
+  <rect x="320" y="246" width="660" height="6" fill="url(#hdrCyan)"/>
+  <g transform="translate(346, 226)">
+    <polygon points="10,2 12.5,8.5 19.5,9 14,13.5 16,20 10,16.5 4,20 6,13.5 0.5,9 7.5,8.5" fill="none" stroke="#00d4ff" stroke-width="1.6"/>
   </g>
-  <g transform="translate(504, 97)">
-    <rect x="0" y="2" width="16" height="14" rx="1.5" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
-    <line x1="3" y1="7" x2="13" y2="7" stroke="#94A3B8" stroke-width="1"/>
-    <line x1="8" y1="4" x2="8" y2="10" stroke="#94A3B8" stroke-width="1"/>
+  <text x="650" y="240" text-anchor="middle" font-size="15" font-weight="700" fill="#00d4ff">Gemma 4 Vision E2B</text>
+  <text x="650" y="278" text-anchor="middle" font-size="12" fill="#FFFFFF">Open-vocabulary marine debris detection</text>
+  <text x="650" y="298" text-anchor="middle" font-size="11" fill="#94A3B8">JSON output: {box_2d, label, material} · 50 fine-grained classes → 11 canonical families</text>
+  <text x="650" y="318" text-anchor="middle" font-size="11" fill="#94A3B8">LiteRT-LM 0.11.0 · ~2.6 GB litert-lm package · CPU + Vulkan/Xclipse 920</text>
+
+  <line x1="650" y1="342" x2="650" y2="376" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrowCyan)"/>
+
+  <!-- ============================================================
+       ROW 3 — DetectionOrchestrator + Room v11  (y: 380-470)
+       ============================================================ -->
+  <rect x="160" y="380" width="320" height="90" rx="10" fill="#0f172a" stroke="#6366f1" stroke-width="1.6"/>
+  <rect x="160" y="380" width="320" height="28" rx="10" fill="url(#hdrBlue)"/>
+  <rect x="160" y="400" width="320" height="8" fill="url(#hdrBlue)"/>
+  <text x="320" y="398" text-anchor="middle" font-size="13" font-weight="700" fill="#a5b4fc">DetectionOrchestrator</text>
+  <text x="320" y="426" text-anchor="middle" font-size="11" fill="#94A3B8">Canonicalize to 11-class taxonomy</text>
+  <text x="320" y="444" text-anchor="middle" font-size="11" fill="#94A3B8">Confidence derivation · NMS</text>
+  <text x="320" y="460" text-anchor="middle" font-size="10" fill="#64748b">DebrisType.canonical() · realistic per-detection confidence</text>
+
+  <rect x="820" y="380" width="320" height="90" rx="10" fill="#0f172a" stroke="#6366f1" stroke-width="1.6"/>
+  <rect x="820" y="380" width="320" height="28" rx="10" fill="url(#hdrBlue)"/>
+  <rect x="820" y="400" width="320" height="8" fill="url(#hdrBlue)"/>
+  <g transform="translate(842, 388)">
+    <ellipse cx="10" cy="3.5" rx="10" ry="3.5" fill="none" stroke="#6366f1" stroke-width="1.4"/>
+    <line x1="0" y1="3.5" x2="0" y2="12" stroke="#6366f1" stroke-width="1.4"/>
+    <line x1="20" y1="3.5" x2="20" y2="12" stroke="#6366f1" stroke-width="1.4"/>
+    <ellipse cx="10" cy="12" rx="10" ry="3.5" fill="none" stroke="#6366f1" stroke-width="1.4"/>
   </g>
-  <text x="600" y="106" text-anchor="middle" font-size="12" font-weight="600" fill="#FFFFFF">Camera / Gallery Input</text>
-  <text x="600" y="139" text-anchor="middle" font-size="10" fill="#94A3B8">JPEG · Real-time preview · Static image</text>
+  <text x="980" y="398" text-anchor="middle" font-size="13" font-weight="700" fill="#a5b4fc">Room Database v11</text>
+  <text x="980" y="426" text-anchor="middle" font-size="11" fill="#94A3B8">DetectionSession · GeneratedReport</text>
+  <text x="980" y="444" text-anchor="middle" font-size="11" fill="#94A3B8">MarineDexEntry · Achievement</text>
+  <text x="980" y="460" text-anchor="middle" font-size="10" fill="#64748b">SQLite · KSP2 · canonical taxonomy migration</text>
 
-  <!-- Arrow: Input → ObjectDetector -->
-  <line x1="600" y1="149" x2="600" y2="180" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arrowCyan)" opacity="0.8"/>
+  <line x1="482" y1="425" x2="818" y2="425" stroke="#6366f1" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#arrowBlue)"/>
+  <rect x="610" y="412" width="80" height="20" rx="4" fill="#0f172a" stroke="#6366f1" stroke-width="0.8"/>
+  <text x="650" y="424" text-anchor="middle" font-size="10" fill="#a5b4fc">persist</text>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 2: ObjectDetector (grouped container)
-  ══════════════════════════════════════════════ -->
-  <!-- Container for ObjectDetector interface -->
-  <rect x="180" y="180" width="640" height="130" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1" stroke-dasharray="5,3"/>
-  <text x="240" y="174" text-anchor="middle" font-size="9" fill="#475569" font-weight="600" letter-spacing="1">OBJECTDETECTOR INTERFACE</text>
+  <line x1="980" y1="472" x2="800" y2="514" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowSlate)"/>
+  <text x="910" y="495" font-size="10" fill="#94A3B8">query</text>
 
-  <!-- Interface badge top -->
-  <rect x="180" y="180" width="640" height="24" rx="10" fill="#1e293b" opacity="0.7"/>
-  <rect x="180" y="193" width="640" height="11" fill="#1e293b" opacity="0.7"/>
-  <text x="500" y="196" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8" letter-spacing="0.5">ObjectDetector  ·  detect(bitmap): List&lt;Detection&gt;  ·  normalized [0,1] bboxes</text>
+  <line x1="320" y1="472" x2="500" y2="514" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowSlate)"/>
+  <text x="378" y="495" font-size="10" fill="#94A3B8">sessions</text>
 
-  <!-- Node 2a: RT-DETRv2 -->
-  <rect x="200" y="216" width="260" height="78" rx="8" fill="#0a1628" stroke="#10b981" stroke-width="1.5"/>
-  <rect x="200" y="216" width="260" height="26" rx="8" fill="url(#headerEmerald)"/>
-  <rect x="200" y="234" width="260" height="8" fill="url(#headerEmerald)"/>
-  <!-- Detection icon -->
-  <g transform="translate(218, 224)">
-    <rect x="0" y="0" width="16" height="12" rx="1.5" fill="none" stroke="#10b981" stroke-width="1.3"/>
-    <rect x="3" y="2.5" width="7" height="7" rx="1" fill="none" stroke="#10b981" stroke-width="1.1"/>
-    <line x1="12" y1="2" x2="14" y2="4" stroke="#10b981" stroke-width="1"/>
-  </g>
-  <text x="330" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#10b981">RT-DETRv2</text>
-  <text x="330" y="254" text-anchor="middle" font-size="10" fill="#94A3B8">TFLite 2.17 · NNAPI+XNNPACK</text>
-  <text x="330" y="268" text-anchor="middle" font-size="10" fill="#94A3B8">FP16 82.8MB / INT8 43.5MB</text>
-  <text x="330" y="283" text-anchor="middle" font-size="9" fill="#475569">640×640 · 8 classes · ~6s/frame</text>
+  <!-- ============================================================
+       ROW 4 — ToolReportContext + OceanGuardTools  (y: 510-610)
+       ============================================================ -->
+  <rect x="220" y="510" width="380" height="100" rx="10" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.6"/>
+  <rect x="220" y="510" width="380" height="28" rx="10" fill="url(#hdrViolet)"/>
+  <rect x="220" y="530" width="380" height="8" fill="url(#hdrViolet)"/>
+  <text x="410" y="528" text-anchor="middle" font-size="13" font-weight="700" fill="#c4b5fd">ToolReportContext</text>
+  <text x="410" y="558" text-anchor="middle" font-size="11" fill="#94A3B8">Pre-computed aggregates · O(1) lookup</text>
+  <text x="410" y="578" text-anchor="middle" font-size="11" fill="#94A3B8">Material / type / risk maps · GPS waypoints</text>
+  <text x="410" y="596" text-anchor="middle" font-size="10" fill="#64748b">ToolDataBundleFormatter → canon for post-repair (offline; never sent to model)</text>
 
-  <!-- Node 2b: Gemma 4 Vision -->
-  <rect x="540" y="216" width="260" height="78" rx="8" fill="#0a1628" stroke="#00d4ff" stroke-width="1.5"/>
-  <rect x="540" y="216" width="260" height="26" rx="8" fill="url(#headerCyan)"/>
-  <rect x="540" y="234" width="260" height="8" fill="url(#headerCyan)"/>
-  <!-- VLM icon -->
-  <g transform="translate(558, 223)">
-    <circle cx="8" cy="7" r="6" fill="none" stroke="#00d4ff" stroke-width="1.3"/>
-    <circle cx="8" cy="7" r="2.5" fill="#00d4ff" opacity="0.4"/>
-    <line x1="14" y1="1" x2="17" y2="-2" stroke="#00d4ff" stroke-width="1.2"/>
-  </g>
-  <text x="670" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#00d4ff">Gemma 4 Vision (E2B)</text>
-  <text x="670" y="254" text-anchor="middle" font-size="10" fill="#94A3B8">LiteRT-LM 0.10.0 · CPU backend</text>
-  <text x="670" y="268" text-anchor="middle" font-size="10" fill="#94A3B8">3.4 GB INT4 · 7.6 tok/s</text>
-  <text x="670" y="283" text-anchor="middle" font-size="9" fill="#475569">VLM image description · scene context</text>
+  <rect x="700" y="510" width="380" height="100" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.6"/>
+  <rect x="700" y="510" width="380" height="28" rx="10" fill="url(#hdrAmber)"/>
+  <rect x="700" y="530" width="380" height="8" fill="url(#hdrAmber)"/>
+  <text x="890" y="528" text-anchor="middle" font-size="13" font-weight="700" fill="#fbbf24">OceanGuardTools</text>
+  <text x="890" y="558" text-anchor="middle" font-size="11" fill="#94A3B8">8 typed Kotlin @Tool methods · no-argument calls</text>
+  <text x="890" y="578" text-anchor="middle" font-size="11" fill="#94A3B8">debris-summary · material-breakdown · type-breakdown</text>
+  <text x="890" y="596" text-anchor="middle" font-size="11" fill="#94A3B8">risk-assessment · waypoints · trend · impacts · stats</text>
 
-  <!-- Divider between the two detectors -->
-  <line x1="500" y1="220" x2="500" y2="290" stroke="#334155" stroke-width="1" stroke-dasharray="3,2"/>
-  <text x="500" y="258" text-anchor="middle" font-size="9" fill="#334155" transform="rotate(-90, 500, 258)" dy="4">parallel</text>
+  <line x1="602" y1="560" x2="698" y2="560" stroke="#8b5cf6" stroke-width="1.6" marker-end="url(#arrowViolet)"/>
 
-  <!-- Arrows from ObjectDetector → DetectionOrchestrator -->
-  <line x1="330" y1="310" x2="440" y2="380" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowEmerald)" opacity="0.8"/>
-  <line x1="670" y1="310" x2="560" y2="380" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arrowCyan)" opacity="0.8"/>
+  <line x1="650" y1="612" x2="650" y2="646" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 3: DetectionOrchestrator + Room DB (side by side)
-  ══════════════════════════════════════════════ -->
-  <!-- Node 3: DetectionOrchestrator -->
-  <rect x="400" y="380" width="200" height="70" rx="8" fill="#0f172a" stroke="#6366f1" stroke-width="1.5"/>
-  <rect x="400" y="380" width="200" height="24" rx="8" fill="url(#headerBlue)"/>
-  <rect x="400" y="396" width="200" height="8" fill="url(#headerBlue)"/>
-  <text x="500" y="396" text-anchor="middle" font-size="11" font-weight="600" fill="#a5b4fc">DetectionOrchestrator</text>
-  <text x="500" y="416" text-anchor="middle" font-size="10" fill="#94A3B8">Merge results · Emit partials</text>
-  <text x="500" y="431" text-anchor="middle" font-size="9" fill="#475569">Confidence threshold · NMS</text>
+  <!-- ============================================================
+       ROW 5 — Agentic Tool Calling  (y: 650-770)
+       ============================================================ -->
+  <rect x="160" y="650" width="980" height="120" rx="12" fill="#0a1628" stroke="#00d4ff" stroke-width="2"/>
+  <rect x="160" y="650" width="980" height="30" rx="12" fill="url(#hdrCyan)"/>
+  <rect x="160" y="674" width="980" height="6" fill="url(#hdrCyan)"/>
+  <text x="650" y="668" text-anchor="middle" font-size="14" font-weight="700" fill="#00d4ff">Single-Conversation Agentic Tool Calling · Gemma 4 Text E2B</text>
 
-  <!-- Node 4: Room Database -->
-  <rect x="850" y="340" width="230" height="120" rx="8" fill="#0f172a" stroke="#6366f1" stroke-width="1.5"/>
-  <rect x="850" y="340" width="230" height="24" rx="8" fill="url(#headerBlue)"/>
-  <rect x="850" y="356" width="230" height="8" fill="url(#headerBlue)"/>
-  <!-- DB icon -->
-  <g transform="translate(868, 347)">
-    <ellipse cx="9" cy="3" rx="9" ry="3" fill="none" stroke="#6366f1" stroke-width="1.3"/>
-    <line x1="0" y1="3" x2="0" y2="11" stroke="#6366f1" stroke-width="1.3"/>
-    <line x1="18" y1="3" x2="18" y2="11" stroke="#6366f1" stroke-width="1.3"/>
-    <ellipse cx="9" cy="11" rx="9" ry="3" fill="none" stroke="#6366f1" stroke-width="1.3"/>
-  </g>
-  <text x="965" y="357" text-anchor="middle" font-size="11" font-weight="600" fill="#a5b4fc">Room Database v10</text>
-  <text x="965" y="378" text-anchor="middle" font-size="10" fill="#94A3B8">DetectionSession</text>
-  <text x="965" y="393" text-anchor="middle" font-size="10" fill="#94A3B8">GeneratedReport</text>
-  <text x="965" y="408" text-anchor="middle" font-size="10" fill="#94A3B8">MarineDexEntry · Achievement</text>
-  <text x="965" y="424" text-anchor="middle" font-size="9" fill="#475569">SQLite · KSP2 · version 10</text>
-  <text x="965" y="439" text-anchor="middle" font-size="9" fill="#475569">imageUri unique index · migrations</text>
-  <text x="965" y="455" text-anchor="middle" font-size="9" fill="#475569">JSON type converters</text>
+  <rect x="200" y="694" width="430" height="64" rx="8" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.2"/>
+  <text x="415" y="712" text-anchor="middle" font-size="12" font-weight="700" fill="#c4b5fd">STEP 1 · Tool dispatch</text>
+  <text x="415" y="732" text-anchor="middle" font-size="10" fill="#94A3B8">ToolAgentLoop · max 14 rounds · 8 required tools</text>
+  <text x="415" y="748" text-anchor="middle" font-size="10" fill="#64748b">automaticToolCalling = false · onToolCallStarted → UI</text>
 
-  <!-- Arrow: Orchestrator → Room DB -->
-  <line x1="600" y1="415" x2="848" y2="400" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrowSlate)" opacity="0.8" stroke-dasharray="4,2"/>
-  <text x="724" y="408" text-anchor="middle" font-size="9" fill="#6366f1">persist</text>
+  <rect x="670" y="694" width="430" height="64" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.2"/>
+  <text x="885" y="712" text-anchor="middle" font-size="12" font-weight="700" fill="#10b981">STEP 2 · Report writing (warm KV)</text>
+  <text x="885" y="732" text-anchor="middle" font-size="10" fill="#94A3B8">Same Conversation · tool responses in cache</text>
+  <text x="885" y="748" text-anchor="middle" font-size="10" fill="#64748b">tokens stream live · onPartialResult → UI banner</text>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 4: ToolReportContext + OceanGuardTools
-  ══════════════════════════════════════════════ -->
-  <!-- Arrow: Orchestrator → ToolReportContext -->
-  <line x1="500" y1="450" x2="500" y2="490" stroke="#475569" stroke-width="1.5" marker-end="url(#arrowSlate)" opacity="0.7"/>
+  <line x1="632" y1="726" x2="668" y2="726" stroke="#FFFFFF" stroke-width="1.6" marker-end="url(#arrowSlate)" opacity="0.7"/>
 
-  <!-- Arrow: Room DB → ToolReportContext -->
-  <line x1="960" y1="460" x2="720" y2="492" stroke="#475569" stroke-width="1.5" marker-end="url(#arrowSlate)" opacity="0.6" stroke-dasharray="4,2"/>
-  <text x="840" y="478" text-anchor="middle" font-size="9" fill="#475569">query</text>
+  <line x1="650" y1="772" x2="650" y2="806" stroke="#10b981" stroke-width="2" marker-end="url(#arrowCyan)"/>
 
-  <!-- Node 5: ToolReportContext -->
-  <rect x="340" y="490" width="220" height="66" rx="8" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/>
-  <rect x="340" y="490" width="220" height="22" rx="8" fill="#8b5cf6" fill-opacity="0.15"/>
-  <rect x="340" y="504" width="220" height="8" fill="#8b5cf6" fill-opacity="0.15"/>
-  <text x="450" y="505" text-anchor="middle" font-size="11" font-weight="600" fill="#c4b5fd">ToolReportContext</text>
-  <text x="450" y="522" text-anchor="middle" font-size="10" fill="#94A3B8">Pre-computed aggregates O(1)</text>
-  <text x="450" y="536" text-anchor="middle" font-size="9" fill="#475569">materialMap · riskMap · gpsData</text>
-  <text x="450" y="549" text-anchor="middle" font-size="9" fill="#475569">ToolDataBundleFormatter</text>
+  <!-- ============================================================
+       ROW 6 — Streaming Output + Validator  (y: 810-870)
+       ============================================================ -->
+  <rect x="160" y="810" width="980" height="60" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.4"/>
+  <rect x="160" y="810" width="980" height="22" rx="10" fill="url(#hdrEmerald)"/>
+  <rect x="160" y="824" width="980" height="8" fill="url(#hdrEmerald)"/>
+  <text x="650" y="826" text-anchor="middle" font-size="12" font-weight="700" fill="#10b981">Streaming Output · Six languages · Three audience modes</text>
 
-  <!-- Node 6: OceanGuardTools -->
-  <rect x="620" y="490" width="220" height="66" rx="8" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/>
-  <rect x="620" y="490" width="220" height="22" rx="8" fill="#f59e0b" fill-opacity="0.13"/>
-  <rect x="620" y="504" width="220" height="8" fill="#f59e0b" fill-opacity="0.13"/>
-  <!-- Tool icon -->
-  <g transform="translate(637, 496)">
-    <path d="M4 2 L12 2 L14 6 L10 14 L6 14 L2 6 Z" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
-    <circle cx="8" cy="8" r="2" fill="#f59e0b" opacity="0.5"/>
-  </g>
-  <text x="730" y="505" text-anchor="middle" font-size="11" font-weight="600" fill="#fbbf24">OceanGuardTools</text>
-  <text x="730" y="522" text-anchor="middle" font-size="10" fill="#94A3B8">9 @Tool methods · no-arg calls</text>
-  <text x="730" y="536" text-anchor="middle" font-size="9" fill="#475569">get_material_breakdown · get_risk</text>
-  <text x="730" y="549" text-anchor="middle" font-size="9" fill="#475569">get_gps · get_summary · get_top_objects…</text>
+  <rect x="195" y="844" width="160" height="20" rx="6" fill="#10b981" fill-opacity="0.18"/>
+  <text x="275" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#10b981">Streaming Markdown</text>
 
-  <!-- Arrow: ToolReportContext → OceanGuardTools -->
-  <line x1="560" y1="523" x2="618" y2="523" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#arrowSlate)" opacity="0.7"/>
+  <rect x="370" y="844" width="120" height="20" rx="6" fill="#6366f1" fill-opacity="0.20"/>
+  <text x="430" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#a5b4fc">PDF Export</text>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 5: ToolAgentLoop ↔ Gemma 4 Text
-  ══════════════════════════════════════════════ -->
-  <!-- Arrow: OceanGuardTools → ToolAgentLoop -->
-  <line x1="600" y1="556" x2="540" y2="592" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrowCyan)" opacity="0.7"/>
-  <!-- Arrow: ToolReportContext → ToolAgentLoop -->
-  <line x1="460" y1="556" x2="490" y2="592" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowCyan)" opacity="0.7"/>
+  <rect x="505" y="844" width="120" height="20" rx="6" fill="#f59e0b" fill-opacity="0.20"/>
+  <text x="565" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#fbbf24">CSV / COCO</text>
 
-  <!-- Node 7: ToolAgentLoop -->
-  <rect x="340" y="592" width="200" height="68" rx="8" fill="#0a1628" stroke="#00d4ff" stroke-width="1.5"/>
-  <rect x="340" y="592" width="200" height="22" rx="8" fill="url(#headerCyan)"/>
-  <rect x="340" y="606" width="200" height="8" fill="url(#headerCyan)"/>
-  <text x="440" y="607" text-anchor="middle" font-size="11" font-weight="600" fill="#00d4ff">ToolAgentLoop</text>
-  <text x="440" y="625" text-anchor="middle" font-size="10" fill="#94A3B8">max 8 rounds · FC parser</text>
-  <text x="440" y="639" text-anchor="middle" font-size="9" fill="#475569">automaticToolCalling = false</text>
-  <text x="440" y="652" text-anchor="middle" font-size="9" fill="#475569">prefix-match tool dispatch</text>
+  <rect x="640" y="844" width="160" height="20" rx="6" fill="#00d4ff" fill-opacity="0.15"/>
+  <text x="720" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#00d4ff">GeoJSON Export</text>
 
-  <!-- Node 7b: Gemma 4 Text (LiteRT-LM) -->
-  <rect x="600" y="592" width="240" height="68" rx="8" fill="#0a1628" stroke="#00d4ff" stroke-width="2"/>
-  <rect x="600" y="592" width="240" height="22" rx="8" fill="url(#headerCyan)"/>
-  <rect x="600" y="606" width="240" height="8" fill="url(#headerCyan)"/>
-  <!-- Gemma star icon -->
-  <g transform="translate(617, 597)">
-    <polygon points="8,0 10,6 16,6 11,10 13,16 8,12 3,16 5,10 0,6 6,6" fill="none" stroke="#00d4ff" stroke-width="1.2"/>
-  </g>
-  <text x="720" y="607" text-anchor="middle" font-size="11" font-weight="600" fill="#00d4ff">Gemma 4 Text (E2B)</text>
-  <text x="720" y="625" text-anchor="middle" font-size="10" fill="#94A3B8">LiteRT-LM · 7.6 tok/s · CPU</text>
-  <text x="720" y="639" text-anchor="middle" font-size="9" fill="#475569">persistent KV cache (Phase 1)</text>
-  <text x="720" y="652" text-anchor="middle" font-size="9" fill="#475569">fresh conversation (Phase 2)</text>
+  <rect x="815" y="844" width="180" height="20" rx="6" fill="#94A3B8" fill-opacity="0.15"/>
+  <text x="905" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#cbd5e1">ReportValidator (12+ checks)</text>
 
-  <!-- Bidirectional arrow ToolAgentLoop ↔ Gemma 4 Text -->
-  <line x1="540" y1="626" x2="598" y2="626" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrowCyan)" opacity="0.9"/>
-  <line x1="600" y1="634" x2="542" y2="634" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrowCyan)" opacity="0.6"/>
+  <rect x="1010" y="844" width="125" height="20" rx="6" fill="#10b981" fill-opacity="0.18"/>
+  <text x="1072" y="858" text-anchor="middle" font-size="11" font-weight="600" fill="#10b981">PDF · 6 langs</text>
 
-  <!-- Arrow loop indicator on ToolAgentLoop -->
-  <path d="M 380 590 Q 360 565 390 558 Q 420 551 430 570 L 425 588" fill="none" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrowCyan)" opacity="0.5"/>
-  <text x="360" y="562" text-anchor="middle" font-size="8" fill="#00d4ff" opacity="0.7">loop</text>
+  <!-- ============================================================
+       SIDEBAR  (y: 220-540)
+       ============================================================ -->
+  <rect x="1160" y="220" width="130" height="120" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.3" opacity="0.95"/>
+  <text x="1225" y="244" text-anchor="middle" font-size="11" font-weight="700" fill="#10b981" letter-spacing="0.5">ON-DEVICE ONLY</text>
+  <line x1="1170" y1="256" x2="1280" y2="256" stroke="#10b981" stroke-width="0.6" opacity="0.5"/>
+  <text x="1225" y="276" text-anchor="middle" font-size="10" fill="#94A3B8">No cloud calls</text>
+  <text x="1225" y="294" text-anchor="middle" font-size="10" fill="#94A3B8">Offline-first</text>
+  <text x="1225" y="312" text-anchor="middle" font-size="10" fill="#94A3B8">Galaxy S22 Ultra</text>
+  <text x="1225" y="330" text-anchor="middle" font-size="10" fill="#94A3B8">Exynos 2200</text>
 
-  <!-- ══════════════════════════════════════════════
-       ROW 6: Streaming Report → Export
-  ══════════════════════════════════════════════ -->
-  <!-- Arrow: ToolAgentLoop → Report output -->
-  <line x1="500" y1="660" x2="500" y2="675" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arrowCyan)" opacity="0.7"/>
+  <rect x="1160" y="360" width="130" height="180" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1" opacity="0.9"/>
+  <text x="1225" y="382" text-anchor="middle" font-size="11" font-weight="700" fill="#cbd5e1">Legend</text>
+  <line x1="1170" y1="394" x2="1280" y2="394" stroke="#334155" stroke-width="0.6"/>
 
-  <!-- Node 8: Streaming Markdown → Exports -->
-  <rect x="80" y="675" width="850" height="14" rx="4" fill="url(#cyanEmerald)" opacity="0.12"/>
-  <rect x="80" y="676" width="850" height="12" rx="4" fill="none" stroke="url(#cyanEmerald)" stroke-width="1"/>
+  <line x1="1176" y1="414" x2="1208" y2="414" stroke="#00d4ff" stroke-width="2"/>
+  <text x="1218" y="414" font-size="10" fill="#cbd5e1">Gemma 4</text>
 
-  <!-- Export boxes -->
-  <rect x="80" y="675" width="200" height="14" rx="4" fill="#10b981" fill-opacity="0.2"/>
-  <text x="180" y="685" text-anchor="middle" font-size="9" font-weight="600" fill="#10b981">Streaming Markdown UI</text>
+  <line x1="1176" y1="436" x2="1208" y2="436" stroke="#6366f1" stroke-width="1.6" stroke-dasharray="5,3"/>
+  <text x="1218" y="436" font-size="10" fill="#cbd5e1">Persistence</text>
 
-  <rect x="295" y="675" width="160" height="14" rx="4" fill="#6366f1" fill-opacity="0.2"/>
-  <text x="375" y="685" text-anchor="middle" font-size="9" font-weight="600" fill="#a5b4fc">PDF Export</text>
+  <line x1="1176" y1="458" x2="1208" y2="458" stroke="#8b5cf6" stroke-width="1.6"/>
+  <text x="1218" y="458" font-size="10" fill="#cbd5e1">Context</text>
 
-  <rect x="470" y="675" width="160" height="14" rx="4" fill="#f59e0b" fill-opacity="0.2"/>
-  <text x="550" y="685" text-anchor="middle" font-size="9" font-weight="600" fill="#fbbf24">CSV Export</text>
+  <line x1="1176" y1="480" x2="1208" y2="480" stroke="#f59e0b" stroke-width="1.6"/>
+  <text x="1218" y="480" font-size="10" fill="#cbd5e1">Tool layer</text>
 
-  <rect x="645" y="675" width="160" height="14" rx="4" fill="#00d4ff" fill-opacity="0.15"/>
-  <text x="725" y="685" text-anchor="middle" font-size="9" font-weight="600" fill="#00d4ff">GeoJSON Export</text>
+  <line x1="1176" y1="502" x2="1208" y2="502" stroke="#10b981" stroke-width="1.6"/>
+  <text x="1218" y="502" font-size="10" fill="#cbd5e1">Output</text>
 
-  <rect x="820" y="675" width="110" height="14" rx="4" fill="#94A3B8" fill-opacity="0.15"/>
-  <text x="875" y="685" text-anchor="middle" font-size="9" font-weight="600" fill="#94A3B8">ReportValidator</text>
+  <line x1="1176" y1="524" x2="1208" y2="524" stroke="#64748b" stroke-width="1.4"/>
+  <text x="1218" y="524" font-size="10" fill="#cbd5e1">Data flow</text>
 
-  <!-- "On-device" badge -->
-  <rect x="1010" y="340" width="168" height="80" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1" opacity="0.85"/>
-  <text x="1094" y="358" text-anchor="middle" font-size="10" font-weight="700" fill="#10b981">ON-DEVICE ONLY</text>
-  <line x1="1020" y1="364" x2="1168" y2="364" stroke="#10b981" stroke-width="0.5" opacity="0.4"/>
-  <text x="1094" y="378" text-anchor="middle" font-size="9" fill="#94A3B8">No cloud calls</text>
-  <text x="1094" y="392" text-anchor="middle" font-size="9" fill="#94A3B8">Offline-first</text>
-  <text x="1094" y="406" text-anchor="middle" font-size="9" fill="#94A3B8">Galaxy S22 Ultra</text>
-  <text x="1094" y="420" text-anchor="middle" font-size="9" fill="#94A3B8">Exynos 2200 CPU</text>
-
-  <!-- Legend -->
-  <rect x="1010" y="440" width="168" height="130" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1" opacity="0.85"/>
-  <text x="1094" y="458" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8">Legend</text>
-  <line x1="1020" y1="464" x2="1168" y2="464" stroke="#334155" stroke-width="0.5"/>
-  <line x1="1024" y1="478" x2="1050" y2="478" stroke="#10b981" stroke-width="1.5"/>
-  <text x="1056" y="481" font-size="9" fill="#94A3B8">RT-DETRv2 path</text>
-  <line x1="1024" y1="494" x2="1050" y2="494" stroke="#00d4ff" stroke-width="1.5"/>
-  <text x="1056" y="497" font-size="9" fill="#94A3B8">VLM / LiteRT-LM path</text>
-  <line x1="1024" y1="510" x2="1050" y2="510" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,2"/>
-  <text x="1056" y="513" font-size="9" fill="#94A3B8">Persist / query</text>
-  <line x1="1024" y1="526" x2="1050" y2="526" stroke="#475569" stroke-width="1.5"/>
-  <text x="1056" y="529" font-size="9" fill="#94A3B8">Data flow</text>
-  <line x1="1024" y1="542" x2="1036" y2="542" stroke="#00d4ff" stroke-width="1.5"/>
-  <line x1="1038" y1="542" x2="1050" y2="542" stroke="#00d4ff" stroke-width="1" stroke-dasharray="2,1"/>
-  <text x="1056" y="545" font-size="9" fill="#94A3B8">Bidirectional loop</text>
-  <rect x="1024" y="552" width="10" height="8" rx="1.5" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
-  <text x="1056" y="560" font-size="9" fill="#94A3B8">Tool layer</text>
-
-  <!-- Caption -->
-  <text x="600" y="699" text-anchor="middle" font-size="9" fill="#475569">Figure 1. OceanGuard AI architecture. Both detectors emit normalized [0,1] bboxes via the ObjectDetector interface. Reports generated through tool-calling loop querying local Room DB, never the internet.</text>
+  <text x="650" y="892" text-anchor="middle" font-size="10" fill="#64748b">Figure 1 · OceanGuard AI architecture · Every step runs locally on the reference device · No cloud dependency at any stage.</text>
 </svg>

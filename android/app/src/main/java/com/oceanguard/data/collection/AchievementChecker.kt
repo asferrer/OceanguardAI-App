@@ -39,8 +39,13 @@ class AchievementChecker(
         try {
             val isBatch = session.tags?.contains("source:batch") == true
 
-            // 1. Extract unique debris types from the session
-            val debrisTypes = session.debrisList.map { it.type.name }.distinct()
+            // 1. Extract unique CANONICAL debris types from the session.
+            //    Extended Gemma 4 types (e.g. PLASTIC_BAG) collapse to their
+            //    parent (PLASTIC_DEBRIS) so marine_dex_entries only ever holds
+            //    the 11 canonical entries and dex_* achievements are coherent.
+            val debrisTypes = session.debrisList
+                .map { it.type.canonical().name }
+                .distinct()
 
             // 2. Update MarineDex entries (always, including batch)
             for (type in debrisTypes) {

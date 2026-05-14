@@ -45,6 +45,12 @@ internal class ToolAgentLoop(
         // wasted CPU. Cancel the current turn once the model starts writing
         // more than a handful of characters without tool calls.
         private const val PHASE1_PROSE_ABORT_CHARS = 64
+        // Agentic mode: the user is reading the streamed text in real time, so
+        // discarding the draft to redirect for missing tools causes a visible
+        // "report restart". Once the model has clearly committed to writing the
+        // report (substantial body or a markdown heading), accept whatever it
+        // produced instead of restarting.
+        private const val AGENTIC_KEEP_DRAFT_CHARS = 300
     }
 
     private val gson = Gson()
@@ -122,6 +128,20 @@ internal class ToolAgentLoop(
                 } else {
                     Log.i(TAG, "AgentLoop summary: rounds=$round redirects=$redirects called=$calledTools chars=${accumulated.length}")
                 }
+                return accumulated.toString()
+            }
+
+            // Agentic mode (no dataBundle): the streamed prose IS the user-visible
+            // report. If the model has already committed to writing a real body
+            // (≥ AGENTIC_KEEP_DRAFT_CHARS or contains a markdown heading), accept
+            // it as the final report rather than discarding and restarting, which
+            // would visibly wipe the report on the user's screen.
+            val agenticMode = dataBundle == null
+            val draftLooksLikeReport = accumulated.length >= AGENTIC_KEEP_DRAFT_CHARS ||
+                accumulated.contains("\n## ") ||
+                accumulated.contains("\n### ")
+            if (agenticMode && draftLooksLikeReport) {
+                Log.w(TAG, "AgentLoop: accepting partial report (chars=${accumulated.length}) despite missing tools=$missing — discarding would restart the visible stream")
                 return accumulated.toString()
             }
 

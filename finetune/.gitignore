@@ -1,0 +1,56 @@
+# Training outputs (checkpoints, merged weights, GGUF exports)
+outputs/
+!outputs/.gitkeep
+
+# Large model files
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.ggml
+*.tflite
+
+# Weights & Biases
+wandb/
+
+# HuggingFace cache
+hf_cache/
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated JSONL datasets (large — regenerate from source)
+data/etapa1_train.jsonl
+data/etapa1_val.jsonl
+data/etapa1_test.jsonl
+data/etapa2_train.jsonl
+
+# Full source dataset directory — keep large COCO image dumps out of the
+# repository; regenerate from CleanSea / Ocean_garbage / Neural_Ocean sources
+data/
+
+# Per-experiment train/val/test split manifests — large COCO JSON dumps
+experiments/splits/
+
+# Unsloth ahead-of-time compile cache — regenerated at first import
+unsloth_compiled_cache/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env

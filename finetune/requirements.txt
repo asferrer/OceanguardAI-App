@@ -1,0 +1,41 @@
+# -----------------------------------------------------------------------
+# OceanGuard AI — Gemma 4 E2B Fine-tune dependencies
+# Tested on: RTX 5090 32GB, CUDA 12.8, Python 3.12.9, torch 2.7.0+cu128
+# -----------------------------------------------------------------------
+
+# --- Core training stack ---
+# Unsloth: 2-4x faster training, 60% less VRAM via optimized kernels.
+# Install via their nightly build (Blackwell sm_120 support):
+#   pip install "unsloth[cu128-torch270] @ git+https://github.com/unslothai/unsloth.git"
+# The line below is the fallback if the nightly is already installed:
+unsloth>=2024.12.0
+
+# Transformers: >=4.50 required for Gemma 4 architecture + image_token_budget
+transformers>=4.50.0
+
+# TRL: SFTTrainer with multimodal support (DataCollatorForSeq2Seq fix)
+trl>=0.15.0
+
+# PEFT: LoRA adapters, used by Unsloth internally
+peft>=0.15.0
+
+# Quantization for adamw_8bit optimizer and bnb quantized loading
+bitsandbytes>=0.45.0
+
+# --- Data preparation ---
+pillow>=10.0.0
+pycocotools>=2.0.7
+
+# --- Experiment tracking ---
+wandb>=0.19.0
+
+# --- Dataset utilities ---
+datasets>=3.0.0
+
+# --- Accelerate (HF multi-GPU / device map support) ---
+accelerate>=1.0.0
+
+# --- Utilities ---
+tqdm>=4.66.0
+pyyaml>=6.0.0
+numpy>=1.26.0

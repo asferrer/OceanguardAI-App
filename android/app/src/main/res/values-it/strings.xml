@@ -118,6 +118,16 @@
     <string name="cd_captured_photo_preview">Anteprima foto scattata</string>
 
     <!-- ================================================================== -->
+    <!-- Schermata risultato fotocamera (overlay immersivo sulla foto)       -->
+    <!-- ================================================================== -->
+    <string name="camera_result_live_count">%1$d trovati finora</string>
+    <string name="camera_result_no_debris">Nessun rifiuto rilevato</string>
+    <string name="camera_result_summary_debris">rifiuti</string>
+    <string name="camera_result_summary_health">salute</string>
+    <string name="camera_result_btn_new_scan">Nuova scansione</string>
+    <string name="camera_result_btn_view_details">Vedi dettagli</string>
+
+    <!-- ================================================================== -->
     <!-- Schermata Rilevamento dal Vivo                                       -->
     <!-- ================================================================== -->
     <string name="live_permission_required">Il permesso fotocamera è necessario per il rilevamento dal vivo.</string>

@@ -118,6 +118,16 @@
     <string name="cd_captured_photo_preview">Vorschau des aufgenommenen Fotos</string>
 
     <!-- ================================================================== -->
+    <!-- Kameraergebnisbildschirm (immersives Overlay auf dem Foto)          -->
+    <!-- ================================================================== -->
+    <string name="camera_result_live_count">Bisher %1$d gefunden</string>
+    <string name="camera_result_no_debris">Kein Müll erkannt</string>
+    <string name="camera_result_summary_debris">Müll</string>
+    <string name="camera_result_summary_health">Zustand</string>
+    <string name="camera_result_btn_new_scan">Neuer Scan</string>
+    <string name="camera_result_btn_view_details">Details ansehen</string>
+
+    <!-- ================================================================== -->
     <!-- Live-Erkennungsbildschirm                                            -->
     <!-- ================================================================== -->
     <string name="live_permission_required">Für die Live-Erkennung ist eine Kameraberechtigung erforderlich.</string>

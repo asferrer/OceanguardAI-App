@@ -1,0 +1,22 @@
+{
+  "mAP_50": 0.3253344779723842,
+  "mAP_50_95": 0.0,
+  "mAP_75": 0.0,
+  "per_class_mAP_50": {
+    "Bottle": 0.3115953813628232,
+    "Can": 0.0606060606060606,
+    "Fishing_Net": 0.4483471074380166,
+    "Glove": 0.46305916305916306,
+    "Mask": 0.3076923076923077,
+    "Metal_Debris": 0.0,
+    "Plastic_Debris": 0.6079442549322367,
+    "Tire": 0.40343154868846565
+  },
+  "n_predictions": 292,
+  "key": "exp10_real_full",
+  "adapter_path": "C:\\Users\\aleja\\Desktop\\Doctorado\\OceanguardAI-App\\finetune\\outputs\\lora_exp10_real_full\\adapter",
+  "n_samples": 200,
+  "json_validity": 0.945,
+  "mean_latency_s": 5.427231508493423,
+  "elapsed_s": 1088.8371641635895
+}

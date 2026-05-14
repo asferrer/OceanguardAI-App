@@ -25,9 +25,12 @@ object DexBackfill {
         Log.i(TAG, "Backfilling MarineDex from ${sessions.size} existing sessions...")
         var newEntries = 0
 
-        // Process sessions oldest-first so firstSeenAt / firstSeenSessionId are correct
+        // Process sessions oldest-first so firstSeenAt / firstSeenSessionId are correct.
+        // Canonicalize types so backfilled entries match the post-canon taxonomy.
         for (session in sessions.reversed()) {
-            val types = session.debrisList.map { it.type.name }.distinct()
+            val types = session.debrisList
+                .map { it.type.canonical().name }
+                .distinct()
             for (type in types) {
                 val isNew = collectionRepo.discoverOrUpdate(type, session.id)
                 if (isNew) newEntries++

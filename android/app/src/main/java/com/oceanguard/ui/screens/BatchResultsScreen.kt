@@ -491,6 +491,10 @@ fun BatchResultsScreen(
                     scope.launch { app.settingsRepository.incrementContributeDeclineCount() }
                     viewModel.dismissContributePrompt()
                 },
+                onDontAskAgain = {
+                    showContributeSheet = false
+                    viewModel.setContributeNeverPrompt()
+                },
                 onDismiss = {
                     showContributeSheet = false
                     scope.launch { app.settingsRepository.incrementContributeDeclineCount() }

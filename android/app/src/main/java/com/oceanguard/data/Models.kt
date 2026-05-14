@@ -173,9 +173,88 @@ enum class DebrisType {
     // Catch-all
     OTHER;
 
+    /**
+     * Collapse this debris type to one of the 11 canonical types shown in the
+     * MarineDex, achievements, and reports. Extended types map to their family
+     * parent (e.g. PLASTIC_BAG -> PLASTIC_DEBRIS); canonical types map to
+     * themselves.
+     */
+    fun canonical(): DebrisType = CANONICAL_PARENT[this] ?: this
+
     companion object {
         /** Core RT-DETRv2 class count (indices 0-7). */
         const val RTDETR_CLASS_COUNT = 8
+
+        /** Number of canonical types shown in MarineDex and Achievements. */
+        const val CANONICAL_COUNT = 11
+
+        /**
+         * The 11 canonical debris types. Order matches the MarineDex grid.
+         * These are the only types persisted in marine_dex_entries and counted
+         * by dex_* achievements after canonicalization.
+         */
+        val CANONICAL: List<DebrisType> = listOf(
+            BOTTLE, CAN, FISHING_NET, GLOVE, MASK, METAL_DEBRIS,
+            PLASTIC_DEBRIS, TIRE, FABRIC_DEBRIS, GLASS_DEBRIS, OTHER,
+        )
+
+        /**
+         * Maps non-canonical types to their canonical parent. Canonical types
+         * are intentionally absent (they fall through to `this` in [canonical]).
+         *
+         * Rationale: cigarette butts/lighters and naturals (wood, paper, ceramic)
+         * map to OTHER so users can see hazardous-or-natural debris separately
+         * from generic plastic. Hazardous metal/glass containers map by physical
+         * material (BATTERY -> METAL_DEBRIS) so reports reflect composition.
+         */
+        private val CANONICAL_PARENT: Map<DebrisType, DebrisType> = mapOf(
+            // plastic family -> PLASTIC_DEBRIS (10)
+            BOTTLE_CAP        to PLASTIC_DEBRIS,
+            PLASTIC_BAG       to PLASTIC_DEBRIS,
+            FOOD_WRAPPER      to PLASTIC_DEBRIS,
+            STYROFOAM         to PLASTIC_DEBRIS,
+            PLASTIC_CUP       to PLASTIC_DEBRIS,
+            STRAW             to PLASTIC_DEBRIS,
+            PLASTIC_UTENSIL   to PLASTIC_DEBRIS,
+            SIX_PACK_RING     to PLASTIC_DEBRIS,
+            PLASTIC_SHEETING  to PLASTIC_DEBRIS,
+            DIAPER            to PLASTIC_DEBRIS,
+            // metal family -> METAL_DEBRIS (8)
+            AEROSOL_CAN       to METAL_DEBRIS,
+            METAL_DRUM        to METAL_DEBRIS,
+            WIRE_CABLE        to METAL_DEBRIS,
+            BATTERY           to METAL_DEBRIS,
+            ELECTRONICS       to METAL_DEBRIS,
+            PAINT_CAN         to METAL_DEBRIS,
+            OIL_CONTAINER     to METAL_DEBRIS,
+            CHEMICAL_DRUM     to METAL_DEBRIS,
+            // glass family -> GLASS_DEBRIS (4)
+            GLASS_BOTTLE      to GLASS_DEBRIS,
+            GLASS_JAR         to GLASS_DEBRIS,
+            GLASS_FRAGMENT    to GLASS_DEBRIS,
+            LIGHT_BULB        to GLASS_DEBRIS,
+            // fishing family -> FISHING_NET (4)
+            FISHING_LINE      to FISHING_NET,
+            ROPE              to FISHING_NET,
+            FISHING_BUOY      to FISHING_NET,
+            FISHING_TRAP      to FISHING_NET,
+            // rubber family -> TIRE (2)
+            FLIP_FLOP         to TIRE,
+            RUBBER_HOSE       to TIRE,
+            // fabric family -> FABRIC_DEBRIS (2)
+            CLOTHING          to FABRIC_DEBRIS,
+            SHOE              to FABRIC_DEBRIS,
+            // hazardous & natural -> OTHER (9)
+            CIGARETTE_BUTT    to OTHER,
+            CIGARETTE_LIGHTER to OTHER,
+            SYRINGE           to OTHER,
+            CARDBOARD         to OTHER,
+            PAPER             to OTHER,
+            WOOD_PALLET       to OTHER,
+            LUMBER            to OTHER,
+            CERAMIC_FRAGMENT  to OTHER,
+            BRICK             to OTHER,
+        )
 
         fun fromString(value: String): DebrisType {
             return try {
@@ -187,6 +266,9 @@ enum class DebrisType {
 
         /** Returns true if this type is within the RT-DETRv2 8-class set. */
         fun isRtDetrClass(type: DebrisType): Boolean = type.ordinal < RTDETR_CLASS_COUNT
+
+        /** Returns true if this type is one of the 11 canonical types. */
+        fun isCanonical(type: DebrisType): Boolean = type in CANONICAL
     }
 }
 

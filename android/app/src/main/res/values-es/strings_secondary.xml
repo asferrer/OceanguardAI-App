@@ -591,8 +591,10 @@
     <string name="report_notif_title">Generando informe</string>
     <string name="report_notif_loading_model">Cargando modelo de IA…</string>
     <string name="report_notif_generating">Redactando informe ambiental…</string>
+    <string name="report_notif_querying">Consultando %1$s…</string>
     <string name="report_notif_complete">¡Informe listo!</string>
     <string name="report_notif_error">Error al generar el informe</string>
+    <string name="report_querying_tool">Consultando %1$s…</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Descargar modelo de IA</string>

@@ -35,7 +35,12 @@ import com.oceanguard.ai.R
 
 /**
  * Bottom sheet shown after analysis when the user hasn't given contribution consent yet.
- * Offers three actions: upload on WiFi, upload now, or skip.
+ *
+ * Actions:
+ *  - upload on WiFi (primary)
+ *  - upload now (secondary)
+ *  - not now (tertiary, dismiss this prompt only)
+ *  - don't ask again (last, permanent opt-out — reversible in Settings)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +50,7 @@ fun ContributeBottomSheet(
     onUploadOnWifi: () -> Unit,
     onUploadNow: () -> Unit,
     onNotNow: () -> Unit,
+    onDontAskAgain: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -135,7 +141,7 @@ fun ContributeBottomSheet(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Tertiary: not now
+            // Tertiary: not now (dismiss this prompt only, may show again later)
             TextButton(
                 onClick = onNotNow,
                 modifier = Modifier.fillMaxWidth(),
@@ -144,6 +150,17 @@ fun ContributeBottomSheet(
                 ),
             ) {
                 Text(text = stringResource(R.string.contribute_prompt_skip))
+            }
+
+            // Final: don't ask again — permanent opt-out, reversible in Settings.
+            TextButton(
+                onClick = onDontAskAgain,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                ),
+            ) {
+                Text(text = stringResource(R.string.contribute_prompt_dont_ask_again))
             }
 
             Spacer(modifier = Modifier.height(8.dp))

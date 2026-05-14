@@ -46,6 +46,9 @@
     <string name="home_model_status_not_downloaded">Not downloaded</string>
     <string name="home_model_name_detection">AI Detection</string>
     <string name="home_model_name_deep_analysis">Deep Analysis</string>
+    <string name="home_model_download_preparing">Preparing download…</string>
+    <string name="home_model_download_downloading">Downloading model…</string>
+    <string name="home_model_download_installing">Installing model…</string>
 
     <!-- Stats card -->
     <string name="home_stat_sessions">Analyses</string>
@@ -116,6 +119,17 @@
     <string name="cd_flash_mode">Flash Mode</string>
     <string name="cd_capture_photo">Capture photo</string>
     <string name="cd_captured_photo_preview">Captured photo preview</string>
+
+    <!-- ================================================================== -->
+    <!-- Camera Result screen (immersive in-photo overlay flow)               -->
+    <!-- ================================================================== -->
+    <!-- Format: "Found 3 so far" — shown while inference is still running -->
+    <string name="camera_result_live_count">Found %1$d so far</string>
+    <string name="camera_result_no_debris">No debris detected</string>
+    <string name="camera_result_summary_debris">debris</string>
+    <string name="camera_result_summary_health">health</string>
+    <string name="camera_result_btn_new_scan">New Scan</string>
+    <string name="camera_result_btn_view_details">View Details</string>
 
     <!-- ================================================================== -->
     <!-- Live Detection screen                                                -->
@@ -313,6 +327,7 @@
     <string name="contribute_prompt_wifi">Upload on WiFi</string>
     <string name="contribute_prompt_now">Upload now</string>
     <string name="contribute_prompt_skip">Not now</string>
+    <string name="contribute_prompt_dont_ask_again">Don\'t ask me again</string>
 
     <!-- Post-analysis info snackbar -->
     <string name="contribute_queued_message">%d image(s) queued for WiFi upload</string>

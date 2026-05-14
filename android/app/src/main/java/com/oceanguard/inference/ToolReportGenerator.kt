@@ -199,7 +199,11 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         onToolCallStarted: (String) -> Unit = {},
     ): String = withContext(Dispatchers.IO) {
         require(sessions.isNotEmpty()) { "Cannot generate report with no sessions" }
-        val ctx = ToolReportContext(sessions, language, audience, zoneInput = null)
+        // Canonicalize debris types before anything reaches the model: the tools,
+        // the bundle, and the prose writer all share this canonical projection
+        // so the report can only reference the 11 canonical type names.
+        val canonSessions = ReportGenerator.canonicalizeSessions(sessions)
+        val ctx = ToolReportContext(canonSessions, language, audience, zoneInput = null)
         val tools = OceanGuardTools(ctx)
 
         val languageName = LANGUAGE_NAMES[language] ?: "English"
@@ -229,7 +233,12 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         onToolCallStarted: (String) -> Unit = {},
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
-        val ctx = ToolReportContext(input.sessions, language, audience, zoneInput = input)
+        // Canonicalize sessions inside the ZoneReportInput too: the tools resolve
+        // counts/aggregates from both ctx.sessions and ctx.zoneInput?.sessions
+        // so both must use canonical types or per-day vs overall tables diverge.
+        val canonSessions = ReportGenerator.canonicalizeSessions(input.sessions)
+        val canonInput = input.copy(sessions = canonSessions)
+        val ctx = ToolReportContext(canonSessions, language, audience, zoneInput = canonInput)
         val tools = OceanGuardTools(ctx)
 
         val languageName = LANGUAGE_NAMES[language] ?: "English"
@@ -252,12 +261,25 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
     }
 
     /**
-     * Two-phase orchestrator: tool dispatch in one conversation, prose writing in
-     * a fresh one. Keeping PHASE 2 isolated from PHASE 1 avoids KV-cache
-     * contamination from the model's early placeholder drafts and lets Gemma 4
-     * E2B focus on a simple "copy these tables" task using the pre-rendered
-     * markdown bundle as context.
+     * Single-pass agentic generation.
+     *
+     * One LiteRT-LM conversation, one KV cache. The model:
+     *   1. Calls each required tool — `onToolCallStarted(name)` fires per
+     *      invocation so the UI can announce "Querying <tool>…".
+     *   2. Receives the JSON responses as `Content.ToolResponse` turns inside
+     *      the SAME conversation. The KV cache from the tool dispatch carries
+     *      into the writing turn so the model genuinely uses the tool data.
+     *   3. Writes the final markdown report. Those tokens stream live to the
+     *      user via `onPartialResult` — no swallow, no fresh-conversation
+     *      reset, no "Generating…" deadtime.
+     *
+     * The deterministic [bundle] is no longer injected as a separate PHASE-2
+     * prompt; instead it stays available for the post-pass
+     * [repairHallucinations] which rewrites any row whose label matches the
+     * canonical map. That keeps numbers/labels precise even if the model
+     * paraphrases a cell.
      */
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun runTwoPhase(
         phase1Prompt: String,
         tools: OceanGuardTools,
@@ -268,34 +290,22 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         onPartialResult: (String) -> Unit,
         onToolCallStarted: (String) -> Unit,
     ): String {
-        // PHASE 1: model invokes tools; returns immediately once all required
-        // tools have run (see ToolAgentLoop early-exit). We swallow any stray
-        // text the model may have started — it is pre-bundle garbage.
-        engine.generateWithTools(
+        Log.i(TAG, "Agentic report: ${requiredToolNames.size} required tools, bundle=${bundle.length} chars (post-repair canon)")
+        val raw = engine.generateWithTools(
             prompt = phase1Prompt,
             toolSet = tools,
             systemMessage = systemMessage,
             maxToolRounds = MAX_TOOL_ROUNDS,
             requiredToolNames = requiredToolNames,
-            dataBundle = bundle,
-            onPartialResult = { /* swallow PHASE 1 stream */ },
+            // null → ToolAgentLoop keeps every prose token and streams it to the
+            // user. The single-conversation flow means the report writing phase
+            // simply continues after the last tool turn with the KV cache intact.
+            dataBundle = null,
+            onPartialResult = onPartialResult,
             onToolCallStarted = onToolCallStarted,
         )
-
-        // PHASE 2: fresh conversation with an ultra-compact writer prompt and the
-        // bundle as the sole context. No tools, no multi-turn — one shot.
-        val writerSystem = buildWriterSystemMessage(systemMessage)
-        Log.i(TAG, "PHASE-2 starting on fresh conversation: bundle=${bundle.length} chars")
-        val raw = engine.generateText(
-            prompt = bundle,
-            maxTokens = MAX_OUTPUT_TOKENS,
-            systemMessage = writerSystem,
-            assistantPrefill = null,
-            thinkingEnabled = false,
-            onPartialResult = onPartialResult,
-        )
         val repaired = repairHallucinations(raw, canon)
-        if (repaired != raw) {
+        if (repaired != raw && repaired.isNotBlank()) {
             Log.i(TAG, "Post-process: ${raw.length}→${repaired.length} chars after canonical repair")
             onPartialResult(repaired)
         }
@@ -338,12 +348,16 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         return """
 OUTPUT LANGUAGE: $languageName (headings, prose, tables — every word, including all debris-type and material labels).
 
+DEBRIS VOCABULARY (closed set — do not invent variations):
+Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris, Tire, Fabric Debris, Glass Debris, Other.
+Use the translated forms from the CONFIRMED DATA tables for the final report — never English snake_case identifiers.
+
 $persona
 
 PROTOCOL:
-  PHASE 1 — call the available tools once each, in any order, with empty arguments. Emit NO prose in PHASE 1, only tool calls.
+  Step 1: Invoke every tool listed below ONCE each, in any order, with empty arguments. Emit only tool calls in this step — no prose, no commentary.
   Required tools (all no-argument): debris-summary, material-breakdown, type-breakdown, risk-assessment, collection-waypoints, survey-statistics, ecological-impacts${if (kind == ReportKind.ZONE) ", temporal-trend" else ""}.
-  PHASE 2 — after the last tool returns, wait for a user turn containing `## CONFIRMED DATA — USE THESE EXACT VALUES`. When you see that block, write the final report by copying its tables into the report structure below.
+  Step 2: As soon as the last tool has returned, write the FINAL report directly in this same turn. Use ONLY the numbers, percentages, labels and rows returned by the tools — do not invent values, do not paraphrase row labels. The very next characters you produce after the last tool response MUST be the first heading of the report (see STRUCTURE).
 
 RULES:
   • CLOSED-WORLD: mention only debris types and materials that appear in the CONFIRMED DATA tables.

@@ -201,10 +201,12 @@ fun MarineDexScreen(
                 }
 
                 // ----------------------------------------------------------------
-                // One card per DebrisType in enum declaration order
+                // One card per canonical DebrisType. Extended types (PLASTIC_BAG,
+                // STYROFOAM, ...) collapse to their parent in AchievementChecker
+                // so they never reach the dex table.
                 // ----------------------------------------------------------------
                 itemsIndexed(
-                    items = DebrisType.entries,
+                    items = DebrisType.CANONICAL,
                     key = { _, type -> type.name },
                 ) { index, type ->
                     val entry = discoveredTypes[type.name]

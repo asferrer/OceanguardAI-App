@@ -150,6 +150,38 @@ class ReportGenerator(
         internal fun translateType(key: String, language: String): String =
             TYPE_NAMES[language]?.get(key) ?: TYPE_NAMES["en"]?.get(key) ?: key
 
+        /**
+         * Closed vocabulary clause for the system prompt. The VLM only ever
+         * sees the 11 canonical types (see [com.oceanguard.ai.data.DebrisType.CANONICAL]),
+         * so it must use those exact names. Translated forms come from the
+         * existing TYPE_NAMES / translateType maps, which only carry the
+         * canonical 11 — the prompt template tells the model to use them.
+         */
+        private const val DEBRIS_VOCABULARY =
+            "DEBRIS VOCABULARY (closed set — do not invent variations):\n" +
+            "Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris, Tire, " +
+            "Fabric Debris, Glass Debris, Other.\n" +
+            "When writing in another language, use the translated form already provided " +
+            "by the report template, never arbitrary synonyms.\n\n"
+
+        /**
+         * Project every detection in [sessions] onto its canonical
+         * [com.oceanguard.ai.data.DebrisType] ([com.oceanguard.ai.data.DebrisType.canonical]).
+         * Returns a copy — the original list is untouched so the UI and
+         * persistence layer keep the original extended types intact.
+         *
+         * Used as the gatekeeper before the data ever reaches the VLM prompt
+         * or the validation pipeline; combined with [DEBRIS_VOCABULARY] it
+         * stops the model from referencing extended types it was never told
+         * about, eliminating a common source of hallucinations.
+         */
+        internal fun canonicalizeSessions(sessions: List<DetectionSession>): List<DetectionSession> =
+            sessions.map { s ->
+                s.copy(debrisList = s.debrisList.map { d ->
+                    d.copy(type = d.type.canonical())
+                })
+            }
+
         /** Pre-built risk table header row + separator for the ZONE template. */
         private fun buildRiskTableHeader(language: String): String = when (language) {
             "es" -> "Genera esta tabla EXACTA:\n| Tipo de Residuo | Puntuación de Riesgo (1-5) | Cantidad | Riesgo Principal | Urgencia |\n|---|---|---|---|---|"
@@ -197,7 +229,9 @@ class ReportGenerator(
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
-        val allDebris = input.sessions.flatMap { it.debrisList }
+        // Canonicalize before flatMap so the pre-formatted tables match the
+        // canonicalized JSON that [buildZoneJsonSummary] hands to the VLM.
+        val allDebris = canonicalizeSessions(input.sessions).flatMap { it.debrisList }
         val summary = buildZoneJsonSummary(input, language)
         Log.i(TAG, "Generating zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
@@ -243,7 +277,11 @@ class ReportGenerator(
     ): String = withContext(Dispatchers.IO) {
         require(input.sessions.isNotEmpty()) { "Cannot generate zone report with no sessions" }
         val languageName = LANGUAGE_NAMES[language] ?: "English"
-        val allDebris = input.sessions.flatMap { it.debrisList }
+        // Canonicalize before flatMap so the pre-formatted material/type tables
+        // injected into the VLM prompt are coherent with the canonicalized JSON
+        // built inside [buildZoneJsonSummary].
+        val canonSessions = canonicalizeSessions(input.sessions)
+        val allDebris = canonSessions.flatMap { it.debrisList }
         val summary = buildZoneJsonSummary(input, language)
         Log.i(TAG, "Generating streamed zone report for ${input.locationName} in $languageName")
         val dateRangeLabel = buildDateRangeLabel(input.dateRangeStartMs, input.dateRangeEndMs)
@@ -672,6 +710,7 @@ Rules:
         return "OUTPUT LANGUAGE: $languageName. Every word of your response must be in " +
             "$languageName. Do not write a single sentence in English unless a Latin scientific " +
             "term has no equivalent. All ## section headings must be in $languageName.\n\n" +
+            DEBRIS_VOCABULARY +
             "$persona\n\n" +
             "$styleRules\n\n" +
             comprehensivenessDirective +
@@ -919,11 +958,18 @@ Rules:
     }
 
     internal fun buildJsonSummary(sessions: List<DetectionSession>): String {
-        val sorted = sessions.sortedBy { it.timestamp }
-        val allDebris = sessions.flatMap { it.debrisList }
+        // Project every debris type onto its canonical parent before serializing
+        // so the VLM only ever sees one of the 11 canonical names. Combined
+        // with [DEBRIS_VOCABULARY] this prevents the model from echoing
+        // extended types (PLASTIC_BAG, STYROFOAM, ...) that would later
+        // mismatch against MarineDex, validator entity tables, and the
+        // [type_breakdown] aggregates below.
+        val canonSessions = canonicalizeSessions(sessions)
+        val sorted = canonSessions.sortedBy { it.timestamp }
+        val allDebris = canonSessions.flatMap { it.debrisList }
         val materialMap = mutableMapOf<String, Int>()
         allDebris.forEach { d -> materialMap[d.material.name] = (materialMap[d.material.name] ?: 0) + 1 }
-        val locationsWithData = sessions.mapNotNull { it.location }
+        val locationsWithData = canonSessions.mapNotNull { it.location }
         val locationSummary = if (locationsWithData.isNotEmpty()) {
             val lats = locationsWithData.map { it.latitude }
             val lons = locationsWithData.map { it.longitude }
@@ -941,20 +987,20 @@ Rules:
         cappedSessions.forEach { sessionDetails.put(buildSessionDetail(it)) }
 
         return JSONObject().apply {
-            put("analyzed_images", sessions.size)
+            put("analyzed_images", canonSessions.size)
             if (sorted.size > MAX_SESSION_DETAILS)
-                put("sessions_note", "Showing ${MAX_SESSION_DETAILS} most recent of ${sessions.size} total")
-            put("total_debris_items", sessions.sumOf { it.totalCount })
-            put("average_health_score", String.format("%.1f", sessions.map { it.healthScore }.average()))
+                put("sessions_note", "Showing ${MAX_SESSION_DETAILS} most recent of ${canonSessions.size} total")
+            put("total_debris_items", canonSessions.sumOf { it.totalCount })
+            put("average_health_score", String.format("%.1f", canonSessions.map { it.healthScore }.average()))
             put("dominant_material", materialMap.maxByOrNull { it.value }?.key ?: "N/A")
             put("date_range", buildDateRange(sorted))
             put("material_breakdown", JSONObject(materialMap as Map<*, *>))
             put("type_breakdown", buildTypeBreakdown(allDebris))
             put("confidence_range", buildConfidenceStats(allDebris))
             put("risk_breakdown", buildRiskBreakdown(allDebris))
-            put("image_quality", buildQualityDistribution(sessions))
+            put("image_quality", buildQualityDistribution(canonSessions))
             put("locations", locationSummary)
-            put("collection_waypoints", buildCollectionWaypoints(sessions))
+            put("collection_waypoints", buildCollectionWaypoints(canonSessions))
             put("sessions", sessionDetails)
         }.toString()
     }
@@ -1130,7 +1176,16 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
     }
 
     internal fun buildZoneJsonSummary(input: ZoneReportInput, language: String = "en"): String {
-        val allDebris = input.sessions.flatMap { it.debrisList }
+        // Canonicalize debris types before we count or serialize anything so
+        // the VLM only ever sees the 11 canonical type names. dayGroups are
+        // recomputed with the same canonical sessions so the per-day tables
+        // stay coherent with the aggregate breakdowns.
+        val canonSessions = canonicalizeSessions(input.sessions)
+        val sessionIdToCanon = canonSessions.associateBy { it.id }
+        val canonDayGroups = input.dayGroups.map { dg ->
+            dg.copy(sessions = dg.sessions.map { sessionIdToCanon[it.id] ?: it })
+        }
+        val allDebris = canonSessions.flatMap { it.debrisList }
         val materialCounts = mutableMapOf<String, Int>()
         val typeCounts = mutableMapOf<String, Int>()
         allDebris.forEach { d ->
@@ -1138,15 +1193,15 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
             typeCounts[d.type.name] = (typeCounts[d.type.name] ?: 0) + 1
         }
 
-        val sortedDays = input.dayGroups.sortedBy { it.date }
+        val sortedDays = canonDayGroups.sortedBy { it.date }
         val cappedDays = if (sortedDays.size > MAX_ZONE_DAYS) sortedDays.takeLast(MAX_ZONE_DAYS) else sortedDays
         val surveyDays = JSONArray()
         cappedDays.forEach { surveyDays.put(buildDayEntry(it)) }
 
         val overall = JSONObject().apply {
-            put("total_analyzed_images", input.sessions.size)
-            put("total_debris_items", input.sessions.sumOf { it.totalCount })
-            put("average_health_score", String.format("%.1f", input.sessions.map { it.healthScore }.average()))
+            put("total_analyzed_images", canonSessions.size)
+            put("total_debris_items", canonSessions.sumOf { it.totalCount })
+            put("average_health_score", String.format("%.1f", canonSessions.map { it.healthScore }.average()))
             put("dominant_material", materialCounts.maxByOrNull { it.value }?.key ?: "N/A")
             put("high_risk_items", allDebris.count { it.getRiskScore() >= HIGH_RISK_THRESHOLD })
             put("trend", input.trend.name)
@@ -1155,7 +1210,7 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
             put("type_breakdown", buildBreakdownWithPct(typeCounts) { translateType(it, language) })
             put("confidence_range", buildConfidenceStats(allDebris))
             put("risk_breakdown", buildRiskBreakdown(allDebris))
-            put("image_quality", buildQualityDistribution(input.sessions))
+            put("image_quality", buildQualityDistribution(canonSessions))
         }
 
         val trendDelta = if (input.dayGroups.size >= 2) {
@@ -1184,7 +1239,7 @@ All ## headings in $languageName. Start directly with ${FIRST_HEADING[language] 
             if (sortedDays.size > MAX_ZONE_DAYS)
                 put("survey_days_note", "Showing ${MAX_ZONE_DAYS} most recent of ${sortedDays.size} total survey days")
             put("overall", overall)
-            put("collection_waypoints", buildCollectionWaypoints(input.sessions))
+            put("collection_waypoints", buildCollectionWaypoints(canonSessions))
             if (trendDelta != null) put("trend_delta", trendDelta)
         }.toString()
     }

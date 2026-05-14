@@ -72,6 +72,10 @@ class ReportGenerationService : LifecycleService() {
                     is ReportGenerationState.Generating -> {
                         updateNotification(getString(R.string.report_notif_generating))
                     }
+                    is ReportGenerationState.ToolExecuting -> {
+                        val human = humanizeToolName(state.toolName)
+                        updateNotification(getString(R.string.report_notif_querying, human))
+                    }
                     is ReportGenerationState.StreamingText -> {
                         // Throttle notification updates to max 1 every 2s during
                         // streaming to avoid main-thread jank from PendingIntent
@@ -154,7 +158,8 @@ class ReportGenerationService : LifecycleService() {
             else -> {
                 val state = app.reportGenerationState.value
                 if (state is ReportGenerationState.LoadingModel ||
-                    state is ReportGenerationState.Generating
+                    state is ReportGenerationState.Generating ||
+                    state is ReportGenerationState.ToolExecuting
                 ) {
                     builder.setProgress(0, 0, true)
                 }
@@ -178,4 +183,18 @@ class ReportGenerationService : LifecycleService() {
             Log.w(TAG, "Cannot update notification: permission denied", e)
         }
     }
+
+    /**
+     * Converts a snake_case tool method name from Gemma 4 (e.g. `get_debris_summary`)
+     * into a human-friendly label (e.g. "Debris Summary") for status messages.
+     * Drops a leading "get_" since every @Tool in this app starts with it.
+     */
+    private fun humanizeToolName(toolName: String): String =
+        toolName
+            .removePrefix("get_")
+            .split('_')
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { it.uppercase() }
+            }
 }

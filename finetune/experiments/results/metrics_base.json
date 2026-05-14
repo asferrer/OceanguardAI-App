@@ -1,22 +1,22 @@
 {
-  "mAP_50": 0.09241071428571429,
+  "mAP_50": 0.1066963813912198,
   "mAP_50_95": 0.0,
   "mAP_75": 0.0,
   "per_class_mAP_50": {
-    "Bottle": 0.045454545454545456,
+    "Bottle": 0.1323529411764706,
     "Can": 0.0,
-    "Fishing_Net": 0.0909090909090909,
-    "Glove": 0.30909090909090914,
+    "Fishing_Net": 0.1422924901185771,
+    "Glove": 0.2334710743801653,
     "Mask": 0.09090909090909091,
     "Metal_Debris": 0.0,
-    "Plastic_Debris": 0.11201298701298701,
-    "Tire": 0.09090909090909091
+    "Plastic_Debris": 0.1212121212121212,
+    "Tire": 0.13333333333333333
   },
-  "n_predictions": 47,
+  "n_predictions": 168,
   "key": "base",
   "adapter_path": null,
-  "n_samples": 50,
-  "json_validity": 1.0,
-  "mean_latency_s": 1.963640055656433,
-  "elapsed_s": 98.89264988899231
+  "n_samples": 200,
+  "json_validity": 0.995,
+  "mean_latency_s": 1.9328559482097625,
+  "elapsed_s": 390.7720613479614
 }

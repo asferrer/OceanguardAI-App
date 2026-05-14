@@ -83,7 +83,7 @@ object EnvironmentalImpact {
             degradationTime = "1,000,000+ years",
             primaryRisk = "Physical injury to marine life",
             riskScore = 4,
-            icon = "\uD83C\uDFFA", // amphora
+            icon = "\uD83E\uDE9F", // window \u2014 glass material
         ),
         DebrisType.OTHER to DebrisImpactInfo(
             degradationTime = "Variable",

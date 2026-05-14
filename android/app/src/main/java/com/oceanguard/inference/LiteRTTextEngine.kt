@@ -240,22 +240,26 @@ class LiteRTTextEngine(
         prompt: String,
         maxTokens: Int = 512,
         systemMessage: String? = null,
+        /** Sampler temperature. Lower = more deterministic (best for JSON output). */
+        temperature: Double = 0.3,
+        /** Sampler top-K. Lower = faster decode with negligible quality loss on structured output. */
+        topK: Int = 20,
         onPartialResult: ((String) -> Unit)? = null,
     ): String = withContext(Dispatchers.IO) {
         val eng = engine
         check(eng != null && eng.isInitialized()) { "Engine not loaded. Call initialize() first." }
 
         val imageBytes = bitmapToJpegBytes(bitmap)
-        Log.d(TAG, "Image: ${bitmap.width}x${bitmap.height}, ${imageBytes.size / 1024} KB JPEG")
+        Log.d(TAG, "Image: ${bitmap.width}x${bitmap.height}, ${imageBytes.size / 1024} KB JPEG, sampler temp=$temperature topK=$topK")
 
         val system = systemMessage ?: "You are a precise visual analysis assistant."
         val conv = eng.createConversation(
             ConversationConfig(
                 systemInstruction = Contents.of(system),
                 samplerConfig = SamplerConfig(
-                    topK = 20,
+                    topK = topK,
                     topP = 0.95,
-                    temperature = 0.3,
+                    temperature = temperature,
                 ),
             )
         )
@@ -302,7 +306,10 @@ class LiteRTTextEngine(
 
     private fun bitmapToJpegBytes(
         bitmap: Bitmap,
-        quality: Int = 90,
+        // 85 is visually indistinguishable from 90 for the vision encoder
+        // (Gemma 4 downsamples internally) and ~25 % smaller on the wire,
+        // shaving a measurable slice off the encoder prefill on batch runs.
+        quality: Int = 85,
     ): ByteArray {
         val stream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)

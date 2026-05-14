@@ -78,7 +78,10 @@ import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.inference.TextModelTier
+import com.oceanguard.ai.inference.VlmDownloadState
 import com.oceanguard.ai.utils.UpdateInfo
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -177,14 +180,43 @@ fun HomeScreen(
     // Gemma 4 download prompt — shown when the user tries to use detection
     // with Gemma 4 selected but the model is not yet downloaded.
     var showGemma4DownloadDialog by remember { mutableStateOf(false) }
-    var pendingNavAfterDownload by remember { mutableStateOf<String?>(null) }
 
-    val needsGemma4Download = remember(app) {
-        {
-            val mode = app.settingsRepository.getDetectorModeSync()
-            mode == DetectorType.GEMMA4_VISION.key &&
-                !app.vlmModelManager.isGemma4VisionAvailable()
+    // The granular download progress (bytes, percent) is read INSIDE
+    // [DownloadProgressRow] so progress updates only recompose that subtree —
+    // not the whole Home screen with its charts and lists.  Up here we only
+    // observe a derived StateFlow<Boolean> that toggles on real transitions
+    // (Idle <-> InFlight) so the rest of Home stays stable while bytes stream in.
+    val isDownloadingFlow = remember(app) {
+        app.vlmModelManager.downloadState
+            .map { state ->
+                state is VlmDownloadState.Preparing ||
+                    state is VlmDownloadState.Downloading ||
+                    state is VlmDownloadState.Installing
+            }
+            .distinctUntilChanged()
+    }
+    val isDownloading by isDownloadingFlow.collectAsStateWithLifecycle(initialValue = false)
+
+    // Disk-presence state for "is the Gemma 4 model file on disk?". Refreshed on
+    // first composition and whenever the download manager emits Complete, so we
+    // never poll. Reading [isGemma4VisionAvailable] is a cheap stat().
+    var isModelDownloaded by remember { mutableStateOf(app.vlmModelManager.isGemma4VisionAvailable()) }
+    val downloadCompleteFlow = remember(app) {
+        app.vlmModelManager.downloadState
+            .map { it is VlmDownloadState.Complete }
+            .distinctUntilChanged()
+    }
+    LaunchedEffect(downloadCompleteFlow) {
+        downloadCompleteFlow.collect { complete ->
+            if (complete) {
+                isModelDownloaded = app.vlmModelManager.isGemma4VisionAvailable()
+            }
         }
+    }
+
+    val needsGemma4Download: Boolean = remember(isModelDownloaded) {
+        app.settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key &&
+            !isModelDownloaded
     }
 
     // Dropdown state for the scan source picker
@@ -214,9 +246,14 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Content with horizontal padding
+            // Content with horizontal padding. widthIn caps the content column
+            // at 600 dp so tablets and landscape phones do not stretch the
+            // cards and charts edge-to-edge; phones in portrait (~360 dp wide)
+            // stay full-width because the cap is well above their width.
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier
+                    .widthIn(max = 600.dp)
+                    .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // ----------------------------------------------------------------
@@ -227,7 +264,47 @@ fun HomeScreen(
                     initialValue = SettingsRepository.DEFAULT_DETECTOR_MODE
                 )
                 Box(modifier = Modifier.spotlightTarget("home_model_status", boundsMap)) {
-                    ModelStatusIndicator(modelState = modelState, detectorModeKey = detectorModeKey)
+                    ModelStatusIndicator(
+                        modelState = modelState,
+                        detectorModeKey = detectorModeKey,
+                        // Pass the raw StateFlow so the granular bytes/percent
+                        // updates only recompose the progress bar subtree.
+                        downloadStateFlow = app.vlmModelManager.downloadState,
+                        onCancelDownload = { app.vlmModelManager.cancelDownload() },
+                    )
+                }
+
+                // Compute scan-action readiness once for all three tiles. The
+                // scan buttons must wait for the active detector to be Ready
+                // (model loaded in RAM and warmed up); otherwise we'd let the
+                // user start an inference against a Loading/WarmingUp engine
+                // and they'd see a freeze on the camera screen instead.
+                val detectorIsGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
+                val activeDetectorStatus = if (detectorIsGemma4) {
+                    modelState.gemma4Vision
+                } else {
+                    modelState.rtdetr
+                }
+                val modelReady = activeDetectorStatus == ModelStatus.Ready
+                // The button is enabled when:
+                //   (a) the model file is missing — so the tap can pop the
+                //       download dialog and start the download flow, OR
+                //   (b) the model is fully loaded and Ready for inference.
+                // Everything in between (downloading, loading into RAM, warming
+                // up, Standby) keeps the buttons disabled.
+                val scanEnabled = needsGemma4Download || (modelReady && !isDownloading)
+
+                // Auto-prewarm whenever the model is on disk but not yet loaded
+                // in RAM. Covers two paths: first Home composition after a fresh
+                // install, and the transition right after a download completes.
+                LaunchedEffect(activeDetectorStatus, isModelDownloaded) {
+                    if (detectorIsGemma4 &&
+                        isModelDownloaded &&
+                        (activeDetectorStatus == ModelStatus.NotLoaded ||
+                            activeDetectorStatus == ModelStatus.Standby)
+                    ) {
+                        app.prewarmGemma4DetectorIfAvailable()
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -250,12 +327,17 @@ fun HomeScreen(
                                 label = stringResource(R.string.home_btn_take_photo),
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = Color(0xFF0A0E1A),
+                                // Enabled when the model file is missing (tap
+                                // opens the download dialog) OR fully Ready for
+                                // inference. Loading / WarmingUp / Standby /
+                                // download-in-flight keep the tile disabled so
+                                // the user cannot start a scan against a model
+                                // that is not yet ready.
+                                enabled = scanEnabled,
                                 onClick = {
-                                    if (needsGemma4Download()) {
-                                        pendingNavAfterDownload = "camera"
-                                        showGemma4DownloadDialog = true
-                                    } else {
-                                        navController.navigate("camera")
+                                    when {
+                                        needsGemma4Download -> showGemma4DownloadDialog = true
+                                        else                 -> navController.navigate("camera")
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -272,11 +354,17 @@ fun HomeScreen(
                                     label = stringResource(R.string.home_btn_select_gallery),
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                                     contentColor = GradientCTAStart,
-                                    onClick = { showScanMenu = true },
+                                    enabled = scanEnabled,
+                                    onClick = {
+                                        when {
+                                            needsGemma4Download -> showGemma4DownloadDialog = true
+                                            else                 -> showScanMenu = true
+                                        }
+                                    },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 DropdownMenu(
-                                    expanded = showScanMenu,
+                                    expanded = showScanMenu && scanEnabled,
                                     onDismissRequest = { showScanMenu = false },
                                 ) {
                                     DropdownMenuItem(
@@ -286,16 +374,11 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             showScanMenu = false
-                                            if (needsGemma4Download()) {
-                                                pendingNavAfterDownload = null
-                                                showGemma4DownloadDialog = true
-                                            } else {
-                                                mediaLauncher.launch(
-                                                    PickVisualMediaRequest(
-                                                        ActivityResultContracts.PickVisualMedia.ImageAndVideo
-                                                    )
+                                            mediaLauncher.launch(
+                                                PickVisualMediaRequest(
+                                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
                                                 )
-                                            }
+                                            )
                                         },
                                     )
                                     DropdownMenuItem(
@@ -305,12 +388,7 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             showScanMenu = false
-                                            if (needsGemma4Download()) {
-                                                pendingNavAfterDownload = null
-                                                showGemma4DownloadDialog = true
-                                            } else {
-                                                filesLauncher.launch(arrayOf("image/*", "video/*"))
-                                            }
+                                            filesLauncher.launch(arrayOf("image/*", "video/*"))
                                         },
                                     )
                                 }
@@ -443,7 +521,10 @@ fun HomeScreen(
                 onDismiss = { updateInfo = null },
             )
         }
-        // Gemma 4 model download dialog
+        // Gemma 4 model download dialog. Confirming starts the download — we
+        // intentionally do NOT navigate to the scan screen yet: scanning is
+        // blocked until the model file is fully on disk, and the Home progress
+        // bar shows the user how far the download has come.
         if (showGemma4DownloadDialog) {
             AlertDialog(
                 onDismissRequest = { showGemma4DownloadDialog = false },
@@ -460,18 +541,12 @@ fun HomeScreen(
                     TextButton(onClick = {
                         showGemma4DownloadDialog = false
                         app.launchVlmDownload(TextModelTier.GEMMA4_E2B)
-                        // Navigate anyway -- the model will download in the background
-                        pendingNavAfterDownload?.let { navController.navigate(it) }
-                        pendingNavAfterDownload = null
                     }) {
                         Text(stringResource(R.string.vlm_download_dialog_confirm))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = {
-                        showGemma4DownloadDialog = false
-                        pendingNavAfterDownload = null
-                    }) {
+                    TextButton(onClick = { showGemma4DownloadDialog = false }) {
                         Text(stringResource(R.string.common_cancel))
                     }
                 },
@@ -711,10 +786,30 @@ private fun GradientActionTile(
 private fun ModelStatusIndicator(
     modelState: ModelLoadingState,
     detectorModeKey: String = SettingsRepository.DEFAULT_DETECTOR_MODE,
+    downloadStateFlow: kotlinx.coroutines.flow.StateFlow<VlmDownloadState>? = null,
+    onCancelDownload: () -> Unit = {},
 ) {
     val isGemma4 = detectorModeKey == DetectorType.GEMMA4_VISION.key
     val detectorStatus = if (isGemma4) modelState.gemma4Vision else modelState.rtdetr
     val detectorReady = detectorStatus == ModelStatus.Ready
+
+    // Derived booleans react only to lifecycle transitions, not to the ~200 ms
+    // progress emissions, so this composable does NOT recompose on every
+    // streamed byte. The actual percent/bytes are read inside DownloadProgressRow.
+    val isActivelyDownloadingFlow = remember(downloadStateFlow) {
+        downloadStateFlow
+            ?.map { state ->
+                state is VlmDownloadState.Preparing ||
+                    state is VlmDownloadState.Downloading ||
+                    state is VlmDownloadState.Installing
+            }
+            ?.distinctUntilChanged()
+    }
+    val isActivelyDownloading: Boolean = if (isActivelyDownloadingFlow != null) {
+        isActivelyDownloadingFlow.collectAsStateWithLifecycle(initialValue = false).value
+    } else {
+        false
+    }
 
     val readyText = stringResource(R.string.home_model_ready)
     val detectorName = if (isGemma4) "Gemma 4" else "AI Detection"
@@ -723,24 +818,166 @@ private fun ModelStatusIndicator(
     val glassColor = Color(0x800F172A)
     val glassBorderColor = Color(0x1A94A3B8)
 
-    if (detectorReady) {
-        ReadyBanner(text = readyText)
-    } else {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
-            shape = RoundedCornerShape(12.dp),
-            color = glassColor,
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+    when {
+        // The download takes precedence over status rows because the user is
+        // actively waiting on bytes, not on a loaded model.
+        isActivelyDownloading && downloadStateFlow != null -> {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                color = glassColor,
             ) {
-                ModelStatusRow(name = detectorName, status = detectorStatus)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    DownloadProgressRow(
+                        stateFlow = downloadStateFlow,
+                        onCancel = onCancelDownload,
+                    )
+                }
+            }
+        }
+        detectorReady -> ReadyBanner(text = readyText)
+        else -> {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, glassBorderColor, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                color = glassColor,
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    ModelStatusRow(name = detectorName, status = detectorStatus)
+                }
             }
         }
     }
+}
+
+/**
+ * Inline download progress for the Gemma 4 vision model. Renders a determinate
+ * LinearProgressIndicator with "X.X MB / Y.Y MB (NN%)" so the user can see how
+ * far the ~2.6 GB download has come without leaving Home. Cancel button reverts
+ * to [VlmDownloadState.Idle] and removes the partial file.
+ *
+ * Receives the [VlmDownloadState] StateFlow directly and collects it inside, so
+ * the bytes/percent updates only recompose this subtree — the rest of the Home
+ * screen (charts, lists) stays stable while the download streams.
+ */
+@Composable
+private fun DownloadProgressRow(
+    stateFlow: kotlinx.coroutines.flow.StateFlow<VlmDownloadState>,
+    onCancel: () -> Unit,
+) {
+    val state by stateFlow.collectAsStateWithLifecycle()
+    val snapshot = state
+    val (label, progress, bytesLine) = when (snapshot) {
+        is VlmDownloadState.Preparing -> Triple(
+            stringResource(R.string.home_model_download_preparing),
+            null,
+            null,
+        )
+        is VlmDownloadState.Downloading -> Triple(
+            stringResource(R.string.home_model_download_downloading),
+            snapshot.progress,
+            formatBytesLine(snapshot.downloadedBytes, snapshot.totalBytes, snapshot.progress),
+        )
+        is VlmDownloadState.Installing -> Triple(
+            stringResource(R.string.home_model_download_installing),
+            1f,
+            null,
+        )
+        else -> Triple("", null, null)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp)),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "Gemma 4",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.widthIn(max = 100.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (snapshot is VlmDownloadState.Downloading) {
+                TextButton(onClick = onCancel) {
+                    Text(
+                        stringResource(R.string.common_cancel),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
+        if (bytesLine != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = bytesLine,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Formats the inline "123.4 MB / 2.5 GB (45%)" line for the progress row. */
+private fun formatBytesLine(downloaded: Long, total: Long, progress: Float): String {
+    val pct = (progress * 100f).toInt().coerceIn(0, 100)
+    return "${humanReadableSize(downloaded)} / ${humanReadableSize(total)}  ($pct%)"
+}
+
+private fun humanReadableSize(bytes: Long): String {
+    if (bytes <= 0L) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB")
+    var value = bytes.toDouble()
+    var unitIdx = 0
+    while (value >= 1024 && unitIdx < units.lastIndex) {
+        value /= 1024
+        unitIdx++
+    }
+    return if (unitIdx >= 2) "%.1f %s".format(value, units[unitIdx]) else "%.0f %s".format(value, units[unitIdx])
 }
 
 @Composable

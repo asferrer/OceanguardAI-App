@@ -107,6 +107,22 @@ enum class TextModelTier(
         formatter    = Gemma4PromptFormatter, // Unused — LiteRT-LM handles chat template
     );
 
+    /**
+     * Next smaller tier to try when this one fails (OOM, timeout, init crash).
+     *
+     * Within the same provider family we step down by size:
+     *   QUALITY (4B) -> BALANCED (2B) -> FAST (0.8B) -> FAST (no smaller).
+     * GEMMA4_E2B has no smaller sibling so we cross-provider to the smallest
+     * Qwen tier (FAST). The caller must still verify the fallback is
+     * downloaded via [VlmModelManager.isModelAvailable] before loading it.
+     */
+    fun smallerFallback(): TextModelTier = when (this) {
+        FAST       -> FAST
+        BALANCED   -> FAST
+        QUALITY    -> BALANCED
+        GEMMA4_E2B -> FAST
+    }
+
     companion object {
         fun fromKey(key: String): TextModelTier =
             entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: GEMMA4_E2B

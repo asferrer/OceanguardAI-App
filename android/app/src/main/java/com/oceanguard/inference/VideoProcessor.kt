@@ -49,6 +49,17 @@ class VideoProcessor(
     private val context: Context,
     private val detector: ObjectDetector,
     private val confidenceThreshold: Float = 0.5f,
+    /**
+     * Number of detector inferences per second of video. The encoder still
+     * emits frames at the source frame rate so the output clip stays smooth;
+     * detections are reused on intermediate frames. A 30 fps clip at
+     * [inferenceFps]=2 runs the detector 15× less often than every-frame
+     * mode, cutting end-to-end processing time roughly the same factor with
+     * very minor tracking penalty (objects "snap" to their new position at
+     * the next sampled frame). Set higher for fast-moving content; set to
+     * the source frame rate for the legacy every-frame behaviour.
+     */
+    private val inferenceFps: Int = 2,
 ) {
     private val _progress = MutableStateFlow(VideoProgress(0, 0, 0L, 0L))
     val progress: StateFlow<VideoProgress> = _progress.asStateFlow()
@@ -89,6 +100,14 @@ class VideoProcessor(
             var processedFrames = 0
             var thumbnailUri: String? = null
 
+            // Inference stride: how many source frames pass between detector
+            // calls. 30 fps source / 2 inference fps = stride 15, so the
+            // detector runs 15× less often. Intermediate frames reuse the
+            // most recent detections to keep the annotated overlay stable.
+            val inferenceStride = (frameRate / inferenceFps.coerceAtLeast(1)).coerceAtLeast(1)
+            Log.i(TAG, "Inference stride: $inferenceStride (source ${frameRate}fps -> ${inferenceFps}fps detector)")
+            var lastDetections: List<DetectionResult> = emptyList()
+
             for (frameIdx in 0 until totalFrames) {
                 if (isCancelled) {
                     encoder.release()
@@ -103,9 +122,19 @@ class VideoProcessor(
                     continue
                 }
 
-                val t0 = System.currentTimeMillis()
-                val detections = detector.detect(rawBitmap, confidenceThreshold)
-                inferenceTimes.add(System.currentTimeMillis() - t0)
+                val shouldInfer = frameIdx % inferenceStride == 0
+                val detections = if (shouldInfer) {
+                    val t0 = System.currentTimeMillis()
+                    val newDetections = detector.detect(rawBitmap, confidenceThreshold)
+                    inferenceTimes.add(System.currentTimeMillis() - t0)
+                    lastDetections = newDetections
+                    newDetections
+                } else {
+                    // Reuse the most recent detections so the overlay/tracker
+                    // do not flicker on intermediate frames. The tracker still
+                    // advances frameIdx so IoU age-out logic stays correct.
+                    lastDetections
+                }
 
                 val trackingResult = tracker.update(frameIdx, detections)
                 val annotated = BitmapAnnotator.annotateWithTrackIds(rawBitmap, trackingResult.activeTracks)

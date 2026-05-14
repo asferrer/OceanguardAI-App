@@ -168,10 +168,15 @@ fun ReportScreen(
         derivedStateOf {
             generationState is ReportGenerationState.Generating ||
                 generationState is ReportGenerationState.LoadingModel ||
+                generationState is ReportGenerationState.ToolExecuting ||
                 generationState is ReportGenerationState.StreamingText
         }
     }
     val isLoadingModel by remember { derivedStateOf { generationState is ReportGenerationState.LoadingModel } }
+    // Currently-running tool name (only set during the agentic PHASE 1).
+    val currentToolName by remember {
+        derivedStateOf { (generationState as? ReportGenerationState.ToolExecuting)?.toolName }
+    }
     // Wrap streaming reads in derivedStateOf so token-level emissions only
     // recompose the GeneratingBanner, not the entire ReportScreen.
     val streamingText by remember { derivedStateOf { (generationState as? ReportGenerationState.StreamingText)?.partialText } }
@@ -292,6 +297,7 @@ fun ReportScreen(
             is ReportGenerationState.Idle -> {}
             is ReportGenerationState.LoadingModel,
             is ReportGenerationState.Generating,
+            is ReportGenerationState.ToolExecuting,
             is ReportGenerationState.StreamingText -> {} // inline banner handles this
             is ReportGenerationState.Complete -> {
                 val completedReport = state.report
@@ -515,6 +521,7 @@ fun ReportScreen(
                 ) {
                     GeneratingBanner(
                         isLoadingModel    = isLoadingModel,
+                        currentToolName   = currentToolName,
                         streamingText     = streamingText,
                         tokenCount        = tokenCount,
                         tokensPerSec      = tokensPerSec,

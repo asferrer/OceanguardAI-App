@@ -159,6 +159,16 @@ class MainViewModel(
      */
     val capturedImageUri: StateFlow<Uri?> = _capturedImageUri.asStateFlow()
 
+    private val _annotatedThumbnailUri = MutableStateFlow<String?>(null)
+
+    /**
+     * URI of the pre-rendered annotated thumbnail (bounding boxes baked into
+     * the JPEG) for the most recent SingleComplete. ResultsScreen consumes
+     * this so the final results image renders identically to the History
+     * detail screen (AsyncImage of the same thumbnail, no live overlay).
+     */
+    val annotatedThumbnailUri: StateFlow<String?> = _annotatedThumbnailUri.asStateFlow()
+
     private val _batchUris = MutableStateFlow<List<Uri>>(emptyList())
 
     /**
@@ -214,11 +224,22 @@ class MainViewModel(
             if (contributionQueued) {
                 _contributePrompt.value = ContributePromptState.ShowInfo(sessionIds.size)
             } else {
+                // Two independent silencers: explicit "Don't ask again" opt-out,
+                // OR the soft cap of three dismissals. Either suppresses the prompt.
+                val neverPrompt = settingsRepository.contributeNeverPrompt.first()
                 val declineCount = settingsRepository.contributeDeclineCount.first()
-                if (declineCount < 3) {
+                if (!neverPrompt && declineCount < 3) {
                     _contributePrompt.value = ContributePromptState.ShowPrompt(sessionIds, sessionIds.size)
                 }
             }
+        }
+    }
+
+    /** Permanently silence the contribution prompt (tapped "Don't ask again"). */
+    fun setContributeNeverPrompt() {
+        viewModelScope.launch {
+            settingsRepository.setContributeNeverPrompt(true)
+            dismissContributePrompt()
         }
     }
 
@@ -254,6 +275,7 @@ class MainViewModel(
                     }
                     is InferenceServiceState.SingleComplete -> {
                         _capturedImageUri.value = serviceState.uri
+                        _annotatedThumbnailUri.value = serviceState.annotatedUri
                         _uiState.value = UiState.AnalysisComplete(serviceState.result)
                         onAnalysisComplete(
                             sessionIds = if (serviceState.sessionId > 0) listOf(serviceState.sessionId) else emptyList(),
@@ -273,6 +295,7 @@ class MainViewModel(
     private fun mapAnalysisState(analysisState: AnalysisState): UiState = when (analysisState) {
         is AnalysisState.Idle -> UiState.Idle
         is AnalysisState.LoadingImage -> UiState.ModelLoading("Loading image...")
+        is AnalysisState.WarmingUpModel -> UiState.ModelLoading("Warming up model...")
         is AnalysisState.Detecting -> UiState.Detecting
         is AnalysisState.DetectionsReady -> UiState.DetectionsReady(analysisState.detections)
         is AnalysisState.AnalyzingDeep -> UiState.AnalyzingDeep(analysisState.detections)
@@ -402,9 +425,17 @@ class MainViewModel(
         if (imageUris.isNotEmpty()) {
             app.inferenceServiceState.value = InferenceServiceState.Idle
             setBatchUris(imageUris)
+            // Enqueue the image batch BEFORE the video jobs so the queue
+            // processes images first. Images take ~6-10 s each with Gemma 4;
+            // videos take minutes per clip. Surfacing the fast image results
+            // first lets the user start reviewing them while the slower video
+            // jobs continue in the background.
+            startBatchInference(imageUris)
         }
 
-        // Enqueue each video as a separate job
+        // Enqueue each video as a separate job, AFTER the image batch above,
+        // so a mixed selection of pictures and clips never blocks the user on
+        // the long-running video pipeline before any image preview shows up.
         for (videoUri in videoUris) {
             val intent = InferenceService.videoIntent(appContext, videoUri)
             ContextCompat.startForegroundService(appContext, intent)
@@ -586,6 +617,7 @@ class MainViewModel(
     fun resetState() {
         _uiState.value = UiState.Idle
         _capturedImageUri.value = null
+        _annotatedThumbnailUri.value = null
         // Clear service state so the init collector doesn't re-emit a stale result
         app.inferenceServiceState.value = InferenceServiceState.Idle
         orchestrator.reset()

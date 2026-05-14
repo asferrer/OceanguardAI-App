@@ -40,6 +40,13 @@ fun OceanGradientHeader(
     subtitle: String,
     modifier: Modifier = Modifier,
 ) {
+    // Collapse the hero band when the device is in landscape so the action
+    // grid and stats stay visible without a long scroll. Portrait keeps the
+    // tall 260 dp banner because the screen has the vertical room for it.
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation ==
+        android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val headerHeight = if (isLandscape) 140.dp else 260.dp
     // --- Entry animation: spring scale-in ---
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
@@ -82,7 +89,7 @@ fun OceanGradientHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp)
+            .height(headerHeight)
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(

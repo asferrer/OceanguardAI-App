@@ -239,6 +239,7 @@ private fun PulsingAIIcon(tint: androidx.compose.ui.graphics.Color, modifier: Mo
 @Composable
 internal fun GeneratingBanner(
     isLoadingModel: Boolean,
+    currentToolName: String? = null,
     streamingText: String? = null,
     tokenCount: Int = 0,
     tokensPerSec: Float = 0f,
@@ -259,6 +260,13 @@ internal fun GeneratingBanner(
     val etaSeconds = if (hasTokenMetrics && tokensPerSec > 0.5f) {
         ((maxTokens - tokenCount) / tokensPerSec).toInt()
     } else null
+    val humanToolName = remember(currentToolName) {
+        currentToolName
+            ?.removePrefix("get_")
+            ?.split('_')
+            ?.filter { it.isNotEmpty() }
+            ?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -280,6 +288,7 @@ internal fun GeneratingBanner(
                 Text(
                     text = when {
                         isLoadingModel -> stringResource(R.string.report_loading_engine)
+                        !humanToolName.isNullOrBlank() -> stringResource(R.string.report_querying_tool, humanToolName)
                         else -> stringResource(R.string.report_btn_generating)
                     },
                     style = MaterialTheme.typography.bodyMedium,

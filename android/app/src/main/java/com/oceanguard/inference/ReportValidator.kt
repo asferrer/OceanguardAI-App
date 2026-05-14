@@ -117,6 +117,15 @@ object ReportValidator {
             )
         }
 
+        // Canonicalize sessions before validating: the VLM only ever saw
+        // canonical types (see ReportGenerator.canonicalizeSessions /
+        // DEBRIS_VOCABULARY), so the entity tables built below must use the
+        // same projection. Otherwise an extended type like PLASTIC_BAG in the
+        // raw session would never match the report's "Plastic Debris" prose
+        // and the validator would incorrectly flag it as "missing entity".
+        @Suppress("NAME_SHADOWING")
+        val sessions = ReportGenerator.canonicalizeSessions(sessions)
+
         val checks = mutableListOf<ValidationCheck>()
         val allDebris = sessions.flatMap { it.debrisList }
 
