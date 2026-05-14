@@ -115,7 +115,7 @@ def main() -> int:
             f.write(f"## Sample {r['idx']} — img_id={r['img_id']}  latency={r['latency_s']:.2f}s json_ok={r['json_ok']}\n\n")
             f.write("**Ground truth**\n\n```json\n" + r["gt"] + "\n```\n\n")
             f.write("**Prediction**\n\n```\n" + r["pred"] + "\n```\n\n")
-    print(f"[smoke] SMOKE_RESULTS.md → {out_path}")
+    print(f"[smoke] SMOKE_RESULTS.md -> {out_path}")
     return 0
 
 

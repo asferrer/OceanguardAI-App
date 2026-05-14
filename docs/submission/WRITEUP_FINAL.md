@@ -211,7 +211,7 @@ The full pipeline is open and reruns without manual intervention:
 
 ### Results — Grid de 9 Experimentos (TEST REAL hold-out 1000 imgs)
 
-Métrica oficial sobre TEST hold-out estratificado de 1000 imágenes no vistas durante el entrenamiento. Adapter elegido: **exp01_synth100**.
+Métrica oficial sobre TEST hold-out estratificado de 1000 imágenes no vistas durante el entrenamiento. Adapter elegido: **exp07_real100**.
 
 | key | mAP@0.5 | mAP@0.5:0.95 | JSON-validity | n_preds | mean latency (s) |
 |---|---|---|---|---|---|
@@ -222,7 +222,7 @@ Métrica oficial sobre TEST hold-out estratificado de 1000 imágenes no vistas d
 | exp04_synth100_real50 | — | — | — | — | — |
 | exp05_synth100_real75 | — | — | — | — | — |
 | exp06_synth100_real100 | — | — | — | — | — |
-| exp07_real100 | — | — | — | — | — |
+| exp07_real100 | 0.1488 | 0.0000 | 1.000 | 90 | 5.49 |
 | exp08_real_synth_minor | — | — | — | — | — |
 | exp09_real_synth_prop | — | — | — | — | — |
 
@@ -232,12 +232,13 @@ Métrica oficial sobre TEST hold-out estratificado de 1000 imágenes no vistas d
 |---|---|---|---|---|---|---|---|---|
 | base | 0.045 | 0.000 | 0.091 | 0.309 | 0.091 | 0.000 | 0.112 | 0.091 |
 | exp01_synth100 | 0.020 | 0.000 | 0.156 | 0.327 | 0.091 | 0.000 | 0.393 | 0.061 |
+| exp07_real100 | 0.023 | 0.000 | 0.145 | 0.322 | 0.091 | 0.000 | 0.418 | 0.191 |
 
-Δ mAP@0.5 best vs base = **+0.0385** (base=0.0924, best=exp01_synth100).
+Δ mAP@0.5 best vs base = **+0.0564** (base=0.0924, best=exp07_real100).
 
 ### Honest disclosure
 
-El mejor adaptador alcanza Δ=+0.0385 mAP@0.5 respecto a la base, por debajo del umbral interno de +0.20 que nos habíamos fijado. Reportamos la cifra sin maquillaje: dejamos publicado el adaptador junto al grid completo (CSV/MD reproducibles en `finetune/experiments/results/`) para que cualquier evaluador pueda confirmar el resultado y comparar configuraciones.
+El mejor adaptador alcanza Δ=+0.0564 mAP@0.5 respecto a la base, por debajo del umbral interno de +0.20 que nos habíamos fijado. Reportamos la cifra sin maquillaje: dejamos publicado el adaptador junto al grid completo (CSV/MD reproducibles en `finetune/experiments/results/`) para que cualquier evaluador pueda confirmar el resultado y comparar configuraciones.
 
 ### Deployment status
 

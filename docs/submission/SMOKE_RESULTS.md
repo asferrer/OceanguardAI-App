@@ -4,9 +4,11 @@ Adapter: `C:\Users\aleja\Desktop\Doctorado\OceanguardAI-App\finetune\outputs\gri
 
 Muestras: 5
 
-JSON-validity (n=5): **100%**
+JSON-validity (n=5): **80%**
 
-## Sample 0 — img_id=1644  latency=12.08s json_ok=True
+> WARNING: JSON-validity por debajo del 95%. Revisar parser y prompt.
+
+## Sample 0 — img_id=1644  latency=15.40s json_ok=False
 
 **Ground truth**
 
@@ -17,15 +19,18 @@ JSON-validity (n=5): **100%**
 **Prediction**
 
 ```
+```json
 [
-  {"box_2d": [0, 135, 363, 292], "label": "plastic_debris", "material": "Plastic"},
-  {"box_2d": [0, 535, 235, 695], "label": "plastic_debris", "material": "Plastic"},
-  {"box_2d": [0, 707, 588, 855], "label": "plastic_debris", "material": "Plastic"},
-  {"box_2d": [235, 295, 600, 425], "label": "plastic_debris", "material": "Plastic"}
+  {"box_2d": [0, 135, 365, 292], "label": "plastic_debris", "material": "Plastic"},
+  {"box_2d": [0, 535, 235, 705], "label": "plastic_debris", "material": "Plastic"},
+  {"box_2d": [0, 712, 588, 855], "label": "plastic_debris", "material": "Plastic"},
+  {"box_2d": [235, 295, 605, 425], "label": "plastic_debris", "material": "Plastic"},
+  {"box_2d": [285, 525, 465, 585], "label": "plastic_debris", "material": "Plastic"}
 ]
 ```
+```
 
-## Sample 1 — img_id=32  latency=5.28s json_ok=True
+## Sample 1 — img_id=32  latency=3.27s json_ok=True
 
 **Ground truth**
 
@@ -37,12 +42,11 @@ JSON-validity (n=5): **100%**
 
 ```
 [
-  {"box_2d": [413, 483, 523, 536], "label": "plastic_bottle"},
-  {"box_2d": [633, 0, 999, 503], "label": "plastic_debris"}
+  {"box_2d": [412, 524, 534, 574], "label": "plastic_bottle", "material": "Plastic"}
 ]
 ```
 
-## Sample 2 — img_id=5280  latency=2.87s json_ok=True
+## Sample 2 — img_id=5280  latency=3.35s json_ok=True
 
 **Ground truth**
 
@@ -54,11 +58,11 @@ JSON-validity (n=5): **100%**
 
 ```
 [
-  {"box_2d": [513, 305, 749, 886], "label": "plastic_debris"}
+  {"box_2d": [511, 305, 749, 887], "label": "plastic_debris", "material": "Plastic"}
 ]
 ```
 
-## Sample 3 — img_id=15351  latency=5.22s json_ok=True
+## Sample 3 — img_id=15351  latency=6.13s json_ok=True
 
 **Ground truth**
 
@@ -70,12 +74,12 @@ JSON-validity (n=5): **100%**
 
 ```
 [
-  {"box_2d": [565, 75, 865, 278], "label": "plastic_debris"},
-  {"box_2d": [645, 315, 998, 505], "label": "glove"}
+  {"box_2d": [565, 75, 835, 278], "label": "plastic_debris", "material": "Plastic"},
+  {"box_2d": [650, 315, 998, 505], "label": "glove", "material": "Latex"}
 ]
 ```
 
-## Sample 4 — img_id=76  latency=10.46s json_ok=True
+## Sample 4 — img_id=76  latency=12.18s json_ok=True
 
 **Ground truth**
 
@@ -87,10 +91,10 @@ JSON-validity (n=5): **100%**
 
 ```
 [
-  {"box_2d": [691, 0, 1000, 475], "label": "fishing_net"},
-  {"box_2d": [628, 358, 765, 452], "label": "plastic_bottle"},
-  {"box_2d": [638, 533, 814, 611], "label": "plastic_bottle"},
-  {"box_2d": [628, 528, 765, 602], "label": "plastic_bottle"}
+  {"box_2d": [638, 362, 772, 452], "label": "plastic_bottle", "material": "Plastic"},
+  {"box_2d": [634, 524, 724, 574], "label": "metal_can", "material": "Metal"},
+  {"box_2d": [669, 542, 792, 602], "label": "metal_can", "material": "Metal"},
+  {"box_2d": [782, 0, 1000, 500], "label": "fishing_net", "material": "Plastic"}
 ]
 ```
 
