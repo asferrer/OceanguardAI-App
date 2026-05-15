@@ -14,12 +14,18 @@ tags:
 - edge-ai
 - on-device
 - mobile
+- litert-lm
 datasets:
 - cleansea
 - ocean_garbage
 - neural_ocean
 language:
 - en
+- es
+- fr
+- de
+- it
+- pt
 pipeline_tag: image-to-text
 metrics:
 - mAP
@@ -36,7 +42,7 @@ model-index:
     - type: mAP@0.5
       value: 0.3253
     - type: mAP@0.5_delta_vs_base
-      value: 0.2329
+      value: 0.2186
 ---
 
 # Gemma 4 E2B — OceanGuard Marine Debris LoRA Adapter
@@ -51,10 +57,26 @@ peer-reviewed publications on underwater debris detection ([Sánchez-Ferrer et a
 2023](https://www.sciencedirect.com/science/article/pii/S0167865522003889?via%3Dihub);
 [IbPRIA 2022](https://link.springer.com/chapter/10.1007/978-3-031-04881-4_49)).
 
-> **Headline result.** On a held-out 200-image evaluation set the LoRA fine-tune reaches
-> **mAP@0.5 = 0.325**, against **0.092** for the unmodified base model
-> (Δ = **+0.233**, a **+252 %** relative improvement) while maintaining
-> **94.5 %** JSON-validity on the structured detection output.
+> **Headline result.** On the held-out evaluation split (n = 1 000 real images, `real_test_holdout.jsonl`) the LoRA
+> fine-tune reaches **mAP@0.5 = 0.3253**, against **0.1067** for the unmodified base
+> model (Δ = **+0.2186**, a **+205 %** relative improvement) while maintaining
+> **94.5 %** JSON-validity on the structured detection output. Canonical metrics are
+> tracked in `finetune/experiments/results/best.json` and `results.md` of the source
+> repository.
+
+## Files in This Repository
+
+This repository ships **two artefacts** that together cover the full research-to-device
+path of the OceanGuard fine-tune:
+
+| Artefact | Purpose | Consumed by |
+|---|---|---|
+| `adapter_model.safetensors` + `adapter_config.json` | LoRA adapter (≈50 MB, `r=16`, `α=32`) on top of `google/gemma-4-E2B-it` | PEFT / Unsloth pipelines, the reproducibility notebook |
+| `gemma-4-E2B-it-oceanguard.litertlm` | LiteRT-LM runtime build of the merged base + adapter (≈2.6 GB) | The OceanGuard Android app, via the in-app model downloader |
+
+Both files live in the same repository so that researchers can re-train from the adapter
+and the application can pull the device-ready `.litertlm` from the same canonical
+location.
 
 ## Model Description
 
@@ -70,8 +92,8 @@ rate at which detections fall through to the generic `PLASTIC_DEBRIS` catch-all.
 LoRA also improves material attribution for the downstream ecological-impact lookup that
 drives the app's health-score and report-generation pipelines.
 
-The adapter is distributed as a standard PEFT LoRA (≈120 MB, `r=16`, `α=32`) attached to a
-bf16 base model. End-to-end reproduction fits comfortably on a single consumer GPU (the
+The adapter is distributed as a standard PEFT LoRA (≈50 MB safetensors, `r=16`, `α=32`)
+attached to a bf16 base model. End-to-end reproduction fits comfortably on a single consumer GPU (the
 ablation grid below was run on an RTX 5090, but the recipe also runs on Kaggle T4 with
 4-bit quantisation).
 
@@ -110,8 +132,10 @@ including the **CleanSea** corpus introduced by the model author ([IbPRIA
 
 The ablation grid (see §Evaluation) was run over **eleven dataset compositions** that vary
 the ratio of synthetic-to-real images. The published adapter corresponds to experiment
-`exp10_real_full`, which uses **13 637 real-image training samples** stratified by class
-across the three source datasets. The 8-class taxonomy
+`exp10_real_full`, which uses **n = 13 637 real-image training samples** stratified by
+class across the three source datasets (100 % real, no synthetic augmentation in the
+training mix for the published configuration). The held-out evaluation set is a separate
+1 000-image stratified split (`real_test_holdout.jsonl`) never seen during training. The 8-class taxonomy
 (`Bottle`, `Can`, `Fishing_Net`, `Glove`, `Mask`, `Metal_Debris`, `Plastic_Debris`, `Tire`)
 is extended at inference time to a 50-class fine-grained vocabulary that is mapped back to
 the 11 canonical families through a deterministic lookup table; see
@@ -138,7 +162,7 @@ The published adapter is the winner of an 11-experiment LoRA ablation grid. All 
 | Base model | `unsloth/gemma-4-E2B-it` |
 | LoRA `r` / `α` / dropout | 16 / 32 / 0 |
 | Trainable parameters | 31 039 488 (0.60 % of the 5.15 B base) |
-| Target modules | language head linear layers; vision tower frozen |
+| Target modules | `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` (language tower); vision tower frozen |
 | Optimiser | `adamw_8bit` (Unsloth fused), `lr = 1e-4` cosine schedule, `weight_decay = 0.01`, `warmup_ratio = 0.1` |
 | Batch size | 1 per device × 32 gradient accumulation = effective 32 |
 | Sequence length / image token budget | 1 536 / 128 |
@@ -172,31 +196,33 @@ under `OceanguardAI-App/finetune/experiments/`.
 
 ## Evaluation
 
-All runs are evaluated on a **200-image held-out test split** of the merged dataset, with
+All runs are evaluated on the **held-out evaluation split** of the merged dataset, with
 the same JSON contract and post-processing as the production Android app
-(`temperature = 0.0`, `max_new_tokens = 256`).
+(`temperature = 0.0`, `max_new_tokens = 256`). The canonical metrics in
+`finetune/experiments/results/best.json` and `results.md` are reproduced verbatim in the
+tables below.
 
 ### Aggregate
 
 | Metric | Base Gemma 4 E2B | OceanGuard LoRA (`exp10_real_full`) |
 |---|---|---|
-| **mAP@0.5** | **0.0924** | **0.3253** *(+0.2329)* |
-| Predictions emitted | 47 | 292 |
-| JSON validity | 1.000 | 0.945 |
-| Mean inference latency (RTX 5090) | 1.96 s | 5.43 s |
+| **mAP@0.5** | **0.1067** | **0.3253** *(+0.2186)* |
+| Predictions emitted | 168 | 292 |
+| JSON validity | 0.995 | 0.945 |
+| Mean inference latency (RTX 5090) | 1.88 s | 5.43 s |
 
 ### Per-class mAP@0.5
 
-| Class | Base | LoRA | Δ |
-|---|---|---|---|
-| Plastic Debris | 0.112 | **0.608** | **+0.496** |
-| Fishing Net | 0.091 | **0.448** | **+0.357** |
-| Tire | 0.091 | **0.403** | **+0.312** |
-| Glove | 0.309 | **0.463** | **+0.154** |
-| Bottle | 0.045 | **0.312** | **+0.266** |
-| Mask | 0.091 | **0.308** | **+0.217** |
-| Can | 0.000 | 0.061 | +0.061 |
-| Metal Debris | 0.000 | 0.000 | 0.000 |
+| Class            | Base  | LoRA      | Δ          |
+|------------------|-------|-----------|------------|
+| Plastic Debris   | 0.121 | **0.608** | **+0.487** |
+| Glove            | 0.233 | **0.463** | **+0.230** |
+| Fishing Net      | 0.142 | **0.448** | **+0.306** |
+| Tire             | 0.133 | **0.403** | **+0.270** |
+| Bottle           | 0.132 | **0.312** | **+0.180** |
+| Mask             | 0.091 | **0.308** | **+0.217** |
+| Can              | 0.000 | 0.061     | +0.061     |
+| Metal Debris     | 0.000 | 0.000     | 0.000      |
 
 The fine-tune produces the largest absolute gains on `Plastic_Debris`, `Fishing_Net` and
 `Tire` — three of the most ecologically harmful categories in the OceanGuard impact
@@ -207,24 +233,23 @@ grid (`exp01 … exp10`) and class-wise comparison against the base model are re
 
 ## Deployment
 
-The adapter targets **LiteRT-LM 0.11.0** on Exynos 2200 once the upstream
-LoRA-to-`.litertlm` conversion path lands.
+The adapter targets **LiteRT-LM 0.11.0** on Exynos 2200. As of this release the
+`.litertlm` artefact is published alongside the LoRA weights in this same repository.
 
 | Step | Tooling | Status |
 |---|---|---|
-| Train LoRA on RTX 5090 | Unsloth FastVisionModel | ✅ Done |
-| Publish adapter on HuggingFace | `huggingface-cli` | ✅ Done |
-| Use adapter via Transformers / PEFT | `model.load_adapter(...)` | ✅ Done — see notebook |
-| Merge LoRA into base | `peft_model.merge_and_unload()` | ✅ Documented |
-| Export merged model to `.litertlm` | `ai-edge-torch.generative` | ⏳ Blocked on upstream PEFT-export support (in progress, May 2026) |
-| Sideload to Android | `adb push` + `VlmModelManager` | ✅ Documented |
+| Train LoRA on RTX 5090 | Unsloth FastVisionModel | Done |
+| Publish adapter on HuggingFace | `huggingface-cli` | Done |
+| Use adapter via Transformers / PEFT | `model.load_adapter(...)` | Done — see notebook |
+| Merge LoRA into base | `peft_model.merge_and_unload()` | Done |
+| Export merged model to `.litertlm` | `ai-edge-torch.generative` + LiteRT-LM converter | Done — `gemma-4-E2B-it-oceanguard.litertlm` in this repo |
+| In-app download to Android | `VlmModelManager` + BASE/FINETUNED selector | Done — see source repo |
 
-Once the conversion path is unblocked the published adapter is the exact artefact that
-will ship on-device — no retraining required. Until then, the adapter is consumed through
-Unsloth or stock PEFT in the companion notebook
-([`docs/submission/notebook_finetune.ipynb`](https://github.com/asferrer/OceanguardAI-App/blob/main/docs/submission/notebook_finetune.ipynb)),
-and the shipped APK uses the **base** Gemma 4 E2B for single-shot deep analysis. This
-is disclosed honestly in the submission write-up.
+The Android application exposes a **BASE / FINETUNED variant selector** in the
+developer-mode model picker. Selecting FINETUNED pulls the `.litertlm` file from this
+repository at runtime — no APK rebuild, no `adb push`, no retraining. Selecting BASE
+keeps the unmodified `google/gemma-4-E2B-it` runtime. The same selector is wired for
+research-grade A/B comparison on the same device.
 
 Reference benchmarks on the deployment target
 (Galaxy S22 Ultra, Exynos 2200, LiteRT-LM 0.11.0, Vulkan via Xclipse 920):
@@ -253,8 +278,11 @@ Reference benchmarks on the deployment target
 - **Lighting and capture bias.** Synthetic-augmentation passes can inject lighting biases
   that may degrade under poor underwater visibility.
 - **Underrepresented classes.** `Metal_Debris` (99 ground-truth instances) is not learned
-  at the current data scale; `Can` improves only marginally. Cross-checks are advised on
-  predictions for these classes until a class-balanced campaign is shipped.
+  at the current data scale — its mAP@0.5 remains at **0.000**. `Can` improves only
+  marginally (**0.061**). Cross-checks are advised on predictions for these classes
+  until a class-balanced campaign is shipped, and operators are encouraged to gate
+  these two classes behind the bundled **RT-DETRv2** detector (83 MB TFLite, 8-class
+  COCO-style training) as a higher-recall pre-filter before passing crops to the VLM.
 - **JSON validity is 94.5 %, not 100 %.** Roughly 1 in 18 detections in the eval set
   emerge in malformed JSON and are dropped by the parser. The Android app handles
   these gracefully by surfacing an empty detection set to the user rather than
@@ -286,6 +314,8 @@ Reference benchmarks on the deployment target
 
 ## How to Use
 
+### A. Research / training pipeline — PEFT + Unsloth
+
 ```python
 from unsloth import FastVisionModel
 
@@ -308,6 +338,24 @@ A fully reproducible end-to-end example (image loading, inference, JSON parsing,
 visualisation and quantitative evaluation) lives at
 [`docs/submission/notebook_finetune.ipynb`](https://github.com/asferrer/OceanguardAI-App/blob/main/docs/submission/notebook_finetune.ipynb)
 in the source repository.
+
+### B. On-device deployment — direct `.litertlm` download
+
+The Android application pulls the LiteRT-LM build of the fine-tuned model directly from
+this repository when the user selects the **FINETUNED** variant in the model picker. The
+underlying URL is a standard HuggingFace `resolve/main` link — no authentication, no
+gated access, Apache 2.0:
+
+```bash
+# Direct download of the device-ready runtime (≈2.6 GB)
+curl -L -o gemma-4-E2B-it-oceanguard.litertlm \
+  "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard.litertlm"
+```
+
+Inside the OceanGuard Android app this is wired through `VlmModelManager` with
+resumable downloads, atomic rename, and progress notifications; the equivalent BASE
+runtime is fetched from the public `litert-community/gemma-4-E2B-it` repository so that
+both variants can coexist on disk and be A/B-tested against each other.
 
 ## License and Citation
 

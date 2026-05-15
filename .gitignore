@@ -48,12 +48,16 @@ env/
 # Signing keys
 *.jks
 *.keystore
+keystore.properties
 
 # Environment & credentials
 .env
+.env.*
 *.token
 hf_token.txt
 credentials*.json
+*.pem
+*.p12
 
 # OS files
 .DS_Store
@@ -83,14 +87,19 @@ screenshots/
 # Landing page repo (now a git submodule)
 # OceanguardAI/
 
-# Claude
+# Local tooling and AI-assistant config (kept out of the public repo)
 .claude/
 CLAUDE.md
+.cursor/
+.aider*
+.continue/
 
 # Local artifacts that should never reach a public snapshot
-alex.html
+*.html
+!OceanguardAI/index.html
 dumpstate-*.zip
 graphify-out/
+bugreport-*.zip
 
 # Eval set captured images (kept off-repo, distributed as release asset)
 docs/submission/eval_set/images/*.jpg
