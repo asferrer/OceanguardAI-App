@@ -50,7 +50,7 @@ model-index:
 A LoRA fine-tune of [`google/gemma-4-E2B-it`](https://huggingface.co/google/gemma-4-E2B-it)
 that adapts the model to open-vocabulary detection of anthropogenic marine debris on
 consumer mobile hardware. The adapter is the training artefact behind the
-[OceanGuard AI](https://github.com/asferrer/OceanguardAI) Android application — a fully
+[OceanGuard AI](https://github.com/asferrer/OceanguardAI-App) Android application — a fully
 offline marine-debris intelligence toolkit submitted to the **Kaggle Gemma 4 Good
 Hackathon** (Global Resilience track, Unsloth $10 K bonus) and built on top of two prior
 peer-reviewed publications on underwater debris detection ([Sánchez-Ferrer et al., PRL
@@ -379,7 +379,7 @@ both variants can coexist on disk and be A/B-tested against each other.
   title        = {{OceanGuard AI: Fully Offline Marine Debris Intelligence with Gemma 4 and Two-Phase Tool Calling}},
   year         = {2026},
   howpublished = {Kaggle Gemma 4 Good Hackathon (Global Resilience track)},
-  url          = {https://github.com/asferrer/OceanguardAI}
+  url          = {https://github.com/asferrer/OceanguardAI-App}
 }
 ```
 

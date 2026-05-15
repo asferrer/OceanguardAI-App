@@ -298,7 +298,7 @@ Each report:
 
 ## Reproducibility
 
-- **Code repository** (Apache 2.0): https://github.com/asferrer/OceanguardAI
+- **Code repository** (Apache 2.0): https://github.com/asferrer/OceanguardAI-App
 - **Signed APK** (GitHub Actions): https://github.com/asferrer/OceanguardAI/releases/latest
 - **Kaggle notebook** *(Run-All clean, 4-bit quantised base + adapter on T4)*:
   *paste Kaggle URL after publishing*
@@ -353,7 +353,7 @@ on-device with Gemma 4 E2B.
                    on Android with Gemma 4}},
   year         = {2026},
   howpublished = {Kaggle Gemma 4 Good Hackathon, Global Resilience Track},
-  url          = {https://github.com/asferrer/OceanguardAI},
+  url          = {https://github.com/asferrer/OceanguardAI-App},
   note         = {Apache 2.0}
 }
 ```
@@ -371,7 +371,7 @@ recommended; Group C is bonus.
 
 | Type | URL |
 |---|---|
-| Public source repo (Apache 2.0) | `https://github.com/asferrer/OceanguardAI` |
+| Public source repo (Apache 2.0) | `https://github.com/asferrer/OceanguardAI-App` |
 | Signed APK (latest release) | `https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk` |
 | HuggingFace LoRA adapter | `https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris` |
 | HuggingFace model card | `https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/blob/main/README.md` |

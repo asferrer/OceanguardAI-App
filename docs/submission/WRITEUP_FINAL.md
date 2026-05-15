@@ -250,7 +250,7 @@ The training stack uses Unsloth FastVisionModel (not raw `transformers`) for bot
 
 Every artifact required to reproduce this submission is open-source under permissive licenses.
 
-**Source code.** A submission-pinned snapshot of the Android application source is published in the public release repo `https://github.com/asferrer/OceanguardAI` (Apache 2.0), which also hosts the GitHub Releases used for the APK assets and the project landing page. The day-to-day development repository (`asferrer/OceanguardAI-App`, kept private during the hackathon window) will be opened after the submission deadline. The training and dataset pipeline lives in the same public repo `https://github.com/asferrer/OceanguardAI` (training subtree) under Apache 2.0 and includes the dataset-prep scripts, the erf-free ONNX export, and the COCO conversion utilities.
+**Source code.** The full Android application source, the conversion utilities, and the LoRA training pipeline are published under Apache 2.0 in `https://github.com/asferrer/OceanguardAI-App` — a single open repository covering the whole project. The companion repository `https://github.com/asferrer/OceanguardAI` hosts the project landing page (`https://asferrer.github.io/OceanguardAI`) and the signed-APK GitHub Releases (`OceanGuard-AI-latest.apk`). Both repositories are linked together via a git submodule reference.
 
 **Notebook.** A Kaggle-runnable Jupyter notebook accompanies this submission at `docs/submission/notebook.ipynb`. It walks through dataset loading, the Gemma 4 `box_2d` parsing for marine-debris detection, and the agentic tool-calling loop in a Python mock, ending with a single-conversation reproduction of the report-generation pipeline (Step 1 tool dispatch + Step 2 writing in the same conversation) over a small synthetic survey.
 
@@ -259,8 +259,8 @@ Every artifact required to reproduce this submission is open-source under permis
 **Build steps (local).** With Java 21 (Temurin or Liberica) and the Android SDK 34+ installed:
 
 ```
-git clone https://github.com/asferrer/OceanguardAI
-cd OceanguardAI/android
+git clone https://github.com/asferrer/OceanguardAI-App
+cd OceanguardAI-App/android
 ./gradlew installDebug
 ```
 
