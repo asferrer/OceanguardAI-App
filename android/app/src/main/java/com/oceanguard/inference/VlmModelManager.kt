@@ -63,17 +63,25 @@ class VlmModelManager(
         const val GEMMA4_LITERTLM_FILENAME = "gemma-4-E2B-it.litertlm"
         private const val MIN_GEMMA4_LITERTLM_BYTES = 2_000_000_000L // 2 GB (~2.58 GB)
 
-        // Gemma 4 — OceanGuard fine-tuned variant
+        // Gemma 4 — OceanGuard fine-tuned variant (LiteRT-LM, pending upstream converter support)
         const val GEMMA4_LITERTLM_FINETUNED_FILENAME = "gemma-4-E2B-it-oceanguard.litertlm"
         private const val GEMMA4_LITERTLM_FINETUNED_URL =
             "$HF_BASE/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard.litertlm"
 
+        // OceanGuard fine-tuned GGUF — exp12_vision_lora merged + Q4_K_M, served via llama.cpp
+        // +205% mAP@0.5 vs base on the OceanGuard marine debris held-out eval (n=200).
+        const val OCEANGUARD_GGUF_FILENAME = "gemma-4-E2B-it-oceanguard-Q4_K_M.gguf"
+        private const val OCEANGUARD_GGUF_URL =
+            "$HF_BASE/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard-Q4_K_M.gguf"
+        private const val MIN_OCEANGUARD_GGUF_BYTES = 3_000_000_000L // 3.0 GB minimum (actual 3.42 GB Q4_K_M, large 262k vocab)
+
         // Minimum valid file sizes (small files = error HTML pages from HF)
         private val MIN_TEXT_BYTES = mapOf(
-            TextModelTier.FAST       to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
-            TextModelTier.BALANCED   to   900_000_000L, //  900 MB — Qwen3.5-2B  (~1.1 GB)
-            TextModelTier.QUALITY    to 2_200_000_000L, // 2.2 GB — Qwen3.5-4B  (~2.74 GB)
-            TextModelTier.GEMMA4_E2B to MIN_GEMMA4_LITERTLM_BYTES, // 2 GB — Gemma 4 E2B (~2.58 GB)
+            TextModelTier.FAST          to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
+            TextModelTier.BALANCED      to   900_000_000L, //  900 MB — Qwen3.5-2B  (~1.1 GB)
+            TextModelTier.QUALITY       to 2_200_000_000L, // 2.2 GB — Qwen3.5-4B  (~2.74 GB)
+            TextModelTier.GEMMA4_E2B    to MIN_GEMMA4_LITERTLM_BYTES, // 2 GB — Gemma 4 E2B (~2.58 GB)
+            TextModelTier.OCEANGUARD_FT to MIN_OCEANGUARD_GGUF_BYTES, // 3.0 GB — Q4_K_M GGUF (actual 3.42 GB)
         )
         private const val MIN_VISION_MODEL_BYTES = 500_000_000L // 500 MB — 2B
         private const val MIN_MMPROJ_BYTES       =  50_000_000L //  50 MB — mmproj
@@ -242,11 +250,12 @@ class VlmModelManager(
             val isFinetuned = tier == TextModelTier.GEMMA4_E2B && effectiveVariant == TextModelVariant.FINETUNED
             val filename = if (isFinetuned) finetunedFilename() else tier.filenameFor(effectiveVariant)
             val url = when {
-                isFinetuned                      -> finetunedUrl()
-                tier == TextModelTier.GEMMA4_E2B -> GEMMA4_LITERTLM_URL
-                tier == TextModelTier.FAST       -> TEXT_FAST_URL
-                tier == TextModelTier.BALANCED   -> TEXT_BALANCED_URL
-                else                             -> TEXT_QUALITY_URL
+                isFinetuned                          -> finetunedUrl()
+                tier == TextModelTier.OCEANGUARD_FT  -> OCEANGUARD_GGUF_URL
+                tier == TextModelTier.GEMMA4_E2B     -> GEMMA4_LITERTLM_URL
+                tier == TextModelTier.FAST           -> TEXT_FAST_URL
+                tier == TextModelTier.BALANCED       -> TEXT_BALANCED_URL
+                else                                 -> TEXT_QUALITY_URL
             }
             val target = File(getModelDirectory(), filename)
             val minBytes = if (effectiveVariant == TextModelVariant.FINETUNED)

@@ -20,7 +20,9 @@ enum class VlmProvider(
     val usesLiteRT: Boolean,
 ) {
     QWEN("qwen", "Qwen 3.5", usesLiteRT = false),
-    GEMMA4("gemma4", "Gemma 4", usesLiteRT = true);
+    GEMMA4("gemma4", "Gemma 4", usesLiteRT = true),
+    /** Fine-tuned Gemma 4 E2B via GGUF + llama.cpp (+205% mAP@0.5 vs base on marine debris). */
+    GEMMA4_GGUF("gemma4_gguf", "Gemma 4 FT (GGUF)", usesLiteRT = false);
 
     companion object {
         fun fromKey(key: String): VlmProvider =
@@ -76,7 +78,7 @@ enum class TextModelTier(
         displayName  = "Balanced (2B)",
         provider     = VlmProvider.QWEN,
         // 12288 accommodates prompt + 6144 output + thinking tokens (500-2000 extra).
-        // KV cache: ~700 MB + 1.1 GB model ≈ 1.8 GB on S22 Ultra.
+        // KV cache: ~700 MB + 3.4 GB model (Q4_K_M, large vocab 262k) ≈ 4.1 GB on S22 Ultra.
         nCtx         = 12288,
         temperature  = 1.0f,   // Recommended by Qwen3.5 docs for thinking mode
         topK         = 20,
@@ -105,6 +107,30 @@ enum class TextModelTier(
         temperature  = 0.3f,   // Unused — LiteRTTextEngine sets its own sampling
         topK         = 20,     // Unused
         formatter    = Gemma4PromptFormatter, // Unused — LiteRT-LM handles chat template
+    ),
+    /**
+     * OceanGuard fine-tuned Gemma 4 E2B — Q4_K_M GGUF via llama.cpp.
+     *
+     * This is the exp12_vision_lora adapter (r=16, α=32, language + SigLIP2 vision encoder)
+     * merged into the base model and quantized to Q4_K_M. Benchmarked at mAP@0.5 = 0.3256
+     * vs 0.1067 base (+205%) on the OceanGuard marine debris held-out eval split.
+     *
+     * Uses [VlmProvider.GEMMA4_GGUF] so [OceanGuardApp.createTextEngine] routes it to
+     * [LlamaTextEngine] (not LiteRTTextEngine). The Gemma 4 chat template is handled by
+     * [Gemma4PromptFormatter].
+     *
+     * Sampling: temperature=0.3 / topK=20 matches the production detection prompt config.
+     * nCtx=8192 gives enough room for the full detection JSON output after a ~2K token prompt.
+     */
+    OCEANGUARD_FT(
+        filename     = "gemma-4-E2B-it-oceanguard-Q4_K_M.gguf",
+        sizeLabel    = "~3.4 GB",
+        displayName  = "Gemma 4 FT (OceanGuard)",
+        provider     = VlmProvider.GEMMA4_GGUF,
+        nCtx         = 8192,
+        temperature  = 0.3f,
+        topK         = 20,
+        formatter    = Gemma4PromptFormatter,
     );
 
     /**
@@ -117,10 +143,11 @@ enum class TextModelTier(
      * downloaded via [VlmModelManager.isModelAvailable] before loading it.
      */
     fun smallerFallback(): TextModelTier = when (this) {
-        FAST       -> FAST
-        BALANCED   -> FAST
-        QUALITY    -> BALANCED
-        GEMMA4_E2B -> FAST
+        FAST          -> FAST
+        BALANCED      -> FAST
+        QUALITY       -> BALANCED
+        GEMMA4_E2B    -> FAST
+        OCEANGUARD_FT -> FAST   // Fall back to Qwen 0.8B if GGUF init fails
     }
 
     /**
@@ -134,7 +161,8 @@ enum class TextModelTier(
             .replace(".litertlm", "${variant.filenameSuffix}.litertlm")
             .replace(".gguf", "${variant.filenameSuffix}.gguf")
 
-    /** Whether this tier exposes a fine-tuned variant for download. Gemma 4 E2B only. */
+    /** Whether this tier exposes a fine-tuned variant for download. Gemma 4 E2B (LiteRT) only.
+     *  OCEANGUARD_FT is itself the fine-tuned GGUF — no additional variant axis needed. */
     val supportsFinetuned: Boolean get() = this == GEMMA4_E2B
 
     /**
@@ -200,7 +228,10 @@ class LlamaTextEngine(val tier: TextModelTier = TextModelTier.FAST) : VlmTextEng
         const val MODEL_FILENAME_LEGACY = "Qwen3.5-0.8B-Q4_K_M.gguf"
     }
 
-    override val displayName: String = "Qwen3.5-${tier.displayName} Q4_K_M"
+    override val displayName: String = when (tier.provider) {
+        VlmProvider.GEMMA4_GGUF -> "${tier.displayName} (llama.cpp)"
+        else -> "Qwen3.5-${tier.displayName} Q4_K_M"
+    }
 
     /** Which backend was actually used after GPU probing. Exposed for UI status. */
     @Volatile var activeBackendName: String = "CPU"

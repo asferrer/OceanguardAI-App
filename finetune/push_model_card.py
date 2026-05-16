@@ -49,7 +49,7 @@ def main() -> int:
             path_in_repo="README.md",
             repo_id=REPO_ID,
             repo_type="model",
-            commit_message="Refresh model card with exp12_vision_lora winner (mAP@0.5=0.3256, +205% vs base)",
+            commit_message="Update model card: GGUF Q4_K_M available, deployment table updated, usage instructions added",
             token=token,
         )
         print(f"OK: pushed to https://huggingface.co/{REPO_ID}")

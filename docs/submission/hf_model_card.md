@@ -72,13 +72,13 @@ This repository ships the LoRA adapter artefacts. The LiteRT-LM runtime build
 | Artefact | Purpose | Consumed by |
 |---|---|---|
 | `adapter_model.safetensors` + `adapter_config.json` | LoRA adapter (≈120 MB, `r=16`, `α=32`, both language + vision towers) on top of `google/gemma-4-E2B-it` | PEFT / Unsloth pipelines, the reproducibility notebook |
-| `gemma-4-E2B-it-oceanguard.litertlm` *(pending)* | LiteRT-LM runtime build of the merged base + adapter (≈2.6 GB) | The OceanGuard Android app, via the in-app model downloader |
+| `gemma-4-E2B-it-oceanguard-Q4_K_M.gguf` | Merged model quantized Q4_K_M (≈3.4 GB, 5.88 BPW; large 262k-token vocab drives size); llama.cpp compatible | OceanGuard Android app via `LlamaTextEngine` + `OCEANGUARD_FT` tier, or any llama.cpp client |
+| `gemma-4-E2B-it-oceanguard.litertlm` *(pending)* | LiteRT-LM runtime build of the merged base + adapter (≈2.6 GB) | The OceanGuard Android app, via the `LiteRTTextEngine` FINETUNED slot |
 
-The adapter is fully reproducible and usable today via PEFT / Unsloth. The
-`.litertlm` export depends on Gemma 4 support landing in MediaPipe's
-`tasks.python.genai.converter` or in `ai-edge-torch`; until then, the Android
-app's FINETUNED selector remains disabled and the app uses the unmodified
-base `google/gemma-4-E2B-it` LiteRT-LM build. See §Deployment.
+The adapter is fully reproducible and usable today via PEFT / Unsloth. The GGUF Q4_K_M
+build is available for immediate use with llama.cpp and the OceanGuard Android app.
+The `.litertlm` export depends on Gemma 4 support landing in MediaPipe's
+`tasks.python.genai.converter` or in `ai-edge-torch`. See §Deployment.
 
 ## Model Description
 
@@ -296,29 +296,52 @@ Notes on this breakdown:
 
 ## Deployment
 
-The adapter targets **LiteRT-LM 0.11.0** on Exynos 2200. The Android application
-is shipped with the **base `google/gemma-4-E2B-it` LiteRT-LM build**; the
-FINETUNED variant is gated on the `.litertlm` export listed below.
+The adapter targets two on-device runtimes on Exynos 2200:
+
+1. **GGUF + llama.cpp** (available now): the merged model is quantized to Q4_K_M and served
+   via the llama.cpp engine already integrated in the OceanGuard Android app.
+2. **LiteRT-LM** (pending): the `.litertlm` export is blocked on upstream converter support
+   for the Gemma 4 / Gemma3n architecture.
 
 | Step | Tooling | Status |
 |---|---|---|
 | Train LoRA on RTX 5090 | Unsloth FastVisionModel | Done |
 | Publish adapter on HuggingFace | `huggingface-cli` | Done |
 | Use adapter via Transformers / PEFT | `model.load_adapter(...)` | Done — see notebook |
-| Merge LoRA into base | `peft_model.merge_and_unload()` | Reproducible (`conversion/merge_and_convert.py`) |
-| Export merged model to `.litertlm` | MediaPipe `tasks.python.genai.converter` or `ai-edge-torch` | **Pending** — Gemma 4 (MatMul-Free MLP + interleaved local/global attention) is not yet supported in the public converter as of May 2026. Scripts are in `conversion/` so the export can re-run as soon as upstream lands Gemma 4 support. |
-| In-app download to Android | `VlmModelManager` + BASE/FINETUNED selector | Wired (BASE active, FINETUNED gated on `.litertlm` above) |
+| Merge LoRA into base (`float16`) | `peft_model.merge_and_unload()` via `conversion/merge_and_convert_docker.py` | Done |
+| Convert merged model to GGUF f16 | `llama.cpp convert_hf_to_gguf.py` build 9159+ (Gemma4ForConditionalGeneration) | Done |
+| Quantize GGUF to Q4_K_M | `llama-quantize Q4_K_M` | Done |
+| Publish GGUF to HuggingFace | `huggingface_hub.HfApi.upload_file` | Done — see `gemma-4-E2B-it-oceanguard-Q4_K_M.gguf` in this repo |
+| Wire GGUF to Android app | `VlmModelManager` OCEANGUARD_FT tier + llama.cpp engine | Done — selectable as "Gemma 4 FT (OceanGuard)" in developer settings |
+| Export merged model to `.litertlm` | MediaPipe `tasks.python.genai.converter` or `ai-edge-torch` | **Pending** — Gemma 4 (MatMul-Free MLP + interleaved local/global attention) not yet supported in the public converter as of May 2026. |
 
-The Android application exposes a **BASE / FINETUNED variant selector** in the
-developer-mode model picker. Selecting FINETUNED is currently disabled until
-the `.litertlm` artefact ships in this repository; the BASE selector remains the
-default and uses the unmodified `litert-community/gemma-4-E2B-it` runtime
-fetched at install time.
+### GGUF Download
+
+```bash
+# Direct download URL
+curl -L -o gemma-4-E2B-it-oceanguard-Q4_K_M.gguf \
+  "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard-Q4_K_M.gguf"
+```
+
+Load with llama.cpp:
+
+```bash
+./llama-cli -m gemma-4-E2B-it-oceanguard-Q4_K_M.gguf \
+  -n 256 --temp 0.3 --top-k 20 \
+  -p "Analyze this marine debris image and output JSON: {\"detections\": [...]}"
+```
+
+### In-App Selection
+
+The OceanGuard Android app exposes the GGUF variant under
+**Settings > VLM Model > Provider: "Gemma 4 FT (GGUF)" > Tier: "Gemma 4 FT (OceanGuard)"**.
+The download button fetches the ~3.4 GB GGUF directly from this repository.
+The BASE Gemma 4 E2B (LiteRT-LM) remains the default and is unaffected.
 
 Reference benchmarks on the deployment target
-(Galaxy S22 Ultra, Exynos 2200, LiteRT-LM 0.11.0, Vulkan via Xclipse 920):
+(Galaxy S22 Ultra, Exynos 2200, LiteRT-LM 0.11.0, Vulkan via Xclipse 920 — BASE model):
 
-- Decode throughput: 5.1 tok/s
+- Decode throughput: 5.1 tok/s (BASE LiteRT-LM); GGUF expected ~4-5 tok/s CPU-only
 - Time to first token (warm / cold first load): 2.33 s / 17.34 s
 - Prefill throughput: 48.7 tok/s
 - Single-shot detection, ~100-token JSON output: ≈ 22 s end-to-end
@@ -413,21 +436,33 @@ visualisation and quantitative evaluation) lives at
 [`docs/submission/notebook_finetune.ipynb`](https://github.com/asferrer/OceanguardAI-App/blob/main/docs/submission/notebook_finetune.ipynb)
 in the source repository.
 
-### B. On-device deployment — direct `.litertlm` download *(pending upstream)*
+### B. On-device deployment — GGUF Q4_K_M via llama.cpp (available now)
+
+```bash
+# Download the GGUF directly from this repository (~3.4 GB; 5.88 BPW due to 262k vocab)
+curl -L -o gemma-4-E2B-it-oceanguard-Q4_K_M.gguf \
+  "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard-Q4_K_M.gguf"
+
+# Run inference with llama.cpp
+./llama-cli -m gemma-4-E2B-it-oceanguard-Q4_K_M.gguf \
+  -n 512 --temp 0.3 --top-k 20 \
+  -p "<start_of_turn>user\nAnalyze this marine debris and output JSON boxes:<end_of_turn>\n<start_of_turn>model\n"
+```
+
+The OceanGuard Android app downloads and loads this GGUF automatically via the
+**"Gemma 4 FT (GGUF)"** provider selector in Settings, using `LlamaTextEngine`
+(llama.cpp) with `nCtx=8192`, `temperature=0.3`, `topK=20`.
+
+### C. On-device deployment — direct `.litertlm` download *(pending upstream)*
 
 Once the `.litertlm` export lands (see §Deployment), it will live at the URL
-below and the Android app's FINETUNED selector will become active:
+below and the Android app's LiteRT-LM FINETUNED slot will become active:
 
 ```bash
 # Direct download URL (will return 404 until the .litertlm is uploaded)
 curl -L -o gemma-4-E2B-it-oceanguard.litertlm \
   "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard.litertlm"
 ```
-
-The wiring inside the OceanGuard Android app (`VlmModelManager`, BASE/FINETUNED
-selector, resumable download, atomic rename, progress notifications) is already
-in place; it falls back gracefully to the BASE variant whenever the FINETUNED
-URL is unreachable.
 
 ## License and Citation
 

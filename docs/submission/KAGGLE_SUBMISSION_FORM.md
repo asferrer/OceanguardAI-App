@@ -302,18 +302,23 @@ Each report:
 
 ## Honest engineering disclosures
 
-- **The `.litertlm` export of the fine-tune is pending upstream tooling.**
-  The LoRA adapter is published on HuggingFace and reproducible end-to-end via
-  PEFT / Unsloth. The merged base + adapter `.litertlm` build that the Android
-  app's FINETUNED selector consumes depends on Gemma 4 support landing in
-  MediaPipe's `tasks.python.genai.converter` or `ai-edge-torch` (Gemma 4's
-  MatMul-Free MLP + interleaved local/global attention are not yet supported
-  in the public converters as of May 2026). All conversion scripts and the
-  in-app variant selector are wired and idempotent in this same repository,
-  ready to re-run as soon as upstream catches up. Until then the APK ships
-  with the unmodified `google/gemma-4-E2B-it` LiteRT-LM build via the BASE
-  selector — same on-device, fully-offline experience, just without the
-  fine-tune gains reported above.
+- **The fine-tuned model is now available as a GGUF Q4_K_M via llama.cpp.**
+  The LoRA adapter (`exp12_vision_lora`, r=16, α=32) was merged into the base
+  model using standard PEFT + transformers 5.x inside Docker, then converted
+  to GGUF f16 via `llama.cpp convert_hf_to_gguf.py` (which supports
+  `Gemma4ForConditionalGeneration` in llama.cpp build 9159+) and quantized to Q4_K_M (~3.4 GB;
+  5.88 BPW due to the 262k-token vocabulary's large embedding tables quantized to Q6_K).
+  The GGUF is published at
+  `asferrer/gemma-4-E2B-it-oceanguard-marine-debris/gemma-4-E2B-it-oceanguard-Q4_K_M.gguf`
+  and is selectable in the Android app under the **"Gemma 4 FT (GGUF)"** provider
+  via `LlamaTextEngine` (llama.cpp). The BASE Gemma 4 E2B (LiteRT-LM, 1.65x faster)
+  remains the default.
+- **The `.litertlm` export remains pending upstream tooling.**
+  The merged base + adapter `.litertlm` build that would feed `LiteRTTextEngine`
+  depends on Gemma 4 / Gemma3n support landing in MediaPipe's
+  `tasks.python.genai.converter` or `ai-edge-torch` (not yet supported as of
+  May 2026). All conversion scripts are wired and idempotent in the repository,
+  ready to re-run as soon as upstream catches up.
 - **Geographic bias.** Training data is predominantly Japan and the
   north-western Pacific. Mediterranean, tropical, polar and freshwater
   performance not yet measured.
