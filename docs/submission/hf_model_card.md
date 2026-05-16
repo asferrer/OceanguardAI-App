@@ -263,6 +263,37 @@ visual representation. The full ablation grid (`exp01 … exp12`) and class-wise
 comparison against the base model are recorded in
 `finetune/experiments/results/results.md` in the source repository.
 
+### Per-source mAP@0.5 (stratified breakdown)
+
+To validate that the gain is not driven by a single source dataset, the same
+200-image stratified test split is broken down by the originating dataset.
+**The LoRA improves over the base in every source, with the largest relative
+uplift on CleanSea — the smallest training subset and the project's own
+benchmark from IbPRIA 2022.**
+
+| Source         | n  | Base mAP@0.5 | LoRA mAP@0.5 | Δ absolute | LoRA / Base |
+|----------------|---:|---:|---:|---:|---:|
+| **GLOBAL**     | 200 | 0.1067 | 0.3236 | +0.2169 | **3.03×** |
+| **CleanSea**   |  19 | 0.0152 | 0.0991 | +0.0840 | **6.54×** |
+| **Neural_Ocean** | 67 | 0.1001 | 0.3252 | +0.2250 | 3.25× |
+| **Ocean_garbage**| 114 | 0.1428 | 0.3532 | +0.2104 | 2.47× |
+
+Notes on this breakdown:
+- The values are computed with the same VOC 11-point AP fallback used by
+  the project's `eval_grid.manual_map_eval` (matches the global card row
+  within ≤ 0.002 rounding versus the pycocotools COCO-standard pass that
+  produced `0.3256`).
+- **CleanSea (n = 19)** is the smallest subset and therefore the
+  6.54× ratio has wider confidence; treat it as a strong directional
+  signal rather than a tight point estimate.
+- The eval split is **not contaminated**: the 200 ids are a subset of
+  `real_test_holdout.jsonl`, none of which appears in any
+  `experiments/splits/exp*/train.jsonl`. The companion eval dataset on
+  Hugging Face,
+  [`asferrer/oceanguard-marine-debris-eval-1000`](https://huggingface.co/datasets/asferrer/oceanguard-marine-debris-eval-1000),
+  ships the full annotation set plus `compute_per_source_map.py` for
+  independent verification.
+
 ## Deployment
 
 The adapter targets **LiteRT-LM 0.11.0** on Exynos 2200. The Android application
