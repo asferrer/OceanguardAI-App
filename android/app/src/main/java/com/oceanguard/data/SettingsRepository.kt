@@ -50,12 +50,19 @@ class SettingsRepository(private val context: Context) {
         val VLM_PROVIDER = stringPreferencesKey("vlm_provider")
         val REPORT_AUDIENCE = stringPreferencesKey("report_audience")
         val DETECTOR_MODE = stringPreferencesKey("detector_mode")
+        val VLM_MODEL_VARIANT = stringPreferencesKey("vlm_model_variant")
 
         // Research contribution
         val CONTRIBUTE_CONSENT_GIVEN  = booleanPreferencesKey("contribute_consent_given")
         val CONTRIBUTE_WIFI_ONLY      = booleanPreferencesKey("contribute_wifi_only")
         val CONTRIBUTE_DECLINE_COUNT  = intPreferencesKey("contribute_decline_count")
         val CONTRIBUTE_NEVER_PROMPT   = booleanPreferencesKey("contribute_never_prompt")
+
+        // Fine-tuned model update checker
+        val INSTALLED_FINETUNED_VERSION  = stringPreferencesKey("installed_finetuned_version")
+        val SKIPPED_FINETUNED_VERSION    = stringPreferencesKey("skipped_finetuned_version")
+        val LAST_MODEL_CHECK_MS          = longPreferencesKey("last_model_check_ms")
+        val CACHED_MODEL_MANIFEST        = stringPreferencesKey("cached_model_manifest")
     }
 
     companion object {
@@ -71,6 +78,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_VLM_PROVIDER = "gemma4"
         const val DEFAULT_REPORT_AUDIENCE = "scientific"
         const val DEFAULT_DETECTOR_MODE = "gemma4"
+        const val DEFAULT_VLM_MODEL_VARIANT = "base"
 
         /** Supported audience modes for report generation. Keys match ReportAudience.fromKey(). */
         val REPORT_AUDIENCES = mapOf(
@@ -408,6 +416,23 @@ class SettingsRepository(private val context: Context) {
     }
 
     /**
+     * Selected VLM model variant: "base" (Google) or "finetuned" (OceanGuard).
+     * Only Gemma 4 E2B exposes FINETUNED; other tiers ignore this setting.
+     */
+    val vlmModelVariant: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.VLM_MODEL_VARIANT] ?: DEFAULT_VLM_MODEL_VARIANT
+    }
+
+    suspend fun setVlmModelVariant(value: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.VLM_MODEL_VARIANT] = value }
+    }
+
+    fun getVlmModelVariantSync(): String {
+        val prefs = runBlocking { context.dataStore.data.first() }
+        return prefs[Keys.VLM_MODEL_VARIANT] ?: DEFAULT_VLM_MODEL_VARIANT
+    }
+
+    /**
      * Active detector mode: "rtdetr" (fast, ~30ms) or "gemma4" (deep, ~4-10s).
      * Controls which ObjectDetector is used for image analysis and live detection.
      */
@@ -473,5 +498,54 @@ class SettingsRepository(private val context: Context) {
     /** Permanently silence the contribution prompt. Reversible from Settings. */
     suspend fun setContributeNeverPrompt(v: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_NEVER_PROMPT] = v }
+    }
+
+    // -----------------------------------------------------------------------
+    // Fine-tuned model update checker
+    // -----------------------------------------------------------------------
+
+    /**
+     * Version string of the currently installed OceanGuard fine-tuned model (e.g. "1.0.0").
+     * Empty string means no fine-tuned model has been downloaded yet.
+     */
+    val installedFinetunedVersion: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.INSTALLED_FINETUNED_VERSION] ?: ""
+    }
+
+    /**
+     * Version string the user chose to skip in the model update prompt.
+     * Empty string means no version has been skipped.
+     */
+    val skippedFinetunedVersion: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SKIPPED_FINETUNED_VERSION] ?: ""
+    }
+
+    /** Epoch-ms timestamp of the last successful model manifest network check. */
+    val lastModelCheckMs: Flow<Long> = context.dataStore.data.map { prefs ->
+        prefs[Keys.LAST_MODEL_CHECK_MS] ?: 0L
+    }
+
+    /**
+     * Last successfully fetched manifest JSON (for offline fallback).
+     * Empty string means no manifest has been cached yet.
+     */
+    val cachedModelManifest: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CACHED_MODEL_MANIFEST] ?: ""
+    }
+
+    suspend fun setInstalledFinetunedVersion(version: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.INSTALLED_FINETUNED_VERSION] = version }
+    }
+
+    suspend fun setSkippedFinetunedVersion(version: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.SKIPPED_FINETUNED_VERSION] = version }
+    }
+
+    suspend fun setLastModelCheckMs(ms: Long) {
+        context.dataStore.edit { prefs -> prefs[Keys.LAST_MODEL_CHECK_MS] = ms }
+    }
+
+    suspend fun setCachedModelManifest(json: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.CACHED_MODEL_MANIFEST] = json }
     }
 }

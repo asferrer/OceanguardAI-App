@@ -186,6 +186,11 @@
     <string name="settings_label_vlm_tier">Modèle de texte VLM</string>
     <string name="settings_desc_vlm_tier">Modèle préféré pour la génération de rapports. Utilise le meilleur disponible si le choix n\'est pas téléchargé.</string>
     <string name="settings_vlm_not_downloaded">non téléchargé</string>
+    <string name="settings_label_vlm_variant">Variante du modèle</string>
+    <string name="settings_desc_vlm_variant">Utilisez le modèle de base Google ou le modèle affiné OceanGuard pour les déchets marins</string>
+    <string name="vlm_variant_base">Base (Google)</string>
+    <string name="vlm_variant_finetuned">Affiné (OceanGuard)</string>
+    <string name="vlm_variant_finetuned_metric">mAP@0.5 0.325 vs Base 0.107</string>
     <string name="settings_label_gemma4_mmproj">Projecteur de vision (mmproj)</string>
     <string name="settings_desc_gemma4_mmproj">Téléchargez le projecteur de vision pour activer l\'analyse d\'images avec Gemma 4.</string>
 
@@ -627,5 +632,16 @@
     <string name="update_data_preserved">Vos données et analyses seront conservées lors de la mise à jour.</string>
     <string name="update_downloading">Téléchargement de la mise à jour…</string>
     <string name="update_download_started">Téléchargement lancé - vérifiez vos notifications</string>
+
+    <!-- ================================================================== -->
+    <!-- Vérificateur de mise à jour du modèle                               -->
+    <!-- ================================================================== -->
+    <string name="model_update_title">Nouveau modèle OceanGuard disponible</string>
+    <string name="model_update_description">La version %1$s améliore le mAP@0.5 de %2$s par rapport à la base. Taille : %3$s.</string>
+    <string name="model_update_download_action">Mettre à jour le modèle</string>
+    <string name="model_update_skip_action">Ignorer cette version</string>
+    <string name="model_update_later_action">Plus tard</string>
+    <string name="model_variant_current">v%1$s — actuelle</string>
+    <string name="model_variant_update_available">mise à jour vers v%1$s disponible</string>
 
 </resources>

@@ -47,6 +47,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.inference.TextModelTier
+import com.oceanguard.ai.inference.TextModelVariant
 import com.oceanguard.ai.inference.VlmDownloadState
 import com.oceanguard.ai.inference.VlmModelManager
 import com.oceanguard.ai.inference.VlmProvider
@@ -282,7 +283,7 @@ fun SettingsScreen(
                     settings = settings,
                     scope = scope,
                     vlmModelManager = app.vlmModelManager,
-                    onDownloadTier = { app.launchVlmDownload(it) },
+                    onDownloadTier = { tier, variant -> app.launchVlmDownload(tier, variant) },
                 )
             }
 
@@ -529,7 +530,7 @@ private fun DeveloperSettingsSection(
     settings: SettingsRepository,
     scope: CoroutineScope,
     vlmModelManager: VlmModelManager,
-    onDownloadTier: (TextModelTier) -> Unit,
+    onDownloadTier: (TextModelTier, TextModelVariant) -> Unit,
 ) {
     val devContext = LocalContext.current
     val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
@@ -541,6 +542,11 @@ private fun DeveloperSettingsSection(
     val vlmModelTierKey by settings.vlmModelTier.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_VLM_MODEL_TIER
     )
+    val vlmModelVariantKey by settings.vlmModelVariant.collectAsStateWithLifecycle(
+        initialValue = SettingsRepository.DEFAULT_VLM_MODEL_VARIANT
+    )
+    val installedFinetunedVersion by settings.installedFinetunedVersion
+        .collectAsStateWithLifecycle(initialValue = "")
     val downloadState by vlmModelManager.downloadState.collectAsStateWithLifecycle(
         initialValue = VlmDownloadState.Idle
     )
@@ -829,6 +835,114 @@ private fun DeveloperSettingsSection(
             }
         }
 
+        // Model variant selector — visible only for Gemma 4 (the only provider with a fine-tuned variant)
+        val currentVariant = TextModelVariant.fromKey(vlmModelVariantKey)
+        if (currentProvider == VlmProvider.GEMMA4 && currentTier.supportsFinetuned) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.settings_label_vlm_variant),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = stringResource(R.string.settings_desc_vlm_variant),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            var variantExpanded by remember { mutableStateOf(false) }
+            val variantAvailable = vlmModelManager.isModelAvailable(currentTier, currentVariant)
+
+            ExposedDropdownMenuBox(
+                expanded = variantExpanded,
+                onExpandedChange = { variantExpanded = it },
+            ) {
+                OutlinedTextField(
+                    value = currentVariant.displayLabel +
+                        if (!variantAvailable) " ($notDownloaded)" else "",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = variantExpanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                    shape = RoundedCornerShape(12.dp),
+                )
+                ExposedDropdownMenu(
+                    expanded = variantExpanded,
+                    onDismissRequest = { variantExpanded = false },
+                ) {
+                    TextModelVariant.entries.forEach { variant ->
+                        val vAvailable = vlmModelManager.isModelAvailable(currentTier, variant)
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(variant.displayLabel)
+                                        if (variant == TextModelVariant.FINETUNED) {
+                                            val bestVersion = vlmModelManager.bestModelVersion()
+                                            val badge = finetunedBadge(
+                                                available = vAvailable,
+                                                installedVersion = installedFinetunedVersion,
+                                                bestVersion = bestVersion,
+                                                notDownloaded = notDownloaded,
+                                            )
+                                            if (badge.isNotBlank()) {
+                                                Text(
+                                                    text = badge,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
+                                        } else if (!vAvailable) {
+                                            Text(
+                                                text = notDownloaded,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                    if (variant == TextModelVariant.FINETUNED) {
+                                        Text(
+                                            text = stringResource(R.string.vlm_variant_finetuned_metric),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                scope.launch { settings.setVlmModelVariant(variant.key) }
+                                variantExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            if (!variantAvailable && !isDownloading) {
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { onDownloadTier(currentTier, currentVariant) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        "Download ${currentVariant.displayLabel} " +
+                            if (currentVariant == TextModelVariant.FINETUNED) "(~2.6 GB)"
+                            else "(${currentTier.sizeLabel})"
+                    )
+                }
+            }
+        }
+
         if (!currentAvailable) {
             Spacer(modifier = Modifier.height(4.dp))
             if (isDownloading) {
@@ -848,7 +962,7 @@ private fun DeveloperSettingsSection(
                 }
             } else {
                 OutlinedButton(
-                    onClick = { onDownloadTier(currentTier) },
+                    onClick = { onDownloadTier(currentTier, TextModelVariant.BASE) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                 ) {
@@ -1359,4 +1473,27 @@ private fun AppLanguageSection(
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the version badge string for the FINETUNED variant label.
+ * States: not downloaded | up-to-date | update available.
+ */
+private fun finetunedBadge(
+    available: Boolean,
+    installedVersion: String,
+    bestVersion: String?,
+    notDownloaded: String,
+): String = when {
+    !available && bestVersion != null -> "v$bestVersion — $notDownloaded"
+    !available                        -> notDownloaded
+    bestVersion != null && installedVersion.isNotBlank() && installedVersion != bestVersion ->
+        "v$installedVersion → v$bestVersion"
+    installedVersion.isNotBlank()     -> "v$installedVersion"
+    bestVersion != null               -> "v$bestVersion"
+    else                              -> ""
 }

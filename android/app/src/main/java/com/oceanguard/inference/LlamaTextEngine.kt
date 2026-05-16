@@ -123,6 +123,27 @@ enum class TextModelTier(
         GEMMA4_E2B -> FAST
     }
 
+    /**
+     * Returns the filename for this tier adjusted by [variant].
+     * For BASE, returns the original [filename] unchanged.
+     * For FINETUNED, replaces the extension suffix to reference the variant file.
+     */
+    fun filenameFor(variant: TextModelVariant): String =
+        if (variant == TextModelVariant.BASE) filename
+        else filename
+            .replace(".litertlm", "${variant.filenameSuffix}.litertlm")
+            .replace(".gguf", "${variant.filenameSuffix}.gguf")
+
+    /** Whether this tier exposes a fine-tuned variant for download. Gemma 4 E2B only. */
+    val supportsFinetuned: Boolean get() = this == GEMMA4_E2B
+
+    /**
+     * Returns [TextModelVariant.BASE] if this tier does not support fine-tuned variants,
+     * otherwise returns [variant] unchanged.
+     */
+    fun variantFallback(variant: TextModelVariant): TextModelVariant =
+        if (supportsFinetuned) variant else TextModelVariant.BASE
+
     companion object {
         fun fromKey(key: String): TextModelTier =
             entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: GEMMA4_E2B
@@ -130,6 +151,26 @@ enum class TextModelTier(
         /** Returns tiers belonging to a specific provider. */
         fun forProvider(provider: VlmProvider): List<TextModelTier> =
             entries.filter { it.provider == provider }
+    }
+}
+
+/**
+ * Orthogonal axis to [TextModelTier]: selects between the base Google model
+ * and the OceanGuard fine-tuned variant. Only [TextModelTier.GEMMA4_E2B] exposes
+ * a FINETUNED option today; all other tiers silently use BASE.
+ */
+enum class TextModelVariant(
+    val key: String,
+    val displayLabel: String,
+    /** Filename suffix inserted before the extension. Empty for BASE. */
+    val filenameSuffix: String,
+) {
+    BASE("base", "Base (Google)", ""),
+    FINETUNED("finetuned", "Fine-tuned (OceanGuard)", "-oceanguard");
+
+    companion object {
+        fun fromKey(key: String): TextModelVariant =
+            entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: BASE
     }
 }
 

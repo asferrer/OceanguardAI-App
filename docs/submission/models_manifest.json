@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "manifest_url": "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/models_manifest.json",
+  "updated_at": "2026-05-16T00:00:00Z",
+  "best_model": {
+    "id": "exp10_real_full_v1",
+    "version": "1.0.0",
+    "release_date": "2026-05-16",
+    "filename": "gemma-4-E2B-it-oceanguard.litertlm",
+    "url": "https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard.litertlm",
+    "size_bytes": 2758000000,
+    "size_label": "~2.6 GB",
+    "sha256": "TBD_after_conversion",
+    "base_model": {
+      "tier": "GEMMA4_E2B",
+      "provider": "gemma4",
+      "base_filename": "gemma-4-E2B-it.litertlm"
+    },
+    "training": {
+      "experiment_id": "exp10_real_full",
+      "dataset": "CleanSea + Ocean_garbage + Neural_Ocean",
+      "train_samples": 13637,
+      "test_samples": 1000,
+      "synthetic_ratio": 0.0,
+      "lora_rank": 16,
+      "lora_alpha": 32,
+      "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+      "epochs": 3,
+      "effective_batch_size": 32,
+      "optimizer": "adamw_8bit",
+      "learning_rate": 1e-4
+    },
+    "metrics": {
+      "map_50": 0.3253,
+      "map_50_delta_vs_base": 0.2186,
+      "base_map_50": 0.1067,
+      "relative_improvement_pct": 205.0,
+      "json_validity": 0.945,
+      "latency_s_per_image": 5.43,
+      "predictions_emitted": 292,
+      "per_class_map_50": {
+        "Bottle": 0.312,
+        "Can": 0.061,
+        "Fishing_Net": 0.448,
+        "Glove": 0.463,
+        "Mask": 0.308,
+        "Metal_Debris": 0.000,
+        "Plastic_Debris": 0.608,
+        "Tire": 0.403
+      }
+    },
+    "release_notes": "Initial release: exp10_real_full LoRA merged with Gemma 4 E2B base and converted to LiteRT-LM. Wins an 11-experiment ablation grid (100% real data, no synthetic mix). Major gains on Fishing_Net (+0.306), Plastic_Debris (+0.487), Tire (+0.270) vs base.",
+    "minimum_app_version": "0.0.1",
+    "license": "apache-2.0"
+  },
+  "history": []
+}

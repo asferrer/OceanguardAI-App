@@ -2,6 +2,9 @@ package com.oceanguard.ai.inference
 
 import android.content.Context
 import android.util.Log
+import com.oceanguard.ai.data.SettingsRepository
+import com.oceanguard.ai.data.model.BestModel
+import com.oceanguard.ai.utils.ModelUpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +25,10 @@ import java.net.URL
  *
  * Download state is exposed via [downloadState] for UI and [VlmDownloadService].
  */
-class VlmModelManager(private val context: Context) {
+class VlmModelManager(
+    private val context: Context,
+    private val settings: SettingsRepository? = null,
+) {
 
     companion object {
         private const val TAG = "VlmModelManager"
@@ -57,6 +63,11 @@ class VlmModelManager(private val context: Context) {
         const val GEMMA4_LITERTLM_FILENAME = "gemma-4-E2B-it.litertlm"
         private const val MIN_GEMMA4_LITERTLM_BYTES = 2_000_000_000L // 2 GB (~2.58 GB)
 
+        // Gemma 4 — OceanGuard fine-tuned variant
+        const val GEMMA4_LITERTLM_FINETUNED_FILENAME = "gemma-4-E2B-it-oceanguard.litertlm"
+        private const val GEMMA4_LITERTLM_FINETUNED_URL =
+            "$HF_BASE/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard.litertlm"
+
         // Minimum valid file sizes (small files = error HTML pages from HF)
         private val MIN_TEXT_BYTES = mapOf(
             TextModelTier.FAST       to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
@@ -79,6 +90,42 @@ class VlmModelManager(private val context: Context) {
     @Volatile
     private var cancelled = false
 
+    /** Latest manifest best-model entry. Populated by [refreshBestModelFromManifest]. */
+    @Volatile
+    private var cachedBestModel: BestModel? = null
+
+    // -----------------------------------------------------------------------
+    // Manifest-aware finetuned URL/filename helpers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Refreshes [cachedBestModel] from the network or DataStore-cached manifest.
+     * Call once at startup (e.g. from [OceanGuardApp]) and again after a fresh manifest check.
+     */
+    suspend fun refreshBestModelFromManifest(
+        checker: ModelUpdateChecker,
+        force: Boolean = false,
+    ): BestModel? {
+        if (!force && cachedBestModel != null) return cachedBestModel
+        val manifest = checker.fetchManifestCached() ?: return cachedBestModel
+        cachedBestModel = manifest.bestModel
+        return cachedBestModel
+    }
+
+    /** Dynamic finetuned filename from manifest, with hardcoded fallback for offline use. */
+    fun finetunedFilename(): String =
+        cachedBestModel?.filename ?: GEMMA4_LITERTLM_FINETUNED_FILENAME
+
+    /** Dynamic finetuned download URL from manifest, with hardcoded fallback for offline use. */
+    fun finetunedUrl(): String =
+        cachedBestModel?.url ?: GEMMA4_LITERTLM_FINETUNED_URL
+
+    /**
+     * Latest known best-model version from the cached manifest (e.g. "1.0.0").
+     * Returns null if no manifest has been fetched yet.
+     */
+    fun bestModelVersion(): String? = cachedBestModel?.version
+
     // -----------------------------------------------------------------------
     // File paths
     // -----------------------------------------------------------------------
@@ -87,9 +134,18 @@ class VlmModelManager(private val context: Context) {
     fun getModelDirectory(): File =
         File(context.getExternalFilesDir(null), "models").also { it.mkdirs() }
 
-    /** Absolute path to the text GGUF file for [tier]. */
-    fun getTextModelPath(tier: TextModelTier = TextModelTier.FAST): String =
-        File(getModelDirectory(), tier.filename).absolutePath
+    /** Absolute path to the text model file for [tier] and [variant]. */
+    fun getTextModelPath(
+        tier: TextModelTier = TextModelTier.FAST,
+        variant: TextModelVariant = TextModelVariant.BASE,
+    ): String {
+        val effectiveVariant = tier.variantFallback(variant)
+        val filename = if (tier == TextModelTier.GEMMA4_E2B && effectiveVariant == TextModelVariant.FINETUNED)
+            finetunedFilename()
+        else
+            tier.filenameFor(effectiveVariant)
+        return File(getModelDirectory(), filename).absolutePath
+    }
 
     /** Absolute path to the Qwen vision LLM GGUF file. */
     fun getVisionModelPath(): String =
@@ -107,16 +163,29 @@ class VlmModelManager(private val context: Context) {
     // Availability checks
     // -----------------------------------------------------------------------
 
-    /** True if the text model for [tier] is present and has a valid size. */
-    fun isModelAvailable(tier: TextModelTier = TextModelTier.FAST): Boolean {
-        val f = File(getModelDirectory(), tier.filename)
-        val minBytes = MIN_TEXT_BYTES[tier] ?: 50_000_000L
+    /** True if the text model for [tier] and [variant] is present and has a valid size. */
+    fun isModelAvailable(
+        tier: TextModelTier = TextModelTier.FAST,
+        variant: TextModelVariant = TextModelVariant.BASE,
+    ): Boolean {
+        val effectiveVariant = tier.variantFallback(variant)
+        val filename = if (tier == TextModelTier.GEMMA4_E2B && effectiveVariant == TextModelVariant.FINETUNED)
+            finetunedFilename()
+        else
+            tier.filenameFor(effectiveVariant)
+        val f = File(getModelDirectory(), filename)
+        val minBytes = if (effectiveVariant == TextModelVariant.FINETUNED)
+            MIN_GEMMA4_LITERTLM_BYTES
+        else
+            MIN_TEXT_BYTES[tier] ?: 50_000_000L
         return f.exists() && f.length() > minBytes
     }
 
-    /** True if any text tier is downloaded (fast check for report button). */
+    /** True if any text tier/variant is downloaded (fast check for report button). */
     fun isAnyTextModelAvailable(): Boolean =
-        TextModelTier.entries.any { isModelAvailable(it) }
+        TextModelTier.entries.any { tier ->
+            TextModelVariant.entries.any { variant -> isModelAvailable(tier, variant) }
+        }
 
     /**
      * True if the Qwen 2B vision model + mmproj are present AND native vision is compiled.
@@ -156,26 +225,40 @@ class VlmModelManager(private val context: Context) {
     // -----------------------------------------------------------------------
 
     /**
-     * Download the text model for [tier] from HuggingFace.
+     * Download the text model for [tier] and [variant] from HuggingFace.
      * No-op if the file is already present and valid.
+     * For FINETUNED variant on non-supporting tiers, silently falls back to BASE.
      */
-    suspend fun downloadModel(tier: TextModelTier = TextModelTier.FAST) =
-        withContext(Dispatchers.IO) {
-            if (isModelAvailable(tier)) {
+    suspend fun downloadModel(
+        tier: TextModelTier = TextModelTier.FAST,
+        variant: TextModelVariant = TextModelVariant.BASE,
+    ) = withContext(Dispatchers.IO) {
+            val effectiveVariant = tier.variantFallback(variant)
+            if (isModelAvailable(tier, effectiveVariant)) {
                 _downloadState.value = VlmDownloadState.Complete
                 return@withContext
             }
             cancelled = false
-            val url = when (tier) {
-                TextModelTier.FAST       -> TEXT_FAST_URL
-                TextModelTier.BALANCED   -> TEXT_BALANCED_URL
-                TextModelTier.QUALITY    -> TEXT_QUALITY_URL
-                TextModelTier.GEMMA4_E2B -> GEMMA4_LITERTLM_URL
+            val isFinetuned = tier == TextModelTier.GEMMA4_E2B && effectiveVariant == TextModelVariant.FINETUNED
+            val filename = if (isFinetuned) finetunedFilename() else tier.filenameFor(effectiveVariant)
+            val url = when {
+                isFinetuned                      -> finetunedUrl()
+                tier == TextModelTier.GEMMA4_E2B -> GEMMA4_LITERTLM_URL
+                tier == TextModelTier.FAST       -> TEXT_FAST_URL
+                tier == TextModelTier.BALANCED   -> TEXT_BALANCED_URL
+                else                             -> TEXT_QUALITY_URL
             }
-            val target = File(getModelDirectory(), tier.filename)
-            val minBytes = MIN_TEXT_BYTES[tier] ?: 50_000_000L
+            val target = File(getModelDirectory(), filename)
+            val minBytes = if (effectiveVariant == TextModelVariant.FINETUNED)
+                MIN_GEMMA4_LITERTLM_BYTES
+            else
+                MIN_TEXT_BYTES[tier] ?: 50_000_000L
             try {
-                downloadFile(url = url, target = target, minValidBytes = minBytes, filename = tier.filename)
+                downloadFile(url = url, target = target, minValidBytes = minBytes, filename = filename)
+                if (isFinetuned) {
+                    val version = cachedBestModel?.version ?: ""
+                    if (version.isNotBlank()) settings?.setInstalledFinetunedVersion(version)
+                }
             } catch (e: VlmDownloadException) {
                 _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")
                 throw e
@@ -249,36 +332,17 @@ class VlmModelManager(private val context: Context) {
     // LiteRT-LM benchmark spike
     // -----------------------------------------------------------------------
 
-    /** Check if the Gemma 4 E2B .litertlm model is downloaded and valid. */
-    fun isLiteRTModelAvailable(): Boolean {
-        val file = File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME)
-        return file.exists() && file.length() > MIN_GEMMA4_LITERTLM_BYTES
-    }
+    /** Check if the Gemma 4 E2B .litertlm model is downloaded and valid for [variant]. */
+    fun isLiteRTModelAvailable(variant: TextModelVariant = TextModelVariant.BASE): Boolean =
+        isModelAvailable(TextModelTier.GEMMA4_E2B, variant)
 
-    /** Absolute path to the .litertlm model file (may not exist yet). */
-    fun getLiteRTModelPath(): String =
-        File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME).absolutePath
+    /** Absolute path to the .litertlm model file for [variant] (may not exist yet). */
+    fun getLiteRTModelPath(variant: TextModelVariant = TextModelVariant.BASE): String =
+        getTextModelPath(TextModelTier.GEMMA4_E2B, variant)
 
     /** Download Gemma 4 E2B .litertlm from HuggingFace (~2.58 GB). */
-    suspend fun downloadLiteRTModel() = withContext(Dispatchers.IO) {
-        if (isLiteRTModelAvailable()) {
-            _downloadState.value = VlmDownloadState.Complete
-            return@withContext
-        }
-        cancelled = false
-        try {
-            val target = File(getModelDirectory(), GEMMA4_LITERTLM_FILENAME)
-            downloadFile(
-                url           = GEMMA4_LITERTLM_URL,
-                target        = target,
-                minValidBytes = MIN_GEMMA4_LITERTLM_BYTES,
-                filename      = GEMMA4_LITERTLM_FILENAME,
-            )
-        } catch (e: VlmDownloadException) {
-            _downloadState.value = VlmDownloadState.Error(e.message ?: "Download failed")
-            throw e
-        }
-    }
+    suspend fun downloadLiteRTModel(variant: TextModelVariant = TextModelVariant.BASE) =
+        downloadModel(TextModelTier.GEMMA4_E2B, variant)
 
     // -----------------------------------------------------------------------
     // Internal helpers

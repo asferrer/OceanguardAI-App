@@ -25,6 +25,7 @@ import com.oceanguard.ai.inference.ToolReportGenerator
 import com.oceanguard.ai.inference.ReportValidator
 import com.oceanguard.ai.inference.Gemma4PromptFormatter
 import com.oceanguard.ai.inference.TextModelTier
+import com.oceanguard.ai.inference.TextModelVariant
 import com.oceanguard.ai.inference.VlmProvider
 import com.oceanguard.ai.inference.VideoProcessor
 import com.oceanguard.ai.inference.VlmModelManager
@@ -39,6 +40,7 @@ import com.oceanguard.ai.data.contribution.ContributionRepository
 import com.oceanguard.ai.utils.ImagePreprocessor
 import com.oceanguard.ai.utils.LocationProvider
 import com.oceanguard.ai.utils.PhotonGeocoderClient
+import com.oceanguard.ai.utils.ModelUpdateChecker
 import com.oceanguard.ai.utils.UpdateChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -181,7 +183,10 @@ class OceanGuardApp : Application() {
     fun getActiveDetector(): ObjectDetector {
         return when (settingsRepository.getDetectorModeSync()) {
             DetectorType.GEMMA4_VISION.key -> {
-                if (vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B)) {
+                val variant = activeVariant()
+                val available = vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B, variant)
+                    || vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B, TextModelVariant.BASE)
+                if (available) {
                     gemma4Detector
                 } else {
                     Log.w(TAG, "Gemma 4 Vision selected but not downloaded — falling back to RT-DETRv2")
@@ -260,7 +265,9 @@ class OceanGuardApp : Application() {
 
     val updateChecker: UpdateChecker by lazy { UpdateChecker(settingsRepository) }
 
-    val vlmModelManager: VlmModelManager by lazy { VlmModelManager(this) }
+    val modelUpdateChecker: ModelUpdateChecker by lazy { ModelUpdateChecker(settingsRepository) }
+
+    val vlmModelManager: VlmModelManager by lazy { VlmModelManager(this, settingsRepository) }
 
     val imagePreprocessor: ImagePreprocessor by lazy { ImagePreprocessor(this) }
 
@@ -438,7 +445,9 @@ class OceanGuardApp : Application() {
         if (settingsRepository.getDetectorModeSync() != DetectorType.GEMMA4_VISION.key) return
         val currentStatus = modelLoadingState.value.gemma4Vision
         if (currentStatus != ModelStatus.NotLoaded && currentStatus != ModelStatus.Standby) return
-        if (!vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B)) return
+        val g4Variant = TextModelTier.GEMMA4_E2B.variantFallback(activeVariant())
+        if (!vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B, g4Variant)
+            && !vlmModelManager.isModelAvailable(TextModelTier.GEMMA4_E2B, TextModelVariant.BASE)) return
         Log.i(TAG, "Pre-warming Gemma 4 vision detector in background")
         applicationScope.launch { initializeGemma4DetectorIfAvailable() }
     }
@@ -453,14 +462,18 @@ class OceanGuardApp : Application() {
             return
         }
         val tier = TextModelTier.GEMMA4_E2B
-        if (!vlmModelManager.isModelAvailable(tier)) {
+        val variant = tier.variantFallback(activeVariant())
+        // Accept finetuned if present, fall back to BASE automatically
+        val effectiveVariant = if (vlmModelManager.isModelAvailable(tier, variant)) variant
+                               else TextModelVariant.BASE
+        if (!vlmModelManager.isModelAvailable(tier, effectiveVariant)) {
             Log.i(TAG, "Gemma 4 E2B model not downloaded -- detector not available")
             modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.NotLoaded) }
             return
         }
         try {
             modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.Loading) }
-            val modelPath = vlmModelManager.getTextModelPath(tier)
+            val modelPath = vlmModelManager.getTextModelPath(tier, effectiveVariant)
             Log.i(TAG, "Loading Gemma 4 vision detector: $modelPath")
             gemma4Detector.textEngine.initialize(modelPath)
             modelLoadingState.update { it.copy(gemma4Vision = ModelStatus.WarmingUp) }
@@ -483,24 +496,35 @@ class OceanGuardApp : Application() {
      * Tries the user-selected tier first; falls back to highest available quality
      * within the same provider family.
      */
-    /** Check if a tier has a usable model on disk.
-     *  Works uniformly for GGUF (llama.cpp) and .litertlm (LiteRT-LM) tiers because
-     *  [VlmModelManager.isModelAvailable] checks by `tier.filename`. */
-    private fun isTextModelAvailable(tier: TextModelTier): Boolean =
-        vlmModelManager.isModelAvailable(tier)
+    /** Check if a tier has a usable model on disk for the active variant. */
+    private fun isTextModelAvailable(
+        tier: TextModelTier,
+        variant: TextModelVariant = activeVariant(),
+    ): Boolean = vlmModelManager.isModelAvailable(tier, variant)
+
+    /** Returns the variant currently selected by the user. */
+    private fun activeVariant(): TextModelVariant =
+        TextModelVariant.fromKey(settingsRepository.getVlmModelVariantSync())
 
     private fun bestAvailableTier(): TextModelTier {
         val provider = VlmProvider.fromKey(settingsRepository.getVlmProviderSync())
         val preferred = TextModelTier.fromKey(settingsRepository.getVlmModelTierSync())
+        val variant = activeVariant()
 
         // If the preferred tier matches the selected provider and is available, use it
-        if (preferred.provider == provider && isTextModelAvailable(preferred)) {
-            return preferred
+        // For FINETUNED: try preferred+finetuned, fall back to preferred+BASE if finetuned absent
+        if (preferred.provider == provider) {
+            if (isTextModelAvailable(preferred, variant)) return preferred
+            // Variant-specific fallback: FINETUNED not present → try BASE same tier
+            if (variant == TextModelVariant.FINETUNED && isTextModelAvailable(preferred, TextModelVariant.BASE)) {
+                Log.w(TAG, "FINETUNED variant not downloaded — falling back to BASE (tier=${preferred.displayName})")
+                return preferred
+            }
         }
 
-        // Fall back to the best available tier within the selected provider
+        // Fall back to the best available tier within the selected provider (BASE only for fallback)
         val providerTiers = TextModelTier.forProvider(provider)
-        val available = providerTiers.lastOrNull { isTextModelAvailable(it) }
+        val available = providerTiers.lastOrNull { isTextModelAvailable(it, TextModelVariant.BASE) }
         if (available != null) return available
 
         // Ultimate fallback: Gemma 4 (LiteRT-LM, default) first, then Qwen by size.
@@ -543,8 +567,9 @@ class OceanGuardApp : Application() {
             modelLoadingState.update {
                 it.copy(qwenText = ModelStatus.Loading, activeTierName = tier.displayName)
             }
-            // Both GGUF and .litertlm files live at `tier.filename` inside the models dir.
-            val modelPath = vlmModelManager.getTextModelPath(tier)
+            // Both GGUF and .litertlm files live at `tier.filename` (or variant filename) inside models dir.
+            val resolvedVariant = tier.variantFallback(activeVariant())
+            val modelPath = vlmModelManager.getTextModelPath(tier, resolvedVariant)
             Log.i(TAG, "Loading ${engine.displayName} ${if (silentPreload) "(preload)" else "on demand"}...")
             engine.initialize(modelPath)
             modelLoadingState.update { it.copy(qwenText = ModelStatus.WarmingUp) }
@@ -818,12 +843,15 @@ class OceanGuardApp : Application() {
     // Download
     // -----------------------------------------------------------------------
 
-    /** Launch text model download for [tier]. Default is the user's selected tier. */
-    fun launchVlmDownload(tier: TextModelTier = TextModelTier.FAST) {
+    /** Launch text model download for [tier] and [variant]. */
+    fun launchVlmDownload(
+        tier: TextModelTier = TextModelTier.FAST,
+        variant: TextModelVariant = TextModelVariant.BASE,
+    ) {
         startForegroundDownloadService()
         applicationScope.launch {
             try {
-                vlmModelManager.downloadModel(tier)
+                vlmModelManager.downloadModel(tier, variant)
                 // After successful download, initialize Gemma 4 if it is the active detector
                 if (tier == TextModelTier.GEMMA4_E2B &&
                     settingsRepository.getDetectorModeSync() == DetectorType.GEMMA4_VISION.key
@@ -831,7 +859,7 @@ class OceanGuardApp : Application() {
                     initializeGemma4DetectorIfAvailable()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "VLM download failed (tier=${tier.displayName})", e)
+                Log.e(TAG, "VLM download failed (tier=${tier.displayName}, variant=${variant.key})", e)
             }
         }
     }

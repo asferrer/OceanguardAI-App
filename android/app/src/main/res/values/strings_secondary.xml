@@ -187,6 +187,11 @@
     <string name="settings_label_vlm_tier">VLM Text Model</string>
     <string name="settings_desc_vlm_tier">Preferred model for report generation. Falls back to best available if not downloaded.</string>
     <string name="settings_vlm_not_downloaded">not downloaded</string>
+    <string name="settings_label_vlm_variant">Model variant</string>
+    <string name="settings_desc_vlm_variant">Use base Google model or OceanGuard fine-tuned for marine debris</string>
+    <string name="vlm_variant_base">Base (Google)</string>
+    <string name="vlm_variant_finetuned">Fine-tuned (OceanGuard)</string>
+    <string name="vlm_variant_finetuned_metric">mAP@0.5 0.325 vs Base 0.107</string>
     <string name="settings_label_gemma4_mmproj">Vision Projector (mmproj)</string>
     <string name="settings_desc_gemma4_mmproj">Download the vision projector to enable Gemma 4 image analysis capabilities.</string>
 
@@ -630,5 +635,16 @@
     <string name="update_data_preserved">Your data and analyses will be preserved when updating.</string>
     <string name="update_downloading">Downloading update…</string>
     <string name="update_download_started">Download started - check your notifications</string>
+
+    <!-- ================================================================== -->
+    <!-- Model update checker                                                 -->
+    <!-- ================================================================== -->
+    <string name="model_update_title">New OceanGuard model available</string>
+    <string name="model_update_description">Version %1$s improves mAP@0.5 by %2$s vs base. Download size: %3$s.</string>
+    <string name="model_update_download_action">Update model</string>
+    <string name="model_update_skip_action">Skip this version</string>
+    <string name="model_update_later_action">Later</string>
+    <string name="model_variant_current">v%1$s — current</string>
+    <string name="model_variant_update_available">update to v%1$s available</string>
 
 </resources>
