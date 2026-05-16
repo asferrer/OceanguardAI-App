@@ -114,9 +114,10 @@ Recommended capture order to minimise navigation:
 
 **Fully offline marine debris intelligence on Android, powered by Gemma 4.**
 
-> mAP@0.5 = 0.325 vs 0.092 base (+252 % relative) on a 200-image held-out
-> evaluation — a fine-tuned LoRA on Gemma 4 E2B that turns any consumer phone
-> into a marine biologist with zero cloud dependency.
+> mAP@0.5 = 0.3256 vs 0.1067 base (+205 % relative) on a 200-image held-out
+> evaluation — a fine-tuned LoRA on Gemma 4 E2B (language + vision encoder)
+> that turns any consumer phone into a marine biologist with zero cloud
+> dependency.
 
 ---
 
@@ -221,31 +222,39 @@ watches each query happen in real time.
 ## Headline result
 
 A LoRA fine-tune of `google/gemma-4-E2B-it` on a Japan / north-western
-Pacific marine-debris corpus (CleanSea + Ocean_garbage + Neural_Ocean,
-~13.6 k training images stratified by class) was selected from an
-11-experiment ablation grid:
+Pacific marine-debris corpus (CleanSea + Ocean_garbage + Neural_Ocean +
+DenSea synthetic renders, ~24.4 k training images) was selected from a
+12-experiment ablation grid. The published winner (`exp12_vision_lora`)
+**unfreezes the SigLIP2 vision encoder via LoRA** in addition to the
+language tower — this is what unlocks the dramatic gain on texture-rich
+classes:
 
-| Metric | Base Gemma 4 E2B | OceanGuard LoRA (`exp10_real_full`) |
+| Metric | Base Gemma 4 E2B | OceanGuard LoRA (`exp12_vision_lora`) |
 |---|---|---|
-| **mAP@0.5** | 0.0924 | **0.3253 (+252 %)** |
-| JSON validity | 1.000 | 0.945 |
-| Predictions emitted | 47 | 292 |
+| **mAP@0.5** | 0.1067 | **0.3256 (+205 %)** |
+| JSON validity | 0.995 | 0.885 |
+| Predictions emitted | 168 | 298 |
 
 Per-class gains (mAP@0.5, full table on the model card):
 
-- Plastic Debris: 0.112 → **0.608** (+0.496)
-- Fishing Net: 0.091 → **0.448** (+0.357)
-- Tire: 0.091 → **0.403** (+0.312)
-- Bottle: 0.045 → **0.312** (+0.266)
-- Mask: 0.091 → **0.308** (+0.217)
-- Glove: 0.309 → **0.463** (+0.154)
-- Can: 0.000 → 0.061 (data-scarce class, planned class-balanced campaign)
-- Metal Debris: 0.000 → 0.000 (only 99 ground-truth instances; same)
+- Fishing Net: 0.142 → **0.575** (+0.433) — biggest absolute gain
+- Plastic Debris: 0.121 → **0.489** (+0.368)
+- Glove: 0.233 → **0.498** (+0.265)
+- Mask: 0.091 → **0.319** (+0.228)
+- Tire: 0.133 → **0.362** (+0.229)
+- Bottle: 0.132 → **0.272** (+0.140)
+- Can: 0.000 → 0.091 (data-scarce class, planned class-balanced campaign)
+- Metal Debris: 0.000 → 0.000 (vision LoRA confirmed not the bottleneck;
+  label-overlap audit planned)
 
-Training: 1 281 steps × effective batch 32 over 3 epochs (≈ 6 h 53 min on
-a single RTX 5090, bf16). LoRA `r=16`, `α=32`, ~31 M trainable parameters
-(0.60 % of base). Loss decreased monotonically from 15.01 to 0.456 with a
-σ_last20 of 0.0092 — clean cosine landing, no late-stage divergence.
+Training: LoRA `r=16`, `α=32`, ~60 M trainable parameters (≈ 1.2 % of
+base) over language + SigLIP2 vision-tower layers, on a single RTX 5090
+(bf16, Unsloth FastVisionModel 2026.5.2). The published checkpoint
+corresponds to step 1 150 of a planned 2 292-step run; an OOM virtual-memory
+limit on the training workstation halted full 3-epoch convergence, but the
+multi-resume recovery already overtook the language-only winner
+(`exp10_real_full`, mAP@0.5 = 0.3253) — see model-card §Training Procedure
+for the recovery details.
 
 Full per-class table, ablation grid, hyper-parameters and reproducible
 pipeline live in the published HuggingFace
@@ -277,19 +286,29 @@ Each report:
 
 ## Honest engineering disclosures
 
-- **APK ships with the base Gemma 4 E2B**, not yet with the LoRA-merged
-  weights — the LoRA-to-`.litertlm` export path is upstream-in-progress.
-  The fine-tuned adapter is reproducible end-to-end via the published
-  Kaggle notebook and the HuggingFace adapter repo.
+- **The published `.litertlm`** is the merged base + adapter export of
+  `exp12_vision_lora` — the Android app picks it up via the in-app
+  BASE / FINETUNED variant selector. No `adb push`, no APK rebuild.
 - **Geographic bias.** Training data is predominantly Japan and the
   north-western Pacific. Mediterranean, tropical, polar and freshwater
   performance not yet measured.
-- **JSON validity 94.5 %**, not 100 %. The 5.5 % of malformed outputs are
-  silently dropped — the app prefers an empty detection set over fabricated
-  boxes.
-- **Underrepresented classes.** `Metal_Debris` (99 ground-truth instances)
-  remains unlearned at the current data scale; a class-balanced campaign is
+- **JSON validity 88.5 %**, not 100 %. The 11.5 % of malformed outputs
+  are silently dropped — the app prefers an empty detection set over
+  fabricated boxes. This is the dominant remaining failure mode and the
+  cost the vision LoRA pays for the higher recall on texture-rich classes
+  (language-only baseline reached 94.5 % validity but a lower global
+  mAP@0.5).
+- **`Metal_Debris` remains unlearned even with the vision encoder
+  unfrozen**, ruling out visual representation as the bottleneck. Most
+  likely cause: label ambiguity in the test split (overlap with `Tire`,
+  `Plastic_Debris`, `Other_metal_objects`) or insufficient ground-truth
+  instances. A class-balanced campaign and per-class label audit are
   planned.
+- **Trained to step 1 150 of a 2 292-step plan.** The vision LoRA's
+  larger trainable-parameter count pushed the Windows commit charge above
+  the workstation's pagefile ceiling. A multi-resume recovery secured the
+  current winning checkpoint; full 3-epoch convergence requires a larger
+  pagefile or a lazy-loading data collator, both on the roadmap.
 - The CPU+Vulkan single-shot Gemma 4 path takes ≈ 20 s end-to-end on the
   reference device, so this is a triage and reporting tool, not a real-time
   detector.
@@ -375,6 +394,7 @@ recommended; Group C is bonus.
 | Signed APK (latest release) | `https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk` |
 | HuggingFace LoRA adapter | `https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris` |
 | HuggingFace model card | `https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/blob/main/README.md` |
+| HuggingFace eval dataset (annotations) | `https://huggingface.co/datasets/asferrer/oceanguard-marine-debris-eval-1000` |
 
 ### Group B — Strongly recommended
 
