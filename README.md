@@ -107,7 +107,7 @@ A Stage-1 / Stage-2 LoRA fine-tune of `google/gemma-4-E2B-it` on a marine-debris
 
 - **Adapter:** [`asferrer/gemma-4-E2B-it-oceanguard-marine-debris`](https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris) on Hugging Face
 - **Notebook:** [`docs/submission/notebook_finetune.ipynb`](docs/submission/notebook_finetune.ipynb) &mdash; runs end-to-end on Kaggle (T4 x2), Unsloth FastVisionModel stack
-- **Reported delta:** mAP@0.5 = 0.325 (vs 0.092 base &mdash; **+252&nbsp;% relative**) on a 200-image held-out test split
+- **Reported delta:** mAP@0.5 = 0.3256 (vs 0.1067 base &mdash; **+205&nbsp;% relative**, &Delta;&nbsp;+0.2189) on a 200-image stratified held-out test split. Winning experiment: `exp12_vision_lora` (LoRA on both the language tower and the SigLIP2 vision encoder).
 
 The APK currently ships with the base Gemma 4 E2B weights; LoRA-merged `.litertlm` export is upstream-in-progress.
 
@@ -172,10 +172,10 @@ OceanguardAI-App/
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture &mdash; inference pipelines, model lifecycle, data flow |
 | [`docs/GEMMA4_DETECTION.md`](docs/GEMMA4_DETECTION.md) | `box_2d` prompt engineering, JSON parsing, coordinate conversion |
-| [`docs/HACKATHON_VIDEO_SCRIPT.md`](docs/HACKATHON_VIDEO_SCRIPT.md) | 3-min demo video shot list |
 | [`docs/submission/WRITEUP_FINAL.md`](docs/submission/WRITEUP_FINAL.md) | Long-form hackathon writeup |
 | [`docs/submission/KAGGLE_SUBMISSION_FORM.md`](docs/submission/KAGGLE_SUBMISSION_FORM.md) | Drop-in copy for every Kaggle form field |
 | [`docs/submission/hf_model_card.md`](docs/submission/hf_model_card.md) | Hugging Face model card for the LoRA adapter |
+| [`docs/submission/UPLOAD_EVAL_SET.md`](docs/submission/UPLOAD_EVAL_SET.md) | Procedure for staging and publishing the 1000-image eval hold-out on Hugging Face |
 | [`docs/submission/SMOKE_RESULTS.md`](docs/submission/SMOKE_RESULTS.md) | On-device latency &amp; memory smoke tests |
 
 ## Privacy

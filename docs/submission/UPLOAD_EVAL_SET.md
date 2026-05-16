@@ -165,7 +165,7 @@ used to train `asferrer/gemma-4-E2B-it-oceanguard-marine-debris`.
 
 | Metric | Base | OceanGuard LoRA |
 |--------|------|-----------------|
-| mAP@0.5 | 0.0924 | **0.3253 (+252 %)** |
+| mAP@0.5 | 0.1067 | **0.3256 (+205 %)** |
 | JSON validity | 1.000 | 0.945 |
 
 ## Citation

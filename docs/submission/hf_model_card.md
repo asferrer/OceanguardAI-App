@@ -109,7 +109,7 @@ this is what unlocks the dramatic gain on texture-heavy classes (`Fishing_Net`,
 - Research baselines for open-vocabulary detection over specialised environmental
   taxonomies.
 - A grounding component for tool-augmented reporting pipelines (see the OceanGuard
-  two-phase tool-calling architecture).
+  single-conversation agentic tool-calling architecture).
 
 **Out-of-scope use cases.**
 
@@ -366,7 +366,7 @@ Reference benchmarks on the deployment target
   before any official use.
 - **Function-calling head untouched.** The fine-tune is intentionally scoped to the
   detection head and does **not** rewrite tool-calling syntax, to avoid regressing the
-  two-phase tool-calling pipeline that the Android app depends on for grounded report
+  single-conversation agentic tool-calling pipeline that the Android app depends on for grounded report
   generation.
 
 ## Bias, Risks and Safety

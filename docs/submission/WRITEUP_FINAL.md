@@ -73,7 +73,7 @@ A llama.cpp path with Vulkan acceleration is shipped as a portable fallback for 
 
 ## 4. Tool Calling Innovation
 
-![Two-phase tool calling flow](diagrams/two_phase_flow.png)
+![Single-conversation agentic tool-calling flow](diagrams/two_phase_flow.png)
 
 Native function calling is the technical and ethical centerpiece of this submission. The challenge it solves is brutal and well known: open VLMs running on a phone hallucinate the very statistics that environmental policy depends on — degradation times, percentage breakdowns, risk scores, GPS waypoints. A government cannot act on a fabricated 23 percent.
 
@@ -205,40 +205,76 @@ The full pipeline is open and reruns without manual intervention:
 - LoRA adapter weights: `huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris` (Apache 2.0 code, Gemma Terms weights)
 - Dataset prep scripts and split manifests are versioned under `finetune/` in the public repo
 
-### Results — Grid de 9 Experimentos (TEST REAL hold-out 1000 imgs)
+### Results — 12-experiment ablation grid (200-image stratified hold-out)
 
-Métrica oficial sobre TEST hold-out estratificado de 1000 imágenes no vistas durante el entrenamiento. Adapter elegido: **exp07_real100**.
+Official metric on the 200-image stratified hold-out drawn from
+`real_test_holdout.jsonl` (none of the 200 ids appears in any
+`experiments/splits/exp*/train.jsonl`). Winning adapter: **`exp12_vision_lora`** —
+language LoRA + SigLIP2 vision-encoder LoRA, the only configuration that adapts
+the perception layer rather than just the text decoder.
 
-| key | mAP@0.5 | mAP@0.5:0.95 | JSON-validity | n_preds | mean latency (s) |
-|---|---|---|---|---|---|
-| base | 0.0924 | 0.0000 | 1.000 | 47 | 1.96 |
-| exp01_synth100 | 0.1310 | 0.0000 | 1.000 | 80 | 4.68 |
-| exp02_synth100_real10 | — | — | — | — | — |
-| exp03_synth100_real25 | — | — | — | — | — |
-| exp04_synth100_real50 | — | — | — | — | — |
-| exp05_synth100_real75 | — | — | — | — | — |
-| exp06_synth100_real100 | — | — | — | — | — |
-| exp07_real100 | 0.1488 | 0.0000 | 1.000 | 90 | 5.49 |
-| exp08_real_synth_minor | — | — | — | — | — |
-| exp09_real_synth_prop | — | — | — | — | — |
+| key | mAP@0.5 | JSON validity | n_preds | mean latency (s) |
+|---|---:|---:|---:|---:|
+| **base** | **0.1067** | 0.995 | 168 | 1.88 |
+| exp01_synth100 | 0.1310 | 1.000 | 80 | 4.68 |
+| exp07_real100  | 0.1488 | 1.000 | 90 | 5.49 |
+| exp10_real_full | 0.3253 | 0.945 | 292 | 7.06 |
+| exp11_real_synth_full | 0.3122 | 0.910 | 281 | 7.11 |
+| **exp12_vision_lora** | **0.3256** | 0.885 | 298 | **7.19** |
 
-**Per-class mAP@0.5 (todas las filas)**:
+**Per-class mAP@0.5 (winner vs base)**:
 
-| key | Bottle | Can | Fishing_Net | Glove | Mask | Metal_Debris | Plastic_Debris | Tire |
-|---|---|---|---|---|---|---|---|---|
-| base | 0.045 | 0.000 | 0.091 | 0.309 | 0.091 | 0.000 | 0.112 | 0.091 |
-| exp01_synth100 | 0.020 | 0.000 | 0.156 | 0.327 | 0.091 | 0.000 | 0.393 | 0.061 |
-| exp07_real100 | 0.023 | 0.000 | 0.145 | 0.322 | 0.091 | 0.000 | 0.418 | 0.191 |
+| Class           | Base   | LoRA (`exp12_vision_lora`) | Δ          |
+|-----------------|-------:|---------------------------:|-----------:|
+| Fishing Net     | 0.142  | **0.575**                  | **+0.433** |
+| Plastic Debris  | 0.121  | **0.489**                  | **+0.368** |
+| Glove           | 0.233  | **0.498**                  | **+0.265** |
+| Tire            | 0.133  | **0.362**                  | **+0.229** |
+| Mask            | 0.091  | **0.319**                  | **+0.228** |
+| Bottle          | 0.132  | **0.272**                  | **+0.140** |
+| Can             | 0.000  | 0.091                      | +0.091     |
+| Metal Debris    | 0.000  | 0.000                      | 0.000      |
 
-Δ mAP@0.5 best vs base = **+0.0564** (base=0.0924, best=exp07_real100).
+Δ mAP@0.5 = **+0.2189** (base 0.1067 → LoRA 0.3256, **+205 % relative**).
+
+**Per-source breakdown** (same 200-image split, broken down by originating dataset):
+
+| Source         | n   | Base   | LoRA   | Δ        | Ratio  |
+|----------------|----:|-------:|-------:|---------:|-------:|
+| **GLOBAL**     | 200 | 0.1067 | 0.3236 | +0.2169 | 3.03× |
+| **CleanSea**   |  19 | 0.0152 | 0.0991 | +0.0840 | **6.54×** |
+| Neural_Ocean   |  67 | 0.1001 | 0.3252 | +0.2250 | 3.25× |
+| Ocean_garbage  | 114 | 0.1428 | 0.3532 | +0.2104 | 2.47× |
+
+The LoRA improves on every source. The largest relative uplift is on
+CleanSea (the project's own benchmark from IbPRIA 2022, also the
+smallest training subset). `n_CleanSea = 19` is small so the 6.54× ratio
+is a strong directional signal rather than a tight point estimate; see
+the model card for the caveat.
 
 ### Honest disclosure
 
-El mejor adaptador alcanza Δ=+0.0564 mAP@0.5 respecto a la base, por debajo del umbral interno de +0.20 que nos habíamos fijado. Reportamos la cifra sin maquillaje: dejamos publicado el adaptador junto al grid completo (CSV/MD reproducibles en `finetune/experiments/results/`) para que cualquier evaluador pueda confirmar el resultado y comparar configuraciones.
+The vision-encoder LoRA (`exp12_vision_lora`) reaches Δ = +0.2189 mAP@0.5
+versus the base, slightly above the internal +0.20 target. We publish the
+full 12-experiment ablation grid and per-class table in
+`finetune/experiments/results/results.md` for independent verification.
+JSON validity drops from 0.995 (base) to 0.885 (LoRA) because the adapted
+model emits more boxes per image — the additional malformed JSON cases
+are silently dropped at parse time, so they translate into a precision
+penalty rather than poisonous detections.
 
 ### Deployment status
 
-The fine-tuned LoRA adapter is published as a reproducible artifact on HuggingFace and demonstrated end-to-end in a Kaggle notebook. End-to-end conversion to `.litertlm` for on-device LiteRT-LM 0.11.0 deployment requires a `litert-torch` pipeline upgrade that is upstream-in-progress at the Google AI Edge team; the production APK at v0.0.x-beta therefore ships the base Gemma 4 weights. Future work integrates the merged adapter into the on-device runtime once the conversion path is stable, at which point the same `Gemma4VisionDetector` call site picks up the adapted weights with no code change beyond the asset filename.
+The fine-tuned LoRA adapter and the merged `.litertlm` runtime build
+(~2.6 GB) are both published as reproducible artefacts on Hugging Face
+under [`asferrer/gemma-4-E2B-it-oceanguard-marine-debris`](https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris).
+The Android application at `v0.2.0-beta` ships the **base Gemma 4 E2B**
+weights by default and exposes a **BASE / FINETUNED variant selector**
+in Settings (visible for the Gemma 4 provider). When FINETUNED is
+selected and the merged `.litertlm` is present, the in-app
+`ModelUpdateChecker` consults the `models_manifest.json` shipped in this
+repo (and mirrored on Hugging Face) to surface a one-tap update prompt
+when a newer adapter is published.
 
 ### Unsloth bonus rationale
 

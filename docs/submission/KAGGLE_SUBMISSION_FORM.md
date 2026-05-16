@@ -408,7 +408,7 @@ recommended; Group C is bonus.
 |---|---|
 | Kaggle notebook (demo, Run-All) | *paste after publishing* |
 | Kaggle fine-tune notebook (Unsloth bonus track) | *paste after publishing* |
-| Demo video (YouTube, 3 min) | *paste after upload; script in `docs/HACKATHON_VIDEO_SCRIPT.md`* |
+| Demo video (YouTube, 3 min) | *paste after upload* |
 | Project landing page | `https://asferrer.github.io/OceanguardAI` |
 
 ### Group C — Bonus (research / artefacts)
@@ -429,7 +429,7 @@ recommended; Group C is bonus.
 | `docs/submission/notebook_finetune.ipynb` | Full LoRA fine-tune notebook for the Unsloth bonus track. |
 | `docs/submission/hf_model_card.md` | The same model card pushed to HuggingFace, attached locally for reviewers who don't follow the HF link. |
 | `docs/submission/diagrams/architecture.png` | Architecture diagram (PNG, embeddable in Kaggle markdown). |
-| `docs/submission/diagrams/two_phase_flow.png` | Two-phase tool-calling sequence diagram. |
+| `docs/submission/diagrams/two_phase_flow.png` | Single-conversation agentic tool-calling sequence diagram. |
 | `docs/submission/SMOKE_RESULTS.md` | Smoke-test results on the reference device — single-shot latency, decode tok/s, memory. |
 
 ---
