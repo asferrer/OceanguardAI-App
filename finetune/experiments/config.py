@@ -105,6 +105,25 @@ EXPERIMENTS = [
         "synth_n": 1500, "real_n": 1500,
         "synth_strategy": "inverse_proportional", "real_strategy": "stratified",
     },
+    {
+        "name": "exp10_real_full",
+        "synth_n": 0, "real_n": 13637,
+        "synth_strategy": None, "real_strategy": "stratified",
+        "epochs": 3,
+    },
+    {
+        "name": "exp11_real_synth_full",
+        "synth_n": 10809, "real_n": 13637,
+        "synth_strategy": "random", "real_strategy": "stratified",
+        "epochs": 3,
+    },
+    {
+        "name": "exp12_vision_lora",
+        "synth_n": 10809, "real_n": 13637,
+        "synth_strategy": "random", "real_strategy": "stratified",
+        "epochs": 3,
+        "vision_lora": True,
+    },
 ]
 
 # === Detection prompt (idéntico al de production app, alineado con etapa1_v2) ===

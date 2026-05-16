@@ -59,6 +59,8 @@ def parse_args():
                         help="Ruta a checkpoint para reanudar (opcional)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Carga modelo y dataset, no entrena (smoke test)")
+    parser.add_argument("--max-steps", type=int, default=None,
+                        help="Cap total steps (overrides epochs). Used for chunked resume.")
     return parser.parse_args()
 
 
@@ -153,6 +155,9 @@ def build_trainer(model, processor, train_ds, val_ds, cfg):
         return default
 
     bsz = cget("batch_size", "per_device_train_batch_size", default=2)
+    max_steps_val = cget("max_steps", default=None)
+    if max_steps_val is None or max_steps_val <= 0:
+        max_steps_val = -1  # HF Trainer convention: -1 means ignore, use epochs
     sft_args = SFTConfig(
         per_device_train_batch_size=bsz,
         per_device_eval_batch_size=cget("eval_batch_size", "per_device_eval_batch_size", default=bsz),
@@ -160,6 +165,7 @@ def build_trainer(model, processor, train_ds, val_ds, cfg):
         max_grad_norm=cget("max_grad_norm", default=0.3),
         warmup_ratio=cget("warmup_ratio", default=0.03),
         num_train_epochs=cget("epochs", "num_train_epochs", default=1),
+        max_steps=max_steps_val,
         learning_rate=cget("lr", "learning_rate", default=1e-4),
         fp16=not is_bfloat16_supported(),
         bf16=is_bfloat16_supported(),
@@ -226,6 +232,9 @@ def main():
 
     if args.resume:
         cfg["resume_from"] = args.resume
+    if args.max_steps is not None:
+        cfg["max_steps"] = args.max_steps
+        print(f"[etapa1] CLI override: max_steps={args.max_steps}")
 
     model, processor = build_model(cfg)
 

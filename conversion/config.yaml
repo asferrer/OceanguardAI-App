@@ -4,13 +4,14 @@
 # Base Model Configuration
 base_model:
   # Model identifier from Hugging Face
-  model_id: "unsloth/gemma-3n-e2b-it"
+  # Gemma 4 E2B — use google/ (public, Apache 2.0). unsloth/ mirror also works.
+  model_id: "google/gemma-4-E2B-it"
 
-  # Alternative: Use E4B for better accuracy (but larger size and slower inference)
-  # model_id: "unsloth/gemma-3n-e4b-it"
+  # Alternative unsloth mirror (quantized, faster download):
+  # model_id: "unsloth/gemma-4-E2B-it"
 
   # Model variant
-  variant: "E2B"  # Options: E2B (2B params), E4B (4B params)
+  variant: "E2B"  # Options: E2B (2B active params), E4B (4B active params)
 
   # Cache directory for downloaded models
   cache_dir: "./models_cache"
@@ -19,22 +20,19 @@ base_model:
   output_format: "litert"  # LiteRT (TensorFlow Lite Runtime)
 
   # Output file path
-  output_file: "./converted_models/oceanguard_base.bin"
+  output_file: "./outputs/gemma-4-E2B-it-oceanguard.litertlm"
 
 # LoRA Adapter Configuration
 lora_adapter:
-  # Path to fine-tuned LoRA adapter weights
-  # TODO: Update this path after E2B training completes
-  # For RTX 5090 training: "../outputs/gemma3n/runs/gemma3n_e2b_rtx5090_mobile_v1/adapter_model.safetensors"
-  # For RTX 2070 training: "../outputs/gemma3n/runs/gemma3n_e2b_rtx2070_mobile_v1/adapter_model.safetensors"
-  adapter_path: "../outputs/gemma3n/runs/gemma3n_e2b_rtx5090_mobile_v1/adapter_model.safetensors"
+  # exp12_vision_lora — winner adapter (mAP@0.5=0.3256, Δ+0.2189 vs base 0.1067)
+  # vision_lora=True: SAME target modules applied to BOTH language tower AND SigLIP2
+  # vision encoder. Trainable params ≈ 60M (≈ 1.2 % of 5.15 B base).
+  # HF: asferrer/gemma-4-E2B-it-oceanguard-marine-debris
+  adapter_path: "../finetune/outputs/grid_best/adapter"
 
-  # Alternative paths (if using different training runs)
-  # adapter_path: "../outputs/gemma3n/runs/gemma3n_e2b_waste_peft_v1/adapter_model.safetensors"
-
-  # LoRA configuration (must match training config)
-  rank: 64  # Must match training config (64 for RTX 5090, 32 for RTX 2070)
-  alpha: 64
+  # LoRA configuration — must match exp12 training config exactly
+  rank: 16
+  alpha: 32
   target_modules:
     - "q_proj"
     - "k_proj"
@@ -44,8 +42,8 @@ lora_adapter:
     - "up_proj"
     - "down_proj"
 
-  # Output file path
-  output_file: "./converted_models/oceanguard_adapter.bin"
+  # Output file — finetuned litertlm (Plan A: LoRA in-model; Plan B: merged)
+  output_file: "./outputs/gemma-4-E2B-it-oceanguard.litertlm"
 
 # Conversion Settings
 conversion:
