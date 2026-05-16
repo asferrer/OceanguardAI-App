@@ -50,21 +50,18 @@ displays in the gallery / shareable card):
 
 | Recommended | Path | Notes |
 |---|---|---|
-| **Primary** | `OceanguardAI/assets/banner.svg` (export to 1200×630 PNG) | Wide hero with the OceanGuard logo + ocean gradient, optimised for social-share aspect ratio. |
-| Fallback A | `OceanguardAI/assets/logo.png` | Square logo, 512×512. Safe if Kaggle rejects the wide banner. |
+| **Primary** | `docs/submission/cover_1200x630.png` | Pre-rendered 1200×630 PNG with the OceanGuard logo, the Gemma 4 tagline, the `LoRA mAP@0.5 +205 %` badge and the Apache 2.0 marker. Ready to upload as-is. |
+| Fallback A | `OceanguardAI/assets/logo.png` | Square logo, 512×512. Safe if Kaggle rejects the wide cover. |
 | Fallback B | `OceanguardAI-App/docs/submission/diagrams/architecture.png` | High-density technical diagram — works as a thumbnail for a more research-oriented framing. |
 
-**To export `banner.svg` → PNG (1200×630, the Kaggle-recommended cover ratio):**
+The cover is a Chrome-headless render of an HTML template so the
+typography is sharp at the exact 1200×630 Kaggle ratio. To regenerate
+(after edits to wording or accent colours):
 
 ```bash
-# Inkscape (preferred — preserves text):
-inkscape OceanguardAI/assets/banner.svg \
-  --export-type=png --export-filename=cover.png \
-  --export-width=1200 --export-height=630
-
-# Or ImageMagick:
-magick -background none -density 144 OceanguardAI/assets/banner.svg \
-  -resize 1200x630 cover.png
+chrome --headless=new --window-size=1200,630 \
+  --screenshot=docs/submission/cover_1200x630.png \
+  file:///$PWD/docs/submission/cover_template.html
 ```
 
 ---
@@ -286,9 +283,18 @@ Each report:
 
 ## Honest engineering disclosures
 
-- **The published `.litertlm`** is the merged base + adapter export of
-  `exp12_vision_lora` — the Android app picks it up via the in-app
-  BASE / FINETUNED variant selector. No `adb push`, no APK rebuild.
+- **The `.litertlm` export of the fine-tune is pending upstream tooling.**
+  The LoRA adapter is published on HuggingFace and reproducible end-to-end via
+  PEFT / Unsloth. The merged base + adapter `.litertlm` build that the Android
+  app's FINETUNED selector consumes depends on Gemma 4 support landing in
+  MediaPipe's `tasks.python.genai.converter` or `ai-edge-torch` (Gemma 4's
+  MatMul-Free MLP + interleaved local/global attention are not yet supported
+  in the public converters as of May 2026). All conversion scripts and the
+  in-app variant selector are wired and idempotent in this same repository,
+  ready to re-run as soon as upstream catches up. Until then the APK ships
+  with the unmodified `google/gemma-4-E2B-it` LiteRT-LM build via the BASE
+  selector — same on-device, fully-offline experience, just without the
+  fine-tune gains reported above.
 - **Geographic bias.** Training data is predominantly Japan and the
   north-western Pacific. Mediterranean, tropical, polar and freshwater
   performance not yet measured.

@@ -97,6 +97,7 @@ CLAUDE.md
 # Local artifacts that should never reach a public snapshot
 *.html
 !OceanguardAI/index.html
+!docs/submission/*.html
 dumpstate-*.zip
 graphify-out/
 bugreport-*.zip
