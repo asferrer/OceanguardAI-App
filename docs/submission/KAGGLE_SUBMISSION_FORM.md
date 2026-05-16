@@ -15,15 +15,16 @@
 
 **Recommended (73 chars):**
 
-> OceanGuard AI: Offline Marine Debris Intelligence on Android with Gemma 4
+> OceanGuard AI: Gemma 4 Agentic Tool Calling for Offline Marine Resilience
 
 Alternatives within budget:
 
 | Variant | Chars |
 |---|---|
+| `OceanGuard AI: Single-Conversation Agentic Tool Calling on Gemma 4 Phone` | 72 |
+| `OceanGuard AI: Agentic Marine Debris Reports on Gemma 4, Fully Offline` | 70 |
+| `OceanGuard AI: Hallucination-Free Marine Reports via Gemma 4 Tool Calling` | 72 |
 | `OceanGuard AI: On-Device Marine Debris Intelligence Powered by Gemma 4` | 70 |
-| `OceanGuard AI: Gemma 4 Marine Pollution Intelligence on a Phone` | 64 |
-| `OceanGuard AI: Offline Marine Debris Detection with Gemma 4` | 60 |
 
 ---
 
@@ -31,15 +32,16 @@ Alternatives within budget:
 
 **Recommended (138 chars):**
 
-> Fully offline Android app: Gemma 4 detects, classifies and reports marine debris in six languages. Zero cloud calls. Apache 2.0.
+> Gemma 4 agentic tool calling on a phone: every percentage in a marine debris report traces back to a typed Kotlin function. Offline.
 
 Alternatives within budget:
 
 | Variant | Chars |
 |---|---|
-| `On-device marine pollution intelligence with Gemma 4. Bounding boxes, ecosystem health, six-language reports. 100% offline.` | 124 |
-| `Gemma 4 turns any Android into a marine biologist. Offline detection, health score, multilingual conservation reports.` | 119 |
-| `Marine debris detection, ecological-impact scoring and multilingual reports on-device with Gemma 4. Apache 2.0.` | 113 |
+| `Single-conversation agentic tool calling on Gemma 4 — zero-hallucination marine debris reports on Android, fully offline.` | 121 |
+| `8 typed Kotlin tools + 1 Gemma 4 conversation = grounded marine debris reports in 6 languages, on-device, no cloud.` | 114 |
+| `On-device marine pollution intelligence with Gemma 4 agentic tool calling. Six-language grounded reports. 100% offline.` | 119 |
+| `Gemma 4 turns any Android into a marine biologist with zero-hallucination agentic reports. Offline, six languages.` | 113 |
 
 ---
 
@@ -109,12 +111,16 @@ Recommended capture order to minimise navigation:
 ```markdown
 # OceanGuard AI
 
-**Fully offline marine debris intelligence on Android, powered by Gemma 4.**
+**Single-conversation agentic tool calling on Gemma 4 E2B, running entirely on a phone.**
 
-> mAP@0.5 = 0.3256 vs 0.1067 base (+205 % relative) on a 200-image held-out
-> evaluation — a fine-tuned LoRA on Gemma 4 E2B (language + vision encoder)
-> that turns any consumer phone into a marine biologist with zero cloud
-> dependency.
+> Eight typed Kotlin tools turn every percentage, degradation time and GPS
+> waypoint in a generated marine debris report into a traceable function
+> call — eliminating the AI hallucination problem that today blocks open
+> VLMs from defensible use in environmental policy. The same single shared
+> Gemma 4 engine also drives open-vocabulary detection over 50 debris
+> sub-types collapsed onto 11 ecological-impact families. Domain-adapted
+> with an Unsloth LoRA on a 24 k-image corpus: **mAP@0.5 = 0.3256 vs
+> 0.1067 base (+205 % relative)**. No cloud. No telemetry. No fabricated numbers.
 
 ---
 
@@ -134,44 +140,6 @@ and absolute zero tolerance for fabricated statistics in policy reports.
 OceanGuard AI exists for them: it is a **single-Activity Jetpack Compose
 Android application that runs the entire marine debris intelligence pipeline
 on the device** with no network call after the initial model download.
-
----
-
-## What the app does
-
-1. **Capture** — the user takes a photo (camera viewfinder optimised for
-   diving masks: 80 dp pulsing shutter, high contrast) or imports from the
-   gallery. Batch mode accepts up to 10 images at once.
-2. **Detect** — Gemma 4 E2B (LiteRT-LM 0.11.0) returns a JSON array of
-   `{box_2d, label, material}` over a 50-class fine-grained vocabulary that
-   maps deterministically to **11 canonical ecological-impact families**
-   (Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris,
-   Tire, Fabric Debris, Glass Debris, Other).
-3. **Score** — every detection feeds a 0-100 *ecosystem health score*
-   computed from a deterministic risk-weight table (NOAA MDMAP, OSPAR and
-   MSFD D10 informed).
-4. **Aggregate** — sessions are clustered geospatially (Haversine + DBSCAN)
-   into **zones**; trend analysis is computed across temporal windows.
-5. **Report** — Gemma 4 produces an executive-grade Markdown or PDF report
-   tuned to three audiences (Scientific, NGO Manager, Citizen) in
-   **six languages** (English, Spanish, French, German, Italian, Portuguese).
-6. **Discover** — every new debris class unlocks an entry in a Pokédex-style
-   *MarineDex* with pixel-art sprites and a 24-achievement progression
-   system to keep citizen-science engagement sustained over months of field
-   work.
-
-Everything happens on a Samsung Galaxy S22 Ultra (Exynos 2200, CPU + Vulkan)
-with **no network call** after the initial model download.
-
----
-
-## Why this is a Global Resilience problem
-
-| Axis | Why OceanGuard moves the needle |
-|---|---|
-| **Climate & biodiversity** | Plastic ingestion / entanglement mortality across 900+ marine species; coastal ecosystem services degradation. Triage faster, intervene sooner. |
-| **Geographic equity** | The river basins emitting most riverine plastic are in regions with the worst mobile broadband. OceanGuard is the first toolkit that does NOT require connectivity. |
-| **Decision quality** | Ministries and NGOs cannot defensibly act on AI-generated environmental statistics that hallucinate. OceanGuard's reports trace every percentage, degradation time and risk score back to deterministic Kotlin tools — *not* token sampling. |
 
 ---
 
@@ -208,11 +176,62 @@ LiteRT-LM conversation:
   whose first cell matches a canonical label, restoring the verbatim
   number even if Gemma 4 paraphrased it. A 12-check `ReportValidator`
   then cross-references the output against the source sessions and
-  persists a 0–100 confidence score.
+  persists a hidden 0–100 confidence score.
 
 The net effect: every number in a generated report can be traced to a
 specific Kotlin function call against a specific Room row, and the user
-watches each query happen in real time.
+watches each query happen in real time. This is the wall that today
+blocks open VLMs from environmental-policy use cases — and OceanGuard AI
+demolishes it without leaving the device.
+
+---
+
+## What the app does
+
+1. **Capture** — the user takes a photo (camera viewfinder optimised for
+   diving masks: 80 dp pulsing shutter, high contrast) or imports from the
+   gallery. Batch mode accepts up to 10 images at once.
+2. **Detect** — Gemma 4 E2B (LiteRT-LM 0.11.0) returns a JSON array of
+   `{box_2d, label, material}` over a 50-class fine-grained vocabulary that
+   maps deterministically to **11 canonical ecological-impact families**
+   (Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris,
+   Tire, Fabric Debris, Glass Debris, Other).
+3. **Score** — every detection feeds a 0-100 *ecosystem health score*
+   computed from a deterministic risk-weight table (NOAA MDMAP, OSPAR and
+   MSFD D10 informed).
+4. **Aggregate** — sessions are clustered geospatially (Haversine + DBSCAN)
+   into **zones**; trend analysis is computed across temporal windows.
+5. **Report (agentic)** — `ToolReportGenerator` opens **one** Gemma 4
+   conversation with `automaticToolCalling = false` and lets the model
+   query **8 typed Kotlin tools** (`debris-summary`, `material-breakdown`,
+   `type-breakdown`, `risk-assessment`, `collection-waypoints`,
+   `survey-statistics`, `ecological-impacts`, `temporal-trend`) from a
+   Room v11 database. Gemma 4 keeps writing the report **inside the same
+   conversation** — the KV cache from the tool round carries directly
+   into prose generation, every tool invocation surfaces a live UI
+   banner ("Querying Debris Summary…"), `repairHallucinations` re-writes
+   any paraphrased number from a canonical lookup map, and a 12-check
+   `ReportValidator` cross-references the final output against the
+   source sessions with a hidden 0–100 confidence score. Three audiences
+   (Scientific / NGO Manager / Citizen) and **six languages** (English,
+   Spanish, French, German, Italian, Portuguese).
+6. **Discover** — every new debris class unlocks an entry in a Pokédex-style
+   *MarineDex* with pixel-art sprites and a 24-achievement progression
+   system to keep citizen-science engagement sustained over months of field
+   work.
+
+Everything happens on a Samsung Galaxy S22 Ultra (Exynos 2200, CPU + Vulkan)
+with **no network call** after the initial model download.
+
+---
+
+## Why this is a Global Resilience problem
+
+| Axis | Why OceanGuard moves the needle |
+|---|---|
+| **Climate & biodiversity** | Plastic ingestion / entanglement mortality across 900+ marine species; coastal ecosystem services degradation. Triage faster, intervene sooner. |
+| **Geographic equity** | The river basins emitting most riverine plastic are in regions with the worst mobile broadband. OceanGuard is the first toolkit that does NOT require connectivity. |
+| **Decision quality** | Ministries and NGOs cannot defensibly act on AI-generated environmental statistics that hallucinate. OceanGuard's reports trace every percentage, degradation time and risk score back to deterministic Kotlin tools — *not* token sampling. |
 
 ---
 

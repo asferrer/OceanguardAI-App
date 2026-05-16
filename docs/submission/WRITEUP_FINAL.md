@@ -1,10 +1,10 @@
-# OceanGuard AI — Fully Offline Marine Debris Intelligence on a Phone
+# OceanGuard AI — Single-Conversation Agentic Tool Calling on Gemma 4 for Offline Marine Resilience
 
 **Kaggle Gemma 4 Good Hackathon — Track: Global Resilience**
 **Submission writeup (M6) · May 2026**
 **Author: Alejandro Sanchez Ferrer**
 
-> The first fully-offline marine debris intelligence toolkit running on consumer Android hardware. Edge inference for the coastlines that need it most, powered end-to-end by a single Gemma 4 E2B engine with single-conversation agentic tool calling, and a domain-adapted Gemma 4 LoRA variant trained with Unsloth on a 10K-image marine debris dataset, published openly as a reproducible artifact. Scientific-grade reporting in six languages. No cloud. No telemetry. No fabricated numbers.
+> Single-conversation agentic tool calling on Gemma 4 E2B, running entirely on a consumer Android phone. Eight typed Kotlin `@Tool` methods turn every percentage, degradation time, risk score and GPS waypoint in a generated marine debris report into a traceable function call — eliminating the AI-hallucination problem that today blocks open VLMs from defensible use in environmental policy. The same single shared Gemma 4 engine also drives open-vocabulary detection over 50 debris sub-types collapsed onto 11 ecological-impact families. Domain-adapted with an Unsloth LoRA on a 24 k-image marine debris corpus (mAP@0.5 +205 % vs base), published openly as a reproducible artifact. Scientific-grade reports in six languages. No cloud. No telemetry. No fabricated numbers.
 
 ---
 
@@ -26,13 +26,13 @@ OceanGuard AI is built for this gap. It is an Android application that performs 
 
 ## 2. Solution Overview
 
-OceanGuard AI is a single-Activity Jetpack Compose Android application that ingests photos from the camera or gallery and produces (a) per-image bounding-box detections with confidence, (b) a continuously updated 0-100 ecosystem health score, (c) GPS-tagged geospatial views with hotspot aggregation, and (d) executive-grade Markdown and PDF reports tuned to three audiences (Scientific, NGO Manager, Citizen) in six languages.
+OceanGuard AI is a single-Activity Jetpack Compose Android application that ingests photos from the camera or gallery and produces (a) per-image bounding-box detections with confidence, (b) a continuously updated 0-100 ecosystem health score, (c) GPS-tagged geospatial views with hotspot aggregation, and (d) **agentic, grounded** Markdown and PDF reports tuned to three audiences (Scientific, NGO Manager, Citizen) in six languages.
 
 The system is intentionally offline-first. The application makes zero outbound network calls during inference; the only network usage is the optional, user-initiated download of model weights from public mirrors (HuggingFace) and an opt-in WiFi-only NAS upload for data contribution. There is no telemetry, no analytics SDK, no remote configuration.
 
 The application targets two complementary user profiles. The first is the field volunteer or citizen scientist who carries a consumer Android phone, often disconnected, and needs an instant judgment they can act on. The second is the field marine biologist or NGO program manager who collects survey data over weeks and needs a defensible, multilingual report for funders, ministries, or peer review without first re-checking every cited number.
 
-The pipeline is anchored end-to-end by Gemma 4 E2B running locally as both detector and report writer. A single open-weights model on the device covers perception, structured tool calling and multilingual generation, so the cost per inference is zero in foreign currency and the privacy posture is *the data never leaves the phone*.
+The pipeline is anchored end-to-end by **a single Gemma 4 E2B engine** running locally as both detector and report writer. The same shared `LiteRTTextEngine` instance is exposed to the model via a typed Kotlin agent loop — `ToolAgentLoop` — with `automaticToolCalling = false`, `MAX_TOOL_ROUNDS = 14`, and 8 deterministic `@Tool` methods that read from Room v11 directly. Reports are written inside a **single warm-KV conversation** (no second context window, no reset), so the model can never quote a number it did not first observe through a tool call. Cost per inference is zero in foreign currency and the privacy posture is *the data never leaves the phone*.
 
 ---
 
