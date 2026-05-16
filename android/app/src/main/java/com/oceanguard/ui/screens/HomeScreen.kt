@@ -574,11 +574,9 @@ private fun UpdateAvailableDialog(
                 )
                 if (info.releaseNotes.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = info.releaseNotes.take(500),
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 10,
-                        overflow = TextOverflow.Ellipsis,
+                    com.oceanguard.ai.ui.components.MarkdownText(
+                        text = info.releaseNotes.take(800),
+                        modifier = Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState()),
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
