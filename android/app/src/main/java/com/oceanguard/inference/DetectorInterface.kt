@@ -70,6 +70,22 @@ object DebrisClasses {
 /**
  * Single detection with normalized [0,1] bounding box coordinates.
  *
+ * Three-level taxonomy lives on every detection:
+ * 1. [rawLabel]  — the free `snake_case` label the VLM actually emitted
+ *                  (`plastic_grocery_bag`, `soda_can`, `glass_jar`). This is
+ *                  what the bounding-box overlay displays so the user sees
+ *                  exactly what the model recognised.
+ * 2. [subType]   — the fine-grained [DebrisType] sub-type after alias resolution
+ *                  (`PLASTIC_BAG`, `CAN`, `GLASS_DEBRIS`). Drives the
+ *                  per-object icon and chip in the detected-objects list.
+ * 3. [className] — the canonical family ([DebrisType.canonical]) for the
+ *                  sub-type (`PLASTIC_DEBRIS`, `CAN`, `GLASS_DEBRIS`). Drives
+ *                  MarineDex unlocks, achievements, ecological-impact lookups
+ *                  and report aggregations.
+ *
+ * RT-DETRv2 detectors leave [rawLabel] and [subType] null — they only emit at
+ * the canonical level and the UI falls back to [className].
+ *
  * [material] is optional: Gemma 4 provides it from the VLM response,
  * RT-DETRv2 leaves it null (inferred later from [className]).
  */
@@ -82,6 +98,10 @@ data class DetectionResult(
     val className: String,
     val confidence: Float,
     val material: DebrisMaterial? = null,
+    /** Raw `snake_case` label emitted by the VLM (Gemma 4 only). */
+    val rawLabel: String? = null,
+    /** Fine-grained [DebrisType] sub-type name (Gemma 4 only). */
+    val subType: String? = null,
 ) {
     val width: Float get() = x2 - x1
     val height: Float get() = y2 - y1

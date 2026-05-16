@@ -163,11 +163,14 @@ class DetectionOrchestrator(
     private fun buildDebrisDetection(detections: List<DetectionResult>): DebrisDetection {
         val debrisList = detections.map { det ->
             val canonType = DebrisType.fromString(det.className).canonical()
+            val subType = det.subType?.let { DebrisType.fromString(it) }
             Debris(
                 bbox = BoundingBox(det.x1, det.y1, det.width, det.height),
-                material = classNameToMaterial(canonType.name),
+                material = det.material ?: classNameToMaterial(canonType.name),
                 type = canonType,
                 confidence = det.confidence,
+                rawLabel = det.rawLabel,
+                subType = subType?.takeIf { it != canonType },   // drop redundant
             )
         }
         return DebrisDetection(

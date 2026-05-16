@@ -19,7 +19,22 @@ data class Debris(
     val bbox: BoundingBox,
     val material: DebrisMaterial,
     val type: DebrisType,
-    val confidence: Float
+    val confidence: Float,
+    /**
+     * Raw `snake_case` label the VLM actually emitted (Gemma 4 vision detector).
+     * `null` when the detection comes from RT-DETRv2 (canonical-only).
+     * Shown verbatim on the bounding-box overlay so the user sees what the
+     * model recognised — not the canonical bucket.
+     */
+    val rawLabel: String? = null,
+    /**
+     * Fine-grained [DebrisType] sub-type after alias resolution (`PLASTIC_BAG`,
+     * `GLASS_JAR`, `CIGARETTE_BUTT`). Always `subType.canonical() == type`.
+     * `null` for RT-DETRv2 (canonical-only). The UI uses `subType ?: type` for
+     * per-object icons and labels, while [type] continues to drive achievements,
+     * MarineDex unlocks and report aggregations.
+     */
+    val subType: DebrisType? = null,
 ) {
     /**
      * Get risk score based on material and type

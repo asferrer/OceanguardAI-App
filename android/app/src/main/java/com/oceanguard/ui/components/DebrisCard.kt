@@ -120,7 +120,23 @@ fun DebrisCard(
     val risk      = riskIndicator(debris.getRiskScore())
     val confidePct = (debris.confidence * 100).toInt()
 
-    val a11yDesc = "${debris.type.displayName()}, " +
+    // Three-level display:
+    //  - primaryName    -> what Gemma 4 said ("Plastic Grocery Bag") when present,
+    //                      else the sub-type display name, else the canonical family.
+    //  - subFamilyLabel -> the canonical family ("Plastic Debris") shown as
+    //                      secondary text so the user still sees the bucket the
+    //                      detection feeds into (achievements, MarineDex, report).
+    val rawDisplay = debris.rawLabel
+        ?.replace('_', ' ')
+        ?.split(' ')
+        ?.joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
+    val subDisplay = debris.subType?.displayName()
+    val primaryName = rawDisplay ?: subDisplay ?: debris.type.displayName()
+    val showFamily  = debris.type.displayName() != primaryName
+    val subFamilyLabel = if (showFamily) debris.type.displayName() else null
+
+    val a11yDesc = "$primaryName, " +
+            (subFamilyLabel?.let { "$it family, " } ?: "") +
             "${debris.material.displayName()} material, " +
             "$confidePct% confidence, ${risk.description}"
 
@@ -169,11 +185,18 @@ fun DebrisCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text       = debris.type.displayName(),
+                    text       = primaryName,
                     style      = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color      = MaterialTheme.colorScheme.onSurface
                 )
+                if (subFamilyLabel != null) {
+                    Text(
+                        text  = subFamilyLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
                     text  = debris.material.displayName(),
                     style = MaterialTheme.typography.bodySmall,

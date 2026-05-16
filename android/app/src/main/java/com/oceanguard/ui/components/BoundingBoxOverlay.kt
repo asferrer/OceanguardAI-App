@@ -290,8 +290,16 @@ internal fun DrawScope.drawDetection(
         strokeWidth = strokeWidthPx,
     )
 
-    // 4. Pill-shaped label chip
-    val label      = "${detection.className} ${(detection.confidence * 100).toInt()}%"
+    // 4. Pill-shaped label chip — prefer the raw VLM label so the user sees
+    //    what the model actually recognised ("plastic_grocery_bag") rather than
+    //    the canonical bucket ("PLASTIC_DEBRIS"). Falls back to className for
+    //    RT-DETRv2 detections that have no raw label.
+    val displayName = detection.rawLabel
+        ?.replace('_', ' ')
+        ?.split(' ')
+        ?.joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
+        ?: detection.className
+    val label      = "$displayName ${(detection.confidence * 100).toInt()}%"
     val textSizePx = 12.dp.toPx()
     val paddingH   = 6.dp.toPx()
     val paddingV   = 3.dp.toPx()

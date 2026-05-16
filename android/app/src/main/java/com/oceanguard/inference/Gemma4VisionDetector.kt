@@ -33,26 +33,41 @@ class Gemma4VisionDetector(
         /**
          * Detection prompt tuned for underwater capture. Kept short on purpose
          * (memory: `feedback_detector_prompt.md`) — closed-class lists,
-         * chain-of-thought and verbose disclaimers degrade Gemma 4 E2B output
-         * and inflate prefill latency on Exynos 2200 CPU sampling.
+         * chain-of-thought, negative rules and verbose disclaimers degrade
+         * Gemma 4 E2B output and inflate prefill latency on Exynos 2200 CPU
+         * sampling.
+         *
+         * Design principles:
+         * 1. **Force a specific object label**, not the canonical category.
+         *    "aluminum_can" beats "metal_debris", "rubber_glove" beats
+         *    "rubber_debris". The client-side [LABEL_TO_TYPE] folds the free
+         *    label into one of the canonical [DebrisType]s, so accuracy comes
+         *    from the model recognising the actual object, not from picking
+         *    the right bucket itself.
+         * 2. **No negative rules.** Mentioning "fishing_net" in a "do NOT use
+         *    for X" sentence inflates fishing_net recall via the pink-elephant
+         *    effect — Gemma 4 E2B does not handle explicit negations well.
+         * 3. **Material list is the 5 universal materials + Other**, *not* the
+         *    full 11-value DebrisMaterial enum. Anything beyond Plastic/Metal/
+         *    Glass/Rubber/Fabric/Other is mapped client-side. Crucially,
+         *    `Fishing_Net` is NOT in the material list — it is an object, not
+         *    a material, and putting it there doubled the fishing_net bias.
          *
          * The anti-organism rule lives in [SYSTEM_MESSAGE] so it can be cached
          * across calls; the user prompt only carries the output schema +
-         * examples biased toward the canonical 11 types ([DebrisType.CANONICAL]).
+         * positively-framed examples.
          */
         private val DETECTION_PROMPT = """
-Detect man-made marine debris. Output ONLY a JSON array.
+Detect every man-made debris object. Output ONLY a JSON array of:
+{"box_2d":[y_min,x_min,y_max,x_max],"label":"<snake_case>","material":"<Plastic|Metal|Glass|Rubber|Fabric|Other>"}
+Coords are integers 0-1000.
 
-Schema per object:
-- "box_2d": [y_min, x_min, y_max, x_max] integers 0-1000
-- "label": snake_case (e.g. plastic_bottle, aluminum_can, rubber_glove, face_mask,
-  plastic_bag, styrofoam, cigarette_butt, glass_bottle, tire). Use "fishing_net" ONLY
-  when a clear mesh/netting pattern or coiled monofilament fishing line is visible —
-  do NOT label generic ropes, decorative cords, or marker buoys as fishing_net. Fall
-  back to plastic_debris / metal_debris / glass_debris / fabric_debris if unsure.
-- "material": Plastic, Metal, Glass, Rubber, Fabric, Fishing_Net, or Other.
+Label MUST be the specific object (plastic_bottle, aluminum_can, glass_bottle,
+rubber_glove, tire, face_mask, fishing_net, styrofoam_cup, cigarette_butt,
+plastic_bag, syringe, battery, flip_flop). Generic *_debris labels are
+forbidden unless the object is truly unrecognisable.
 
-If no man-made debris is visible: []
+If nothing visible: [].
 """.trimIndent()
 
         private const val SYSTEM_MESSAGE =
@@ -67,18 +82,25 @@ If no man-made debris is visible: []
          * that would later be invisible in the MarineDex or duplicated against
          * its canonical parent in the report tables.
          *
-         * Adding new alias keys is cheap and improves recall; pointing them at
-         * an extended enum is a regression — always pick the canonical parent
-         * shown in [DebrisType.CANONICAL].
+         * Adding new alias keys is cheap and improves recall. Point each alias
+         * at the **finest-grained sub-type that exists in the enum** (e.g.
+         * `glass_bottle -> GLASS_BOTTLE`, not `GLASS_DEBRIS`). The resolver
+         * never canonicalises here — `parseDetections` keeps the sub-type as
+         * `DetectionResult.subType` and stores `subType.canonical()` as the
+         * family in `DetectionResult.className`, so achievements, MarineDex
+         * and reports keep working off the canonical level while the bounding
+         * box and the per-object list get the granular sub-type.
          */
         private val LABEL_TO_TYPE: Map<String, DebrisType> = buildMap {
-            // ---- BOTTLE (RT-DETR core, plastic bottle family) ----
+            // ---- BOTTLE family (canonical: BOTTLE) ----
             put("bottle", DebrisType.BOTTLE)
             put("plastic_bottle", DebrisType.BOTTLE)
             put("water_bottle", DebrisType.BOTTLE)
             put("soda_bottle", DebrisType.BOTTLE)
+            put("bottle_cap", DebrisType.BOTTLE_CAP)
+            put("cap", DebrisType.BOTTLE_CAP)
 
-            // ---- CAN (RT-DETR core, metallic beverage cans) ----
+            // ---- CAN family (canonical: CAN) ----
             put("can", DebrisType.CAN)
             put("aluminum_can", DebrisType.CAN)
             put("tin_can", DebrisType.CAN)
@@ -86,7 +108,7 @@ If no man-made debris is visible: []
             put("soda_can", DebrisType.CAN)
             put("beer_can", DebrisType.CAN)
 
-            // ---- FISHING_NET (only unambiguous fishing-gear vocabulary) ----
+            // ---- FISHING family (canonical: FISHING_NET) ----
             // Generic words like rope/cordage/buoy/float/trap have been moved
             // to OTHER because they cause false positives: a decorative rope,
             // a navigation buoy or a mouse trap are NOT fishing gear and
@@ -96,87 +118,85 @@ If no man-made debris is visible: []
             put("fishing_net", DebrisType.FISHING_NET)
             put("ghost_net", DebrisType.FISHING_NET)
             put("fishing_gear", DebrisType.FISHING_NET)
-            put("fishing_line", DebrisType.FISHING_NET)
-            put("fishing_rope", DebrisType.FISHING_NET)
-            put("fishing_buoy", DebrisType.FISHING_NET)
-            put("fishing_trap", DebrisType.FISHING_NET)
-            put("crab_pot", DebrisType.FISHING_NET)
-            put("lobster_pot", DebrisType.FISHING_NET)
-            put("fishing_rod", DebrisType.FISHING_NET)
-            put("fishing_pole", DebrisType.FISHING_NET)
             put("trawl_net", DebrisType.FISHING_NET)
             put("gill_net", DebrisType.FISHING_NET)
             put("seine_net", DebrisType.FISHING_NET)
+            put("fishing_line", DebrisType.FISHING_LINE)
+            put("fishing_rope", DebrisType.FISHING_LINE)
+            put("fishing_buoy", DebrisType.FISHING_BUOY)
+            put("fishing_trap", DebrisType.FISHING_TRAP)
+            put("crab_pot", DebrisType.FISHING_TRAP)
+            put("lobster_pot", DebrisType.FISHING_TRAP)
+            put("fishing_rod", DebrisType.FISHING_TRAP)
+            put("fishing_pole", DebrisType.FISHING_TRAP)
 
-            // ---- GLOVE (RT-DETR core) ----
+            // ---- GLOVE family (canonical: GLOVE) ----
             put("glove", DebrisType.GLOVE)
             put("rubber_glove", DebrisType.GLOVE)
             put("latex_glove", DebrisType.GLOVE)
             put("work_glove", DebrisType.GLOVE)
 
-            // ---- MASK (RT-DETR core, single-use face masks) ----
+            // ---- MASK family (canonical: MASK) ----
             put("mask", DebrisType.MASK)
             put("face_mask", DebrisType.MASK)
             put("surgical_mask", DebrisType.MASK)
             put("respirator", DebrisType.MASK)
 
-            // ---- TIRE (RT-DETR core, rubber family) ----
+            // ---- TIRE family (canonical: TIRE) ----
             put("tire", DebrisType.TIRE)
             put("tyre", DebrisType.TIRE)
-            put("flip_flop", DebrisType.TIRE)
-            put("sandal", DebrisType.TIRE)
-            put("rubber_hose", DebrisType.TIRE)
-            put("hose", DebrisType.TIRE)
+            put("flip_flop", DebrisType.FLIP_FLOP)
+            put("sandal", DebrisType.FLIP_FLOP)
+            put("rubber_hose", DebrisType.RUBBER_HOSE)
+            put("hose", DebrisType.RUBBER_HOSE)
 
-            // ---- METAL_DEBRIS (RT-DETR core, hazardous metal containers, etc.) ----
+            // ---- METAL_DEBRIS family (canonical: METAL_DEBRIS) ----
             put("metal_debris", DebrisType.METAL_DEBRIS)
             put("scrap_metal", DebrisType.METAL_DEBRIS)
             put("metal_fragment", DebrisType.METAL_DEBRIS)
             put("metal", DebrisType.METAL_DEBRIS)
-            put("aerosol_can", DebrisType.METAL_DEBRIS)
-            put("spray_can", DebrisType.METAL_DEBRIS)
-            put("metal_drum", DebrisType.METAL_DEBRIS)
-            put("barrel", DebrisType.METAL_DEBRIS)
-            put("wire_cable", DebrisType.METAL_DEBRIS)
-            put("wire", DebrisType.METAL_DEBRIS)
-            put("cable", DebrisType.METAL_DEBRIS)
-            put("battery", DebrisType.METAL_DEBRIS)
-            put("electronics", DebrisType.METAL_DEBRIS)
-            put("electronic", DebrisType.METAL_DEBRIS)
-            put("paint_can", DebrisType.METAL_DEBRIS)
-            put("oil_container", DebrisType.METAL_DEBRIS)
-            put("jerry_can", DebrisType.METAL_DEBRIS)
-            put("chemical_drum", DebrisType.METAL_DEBRIS)
+            put("aerosol_can", DebrisType.AEROSOL_CAN)
+            put("spray_can", DebrisType.AEROSOL_CAN)
+            put("metal_drum", DebrisType.METAL_DRUM)
+            put("barrel", DebrisType.METAL_DRUM)
+            put("wire_cable", DebrisType.WIRE_CABLE)
+            put("wire", DebrisType.WIRE_CABLE)
+            put("cable", DebrisType.WIRE_CABLE)
+            put("battery", DebrisType.BATTERY)
+            put("electronics", DebrisType.ELECTRONICS)
+            put("electronic", DebrisType.ELECTRONICS)
+            put("paint_can", DebrisType.PAINT_CAN)
+            put("oil_container", DebrisType.OIL_CONTAINER)
+            put("jerry_can", DebrisType.OIL_CONTAINER)
+            put("chemical_drum", DebrisType.CHEMICAL_DRUM)
 
-            // ---- PLASTIC_DEBRIS (RT-DETR core + plastic sub-types) ----
+            // ---- PLASTIC_DEBRIS family (canonical: PLASTIC_DEBRIS) ----
             put("plastic_debris", DebrisType.PLASTIC_DEBRIS)
             put("plastic_fragment", DebrisType.PLASTIC_DEBRIS)
             put("plastic", DebrisType.PLASTIC_DEBRIS)
-            put("bottle_cap", DebrisType.PLASTIC_DEBRIS)
-            put("cap", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_bag", DebrisType.PLASTIC_DEBRIS)
-            put("bag", DebrisType.PLASTIC_DEBRIS)
-            put("grocery_bag", DebrisType.PLASTIC_DEBRIS)
-            put("shopping_bag", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_grocery_bag", DebrisType.PLASTIC_DEBRIS)
-            put("food_wrapper", DebrisType.PLASTIC_DEBRIS)
-            put("wrapper", DebrisType.PLASTIC_DEBRIS)
-            put("styrofoam", DebrisType.PLASTIC_DEBRIS)
-            put("polystyrene", DebrisType.PLASTIC_DEBRIS)
-            put("foam", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_cup", DebrisType.PLASTIC_DEBRIS)
-            put("cup", DebrisType.PLASTIC_DEBRIS)
-            put("straw", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_straw", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_utensil", DebrisType.PLASTIC_DEBRIS)
-            put("utensil", DebrisType.PLASTIC_DEBRIS)
-            put("fork", DebrisType.PLASTIC_DEBRIS)
-            put("spoon", DebrisType.PLASTIC_DEBRIS)
-            put("knife", DebrisType.PLASTIC_DEBRIS)
-            put("six_pack_ring", DebrisType.PLASTIC_DEBRIS)
-            put("plastic_sheeting", DebrisType.PLASTIC_DEBRIS)
-            put("tarp", DebrisType.PLASTIC_DEBRIS)
-            put("diaper", DebrisType.PLASTIC_DEBRIS)
+            put("plastic_bag", DebrisType.PLASTIC_BAG)
+            put("bag", DebrisType.PLASTIC_BAG)
+            put("grocery_bag", DebrisType.PLASTIC_BAG)
+            put("shopping_bag", DebrisType.PLASTIC_BAG)
+            put("plastic_grocery_bag", DebrisType.PLASTIC_BAG)
+            put("food_wrapper", DebrisType.FOOD_WRAPPER)
+            put("wrapper", DebrisType.FOOD_WRAPPER)
+            put("styrofoam", DebrisType.STYROFOAM)
+            put("polystyrene", DebrisType.STYROFOAM)
+            put("foam", DebrisType.STYROFOAM)
+            put("plastic_cup", DebrisType.PLASTIC_CUP)
+            put("cup", DebrisType.PLASTIC_CUP)
+            put("straw", DebrisType.STRAW)
+            put("plastic_straw", DebrisType.STRAW)
+            put("plastic_utensil", DebrisType.PLASTIC_UTENSIL)
+            put("utensil", DebrisType.PLASTIC_UTENSIL)
+            put("fork", DebrisType.PLASTIC_UTENSIL)
+            put("spoon", DebrisType.PLASTIC_UTENSIL)
+            put("knife", DebrisType.PLASTIC_UTENSIL)
+            put("six_pack_ring", DebrisType.SIX_PACK_RING)
+            put("plastic_sheeting", DebrisType.PLASTIC_SHEETING)
+            put("tarp", DebrisType.PLASTIC_SHEETING)
+            put("diaper", DebrisType.DIAPER)
             // Generic litter words: Gemma 4 emits these when uncertain.
             put("litter", DebrisType.PLASTIC_DEBRIS)
             put("debris", DebrisType.PLASTIC_DEBRIS)
@@ -185,65 +205,65 @@ If no man-made debris is visible: []
             put("waste", DebrisType.PLASTIC_DEBRIS)
             put("rubbish", DebrisType.PLASTIC_DEBRIS)
 
-            // ---- GLASS_DEBRIS (extended catch-all) ----
+            // ---- GLASS_DEBRIS family (canonical: GLASS_DEBRIS) ----
             put("glass_debris", DebrisType.GLASS_DEBRIS)
-            put("glass_fragment", DebrisType.GLASS_DEBRIS)
-            put("glass_shard", DebrisType.GLASS_DEBRIS)
             put("glass", DebrisType.GLASS_DEBRIS)
-            put("glass_bottle", DebrisType.GLASS_DEBRIS)
-            put("glass_jar", DebrisType.GLASS_DEBRIS)
-            put("jar", DebrisType.GLASS_DEBRIS)
-            put("light_bulb", DebrisType.GLASS_DEBRIS)
-            put("bulb", DebrisType.GLASS_DEBRIS)
-            put("fluorescent", DebrisType.GLASS_DEBRIS)
-            put("glass_cup", DebrisType.GLASS_DEBRIS)
-            put("glass_mug", DebrisType.GLASS_DEBRIS)
+            put("glass_bottle", DebrisType.GLASS_BOTTLE)
+            put("glass_jar", DebrisType.GLASS_JAR)
+            put("jar", DebrisType.GLASS_JAR)
+            put("glass_fragment", DebrisType.GLASS_FRAGMENT)
+            put("glass_shard", DebrisType.GLASS_FRAGMENT)
+            put("glass_cup", DebrisType.GLASS_FRAGMENT)
+            put("glass_mug", DebrisType.GLASS_FRAGMENT)
+            put("light_bulb", DebrisType.LIGHT_BULB)
+            put("bulb", DebrisType.LIGHT_BULB)
+            put("fluorescent", DebrisType.LIGHT_BULB)
 
-            // ---- FABRIC_DEBRIS (extended catch-all) ----
+            // ---- FABRIC_DEBRIS family (canonical: FABRIC_DEBRIS) ----
             put("fabric_debris", DebrisType.FABRIC_DEBRIS)
             put("textile_debris", DebrisType.FABRIC_DEBRIS)
             put("textile", DebrisType.FABRIC_DEBRIS)
             put("cloth", DebrisType.FABRIC_DEBRIS)
             put("fabric", DebrisType.FABRIC_DEBRIS)
-            put("clothing", DebrisType.FABRIC_DEBRIS)
-            put("clothes", DebrisType.FABRIC_DEBRIS)
-            put("shirt", DebrisType.FABRIC_DEBRIS)
-            put("pants", DebrisType.FABRIC_DEBRIS)
-            put("shoe", DebrisType.FABRIC_DEBRIS)
-            put("footwear", DebrisType.FABRIC_DEBRIS)
-            put("boot", DebrisType.FABRIC_DEBRIS)
-            put("sneaker", DebrisType.FABRIC_DEBRIS)
+            put("clothing", DebrisType.CLOTHING)
+            put("clothes", DebrisType.CLOTHING)
+            put("shirt", DebrisType.CLOTHING)
+            put("pants", DebrisType.CLOTHING)
+            put("shoe", DebrisType.SHOE)
+            put("footwear", DebrisType.SHOE)
+            put("boot", DebrisType.SHOE)
+            put("sneaker", DebrisType.SHOE)
 
-            // ---- OTHER (hazardous, naturals, ambiguous) ----
+            // ---- OTHER family (canonical: OTHER) ----
             put("other", DebrisType.OTHER)
-            put("cigarette_butt", DebrisType.OTHER)
-            put("cigarette", DebrisType.OTHER)
-            put("cigarette_lighter", DebrisType.OTHER)
-            put("lighter", DebrisType.OTHER)
-            put("syringe", DebrisType.OTHER)
-            put("needle", DebrisType.OTHER)
-            put("medical_waste", DebrisType.OTHER)
-            put("cardboard", DebrisType.OTHER)
-            put("cardboard_box", DebrisType.OTHER)
-            put("paper", DebrisType.OTHER)
-            put("newspaper", DebrisType.OTHER)
-            put("wood_pallet", DebrisType.OTHER)
-            put("pallet", DebrisType.OTHER)
-            put("crate", DebrisType.OTHER)
-            put("lumber", DebrisType.OTHER)
-            put("plywood", DebrisType.OTHER)
-            put("wood", DebrisType.OTHER)
-            put("ceramic_fragment", DebrisType.OTHER)
-            put("ceramic", DebrisType.OTHER)
-            put("pottery", DebrisType.OTHER)
-            put("mug", DebrisType.OTHER)
-            put("ceramic_mug", DebrisType.OTHER)
-            put("ceramic_cup", DebrisType.OTHER)
-            put("dish", DebrisType.OTHER)
-            put("plate", DebrisType.OTHER)
-            put("bowl", DebrisType.OTHER)
-            put("brick", DebrisType.OTHER)
-            put("concrete", DebrisType.OTHER)
+            put("cigarette_butt", DebrisType.CIGARETTE_BUTT)
+            put("cigarette", DebrisType.CIGARETTE_BUTT)
+            put("cigarette_lighter", DebrisType.CIGARETTE_LIGHTER)
+            put("lighter", DebrisType.CIGARETTE_LIGHTER)
+            put("syringe", DebrisType.SYRINGE)
+            put("needle", DebrisType.SYRINGE)
+            put("medical_waste", DebrisType.SYRINGE)
+            put("cardboard", DebrisType.CARDBOARD)
+            put("cardboard_box", DebrisType.CARDBOARD)
+            put("paper", DebrisType.PAPER)
+            put("newspaper", DebrisType.PAPER)
+            put("wood_pallet", DebrisType.WOOD_PALLET)
+            put("pallet", DebrisType.WOOD_PALLET)
+            put("crate", DebrisType.WOOD_PALLET)
+            put("lumber", DebrisType.LUMBER)
+            put("plywood", DebrisType.LUMBER)
+            put("wood", DebrisType.LUMBER)
+            put("ceramic_fragment", DebrisType.CERAMIC_FRAGMENT)
+            put("ceramic", DebrisType.CERAMIC_FRAGMENT)
+            put("pottery", DebrisType.CERAMIC_FRAGMENT)
+            put("mug", DebrisType.CERAMIC_FRAGMENT)
+            put("ceramic_mug", DebrisType.CERAMIC_FRAGMENT)
+            put("ceramic_cup", DebrisType.CERAMIC_FRAGMENT)
+            put("dish", DebrisType.CERAMIC_FRAGMENT)
+            put("plate", DebrisType.CERAMIC_FRAGMENT)
+            put("bowl", DebrisType.CERAMIC_FRAGMENT)
+            put("brick", DebrisType.BRICK)
+            put("concrete", DebrisType.BRICK)
         }
 
         /** Maps Gemma 4 material strings to [DebrisMaterial]. */
@@ -293,10 +313,13 @@ If no man-made debris is visible: []
             textEngine.generateWithImage(
                 bitmap = bitmap,
                 prompt = DETECTION_PROMPT,
-                // 384 fits ~10 typical detections in JSON without truncation;
-                // the previous 1024 budget rarely filled past 100 tokens and
-                // forced the CPU sampler to pay for unused slots.
-                maxTokens = 384,
+                // 512 fits ~14 typical detections in JSON without truncation.
+                // 384 (previous value) cut off cluttered scenes mid-array, and
+                // a truncated JSON makes the parser drop every box after the
+                // failure point — including the one the user actually cared
+                // about. 1024 was wasteful: prefill rarely filled past 200
+                // tokens but the CPU sampler pays per slot allocated.
+                maxTokens = 512,
                 systemMessage = SYSTEM_MESSAGE,
                 // Structured JSON output benefits from low entropy. 0.1 + topK=10
                 // keeps the model deterministic (less drift mid-array) and cuts
@@ -356,13 +379,16 @@ If no man-made debris is visible: []
                     // detection quality (see feedback_detector_prompt.md), so
                     // we derive it deterministically from the resolution path.
                     val resolution = resolveDebrisTypeWithConfidence(label, materialStr)
-                    val debrisType = resolution.type
-                    // Map material string or infer from type
+                    val subType = resolution.type                  // fine-grained, e.g. PLASTIC_BAG
+                    val canonical = subType.canonical()            // family, e.g. PLASTIC_DEBRIS
+                    // Use the sub-type for material inference so that, e.g., a
+                    // GLASS_BOTTLE sub-type contributes GLASS rather than the
+                    // canonical BOTTLE family's PLASTIC default.
                     val material = if (materialStr != null) {
                         MATERIAL_MAP[materialStr.lowercase().replace(" ", "_")]
-                            ?: inferMaterial(debrisType)
+                            ?: inferMaterial(subType)
                     } else {
-                        inferMaterial(debrisType)
+                        inferMaterial(subType)
                     }
 
                     // box_2d is [y_min, x_min, y_max, x_max] on 1000-grid
@@ -376,7 +402,7 @@ If no man-made debris is visible: []
                     // type, treat that as corroboration and nudge confidence up.
                     val consistencyBonus = if (materialStr != null) {
                         val mappedMaterial = MATERIAL_MAP[materialStr.lowercase().replace(" ", "_")]
-                        if (mappedMaterial != null && mappedMaterial == inferMaterial(debrisType)) 0.05f else 0f
+                        if (mappedMaterial != null && mappedMaterial == inferMaterial(subType)) 0.05f else 0f
                     } else 0f
                     val finalConfidence = (resolution.confidence + consistencyBonus).coerceIn(0.30f, 0.95f)
 
@@ -385,10 +411,12 @@ If no man-made debris is visible: []
                         y1 = yMin / 1000f,
                         x2 = xMax / 1000f,
                         y2 = yMax / 1000f,
-                        classId = debrisType.ordinal,
-                        className = debrisType.name,
+                        classId = canonical.ordinal,
+                        className = canonical.name,        // canonical family (back-compat)
                         confidence = finalConfidence,
                         material = material,
+                        rawLabel = label,                  // verbatim VLM label for the BBox overlay
+                        subType = subType.name,            // fine-grained sub-type for icon / list chip
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "Skipping malformed detection element: ${e.message}")
@@ -464,23 +492,28 @@ If no man-made debris is visible: []
     ): ResolvedDetection {
         val normalized = label.trim().lowercase().replace(" ", "_")
 
-        // 1. Exact match
+        // 1. Exact match — return the SUB-TYPE, not the canonical parent.
+        //    The caller (parseDetections) keeps both: subType for the
+        //    bounding-box / list icon, subType.canonical() for the
+        //    MarineDex / achievements / reports.
         LABEL_TO_TYPE[normalized]?.let {
-            return ResolvedDetection(it.canonical(), 0.85f)
+            return ResolvedDetection(it, 0.85f)
         }
 
-        // 2. Material-prefixed semantic match (label-driven)
+        // 2. Material-prefixed semantic match (label-driven). These map straight
+        //    to the canonical *_DEBRIS bucket because there is no finer
+        //    sub-type to recover ("glass_X" with X unknown).
         materialFromText(normalized)?.let { type ->
             Log.i(TAG, "Label '$label' resolved by label material prefix to ${type.name}")
-            return ResolvedDetection(type.canonical(), 0.78f)
+            return ResolvedDetection(type, 0.78f)
         }
 
-        // 3. Material hint from JSON `material` field
+        // 3. Material hint from JSON `material` field — same rationale.
         if (materialHint != null) {
             val hintNorm = materialHint.trim().lowercase().replace(" ", "_")
             materialFromText(hintNorm)?.let { type ->
                 Log.i(TAG, "Label '$label' resolved by material hint '$materialHint' to ${type.name}")
-                return ResolvedDetection(type.canonical(), 0.65f)
+                return ResolvedDetection(type, 0.65f)
             }
         }
 
@@ -490,14 +523,16 @@ If no man-made debris is visible: []
         //    such as "fishing_net" / "fishing_rope": that path was the main
         //    source of FISHING_NET false positives (decorative rope, sports
         //    nets, navigation buoys all got hijacked). Only match when the
-        //    Gemma label genuinely contains a known compound word.
+        //    Gemma label genuinely contains a known compound word. Sub-type
+        //    is preserved.
         for (key in LABEL_TO_TYPE.keys.sortedByDescending { it.length }) {
             if (normalized.contains(key)) {
-                return ResolvedDetection(LABEL_TO_TYPE.getValue(key).canonical(), 0.72f)
+                return ResolvedDetection(LABEL_TO_TYPE.getValue(key), 0.72f)
             }
         }
 
-        // 5. Plastic-debris catch-all for generic litter words
+        // 5. Plastic-debris catch-all for generic litter words. No sub-type to
+        //    recover, so we stay at the canonical bucket.
         if (
             "plastic" in normalized || "polymer" in normalized ||
             "trash" in normalized || "garbage" in normalized || "litter" in normalized ||
@@ -508,8 +543,8 @@ If no man-made debris is visible: []
             return ResolvedDetection(DebrisType.PLASTIC_DEBRIS, 0.55f)
         }
 
-        // 6. Last resort
-        val direct = DebrisType.fromString(label).canonical()
+        // 6. Last resort — DebrisType.fromString may hit an extended type (preserve it).
+        val direct = DebrisType.fromString(label)
         if (direct == DebrisType.OTHER && normalized != "other") {
             Log.w(TAG, "Label '$label' (normalized='$normalized') unmapped -> OTHER. Add to LABEL_TO_TYPE or taxonomy.")
         }
