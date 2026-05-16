@@ -79,6 +79,8 @@ import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.VlmDownloadState
+import com.oceanguard.ai.inference.TextModelVariant
+import com.oceanguard.ai.utils.ModelUpdate
 import com.oceanguard.ai.utils.UpdateInfo
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -139,10 +141,17 @@ fun HomeScreen(
         .collectAsStateWithLifecycle(initialValue = false)
     var showTransitionDialog by remember { mutableStateOf(false) }
 
-    // Update checker
+    // App update checker
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     LaunchedEffect(Unit) {
         updateInfo = app.updateChecker.check()
+    }
+
+    // Model update checker — runs after app update check to avoid overlap
+    var modelUpdateInfo by remember { mutableStateOf<ModelUpdate?>(null) }
+    LaunchedEffect(Unit) {
+        app.vlmModelManager.refreshBestModelFromManifest(app.modelUpdateChecker)
+        modelUpdateInfo = app.modelUpdateChecker.check()
     }
 
     LaunchedEffect(tourComplete) {
@@ -521,6 +530,26 @@ fun HomeScreen(
                 onDismiss = { updateInfo = null },
             )
         }
+
+        modelUpdateInfo?.let { update ->
+            ModelUpdateAvailableDialog(
+                update = update,
+                onDownload = {
+                    modelUpdateInfo = null
+                    app.launchVlmDownload(
+                        com.oceanguard.ai.inference.TextModelTier.GEMMA4_E2B,
+                        TextModelVariant.FINETUNED,
+                    )
+                },
+                onSkip = {
+                    scope.launch {
+                        app.settingsRepository.setSkippedFinetunedVersion(update.version)
+                    }
+                    modelUpdateInfo = null
+                },
+                onDismiss = { modelUpdateInfo = null },
+            )
+        }
         // Gemma 4 model download dialog. Confirming starts the download — we
         // intentionally do NOT navigate to the scan screen yet: scanning is
         // blocked until the model file is fully on disk, and the Home progress
@@ -566,26 +595,10 @@ private fun UpdateAvailableDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.update_available_title)) },
         text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.update_new_version, info.versionName),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                if (info.releaseNotes.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    com.oceanguard.ai.ui.components.MarkdownText(
-                        text = info.releaseNotes.take(800),
-                        modifier = Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState()),
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.update_data_preserved),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = stringResource(R.string.update_new_version, info.versionName),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         },
         confirmButton = {
             TextButton(onClick = onDownload) {
@@ -593,12 +606,57 @@ private fun UpdateAvailableDialog(
             }
         },
         dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.update_later))
+            }
+        },
+    )
+}
+
+@androidx.compose.runtime.Composable
+private fun ModelUpdateAvailableDialog(
+    update: ModelUpdate,
+    onDownload: () -> Unit,
+    onSkip: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val deltaStr = "+%.3f".format(update.deltaVsBase)
+    val sizeMb = update.sizeMb
+    val sizeStr = if (sizeMb > 1000) "~%.1f GB".format(sizeMb / 1000f) else "~$sizeMb MB"
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.model_update_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.model_update_description, update.version, deltaStr, sizeStr),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (update.releaseNotes.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = update.releaseNotes.take(600),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .heightIn(max = 200.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDownload) {
+                Text(stringResource(R.string.model_update_download_action))
+            }
+        },
+        dismissButton = {
             Row {
                 TextButton(onClick = onSkip) {
-                    Text(stringResource(R.string.update_skip_version))
+                    Text(stringResource(R.string.model_update_skip_action))
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.update_later))
+                    Text(stringResource(R.string.model_update_later_action))
                 }
             }
         },

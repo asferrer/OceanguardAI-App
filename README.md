@@ -1,237 +1,226 @@
-# OceanGuard AI
+<h1 align="center">OceanGuard AI &mdash; Android Application</h1>
 
-**On-device marine debris detection powered by Gemma 4 Vision -- 100% offline, zero cloud dependency.**
+<p align="center">
+  <strong>On-device marine debris intelligence powered by Gemma 4.</strong><br/>
+  <sub>100% offline &middot; agentic tool-calling reports &middot; 6 languages &middot; Apache 2.0</sub>
+</p>
 
-> Kaggle Gemma 4 Good Hackathon -- Global Resilience Track
+<p align="center">
+  <a href="https://github.com/asferrer/OceanguardAI/releases/latest">
+    <img src="https://img.shields.io/github/v/release/asferrer/OceanguardAI?style=for-the-badge&color=00d4ff&label=Latest%20APK" alt="Latest APK"/>
+  </a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android 8.0+"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge" alt="Apache 2.0"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Powered%20by-Gemma%204-00d4ff?style=for-the-badge" alt="Powered by Gemma 4"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk"><strong>Download APK</strong></a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://asferrer.github.io/OceanguardAI"><strong>Landing page</strong></a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris"><strong>LoRA adapter</strong></a>
+  &nbsp;&middot;&nbsp;
+  <a href="docs/submission/WRITEUP_FINAL.md"><strong>Writeup</strong></a>
+</p>
 
 ---
 
-## The Problem
+## About
 
-Every year, **8 million+ tons of plastic and debris** enter the world's oceans, devastating marine ecosystems, killing wildlife, and contaminating food chains. Current monitoring methods rely on expensive research vessels, satellite imagery with limited resolution, or cloud-dependent apps that fail in remote coastal areas where connectivity is scarce or nonexistent.
+OceanGuard AI is a fully offline Android application that detects and reports marine debris using **Gemma 4 E2B** running entirely on the device via the LiteRT-LM runtime. No internet connection is required after the initial model download, no images leave the phone, and every number in every generated report is sourced from a typed Kotlin function &mdash; never invented by the model.
 
-Conservation teams in the field -- marine biologists, dive cleanup crews, coastal rangers -- need a tool that works **right now, right here**, without waiting for a cell signal.
+This repository contains the **Android source code**, the **LoRA fine-tuning pipeline**, the **model-conversion utilities** and the **hackathon submission notebooks**. The companion repository [`asferrer/OceanguardAI`](https://github.com/asferrer/OceanguardAI) hosts the project landing page and the signed-APK releases.
 
-## The Solution
+Submitted to the **Kaggle Gemma 4 Good Hackathon &mdash; Global Resilience Track** and the **Unsloth fine-tuning bonus track**.
 
-OceanGuard AI is a fully offline Android application that runs **two AI models entirely on-device** to detect, classify, and report marine debris from photos and live camera feeds:
+## Why Gemma 4
 
-1. **RT-DETRv2** -- A real-time transformer-based object detector (~30ms per frame) for fast scanning
-2. **Gemma 4 E2B Vision** -- Google's multimodal VLM used as a **visual object detector** with native `box_2d` bounding box output, providing deep analysis with spatial localization
+A single open-weights model drives both perception and reporting on the phone:
 
-No internet required. No data leaves the device. Works in remote atolls, underwater housings, and research vessels with zero connectivity.
+- **Open-vocabulary detection.** Gemma 4 Vision emits `box_2d` bounding boxes with free-text labels and material guesses on a 1000&times;1000 normalised grid, expanding the deterministic 8-class debris taxonomy into 50 fine-grained sub-types mapped onto 11 ecological-impact families.
+- **Grounded report generation.** Gemma 4 Text uses native function calling to query Kotlin `@Tool` methods (debris counts, percentages, GPS waypoints, ecological impacts, temporal trends) and writes scientific-grade reports in six languages and three audience voices, with zero fabricated statistics.
+- **One on-device weight.** A single shared engine instance powers both modes &mdash; no cloud round-trip, no per-image cost, no telemetry.
 
-## Key Innovation: Gemma 4 as a Visual Object Detector
+## Single-Conversation Agentic Tool Calling
 
-Most VLM applications use large language models for classification or description. OceanGuard AI pushes further -- **Gemma 4 E2B generates precise bounding boxes** using its native `box_2d` coordinate system.
+Open VLMs on a phone routinely hallucinate the very statistics environmental policy depends on &mdash; degradation times, percentage breakdowns, risk scores, GPS waypoints. A government cannot defensibly act on a fabricated `23 %`. OceanGuard AI flips the contract:
 
-The model outputs structured JSON with `[y_min, x_min, y_max, x_max]` coordinates on a 1000x1000 grid, which are converted to normalized `[0,1]` coordinates and rendered as visual bounding boxes on the image -- just like a traditional object detector, but powered by a VLM.
+```
+USER &rarr; "Generate report"
+  &darr;
+[ One Gemma 4 Conversation &middot; KV cache persists across every turn ]
+  &darr;
+Step 1 &middot; Tool dispatch (warm KV)
+  &middot; ToolAgentLoop &middot; MAX_TOOL_ROUNDS = 14 &middot; automaticToolCalling = false
+  &middot; 8 typed Kotlin @Tool methods: debris-summary, material-breakdown,
+    type-breakdown, risk-assessment, collection-waypoints,
+    survey-statistics, ecological-impacts, temporal-trend
+  &middot; onToolCallStarted &rarr; UI banner "Querying &lt;tool&gt;&hellip;"
+  &darr; (same conversation, no reset)
+Step 2 &middot; Report writing (warm KV)
+  &middot; Tool responses already in cache &mdash; tokens stream live to the UI
+  &darr;
+Post-process &middot; repairHallucinations(canon) &mdash; rewrites paraphrased rows
+  &darr;
+ReportValidator &middot; 12+ checks &rarr; validationScore 0&ndash;100
+  &darr;
+Grounded Report &middot; Markdown &middot; PDF &middot; CSV &middot; GeoJSON
+```
 
-This means:
-- **No custom training required** -- Gemma 4's zero-shot detection finds debris types it was never specifically trained on
-- **Richer context** -- The VLM understands scene semantics (e.g., "fishing net tangled on coral" vs "fishing net on sand")
-- **Complementary to RT-DETRv2** -- Fast detector for scanning, VLM for deep verification and edge cases
+Every percentage is computed once in Kotlin, every risk score is read from a Kotlin map, and the model has no opportunity to mis-tokenise a number it never authored.
 
 ## Features
 
-### Dual Detection Pipeline
-- **Fast mode (RT-DETRv2)**: TFLite model, ~30ms inference, NNAPI+XNNPACK delegates, 8 debris classes
-- **Deep mode (Gemma 4 Vision)**: LiteRT-LM engine, ~4-10s inference, structured JSON with bounding boxes
-- **Orchestrated pipeline**: Fast detection first with immediate UI, optional deep VLM verification
+| Detection | Agentic Reporting |
+|---|---|
+| Single-shot deep analysis (full Gemma 4 Vision pass) | Native function calling on Gemma 4 |
+| Image, gallery, and batch input | Live token stream with per-tool banners |
+| 50 fine-grained debris sub-types &rarr; 11 canonical families | Scientific / NGO Manager / Citizen voices |
+| Corner-bracket bounding boxes with glow + pulse | 6 languages (EN, ES, FR, DE, IT, PT) |
 
-### VLM-Powered Reports
-- **Qwen 3.5 family** (0.8B / 2B / 4B): Three quality tiers via llama.cpp with Vulkan GPU acceleration
-- **Gemma 4 E2B**: LiteRT-LM runtime, 1.65x faster decode than llama.cpp on Exynos 2200
-- Comprehensive environmental impact reports with health scores, risk assessments, and cleanup recommendations
-- Streaming token output with real-time progress
+| Mapping & Tracking | Privacy & Gamification |
+|---|---|
+| GPS geotagging (EXIF &rarr; device GPS) | 100% offline, no telemetry, no accounts |
+| Offline MapLibre + OpenFreeMap, no API key | All data on-device, deletable from settings |
+| Automatic hotspot clustering, ecosystem health | Pixel-art MarineDex with achievements |
 
-### Live Camera Detection
-- CameraX integration with real-time frame analysis
-- Bounding box overlay with corner brackets, glow effects, and pulse animations
-- Works with rear and front cameras
+## On-Device Stack
 
-### Gamification -- MarineDex
-- Collect discovered debris types like a field guide
-- Unlock achievements for conservation milestones
-- Track personal cleanup impact over time
+| Component | Technology |
+|---|---|
+| **Vision &amp; report model** | **Gemma 4 E2B** via LiteRT-LM 0.11 &mdash; single shared engine, ~2.6&nbsp;GB on disk |
+| **Tool runtime** | Native function calling on Gemma 4 &middot; 8 typed Kotlin `@Tool` methods &middot; `automaticToolCalling = false` agent loop |
+| **UI** | Jetpack Compose + Material 3 &middot; Kotlin 2.2 &middot; min SDK 26 (Android 8.0) |
+| **Camera** | CameraX 1.5 &mdash; hardware-rotation-aware capture |
+| **Database** | Room 2.7 + DataStore preferences |
+| **Maps** | MapLibre Compose + OpenFreeMap &mdash; no API key, offline tiles |
 
-### Interactive Maps
-- MapLibre + OpenFreeMap (no API key, no cloud dependency)
-- GPS-tagged detection sessions plotted on the map
-- Zone aggregation for area-level pollution analysis
+Optional alternative engines are kept as legacy fall-backs and selectable from **Settings &rarr; VLM provider**: an RT-DETRv2 TFLite path for fast (~30&nbsp;ms) lightweight detection on devices where Gemma 4 Vision is too heavy, and a llama.cpp + Qwen 3.5 path for text generation when LiteRT-LM is not available.
 
-### Accessibility
-- 6 languages: English, Spanish, French, German, Italian, Portuguese
-- GPU auto-detection with CPU fallback
-- Models downloadable in-app from HuggingFace (Apache 2.0, no auth)
-- Works on mid-range devices (4GB RAM minimum)
+## Domain-Adapted LoRA Adapter
 
-## Architecture
+A Stage-1 / Stage-2 LoRA fine-tune of `google/gemma-4-E2B-it` on a marine-debris corpus (CleanSea + Ocean_garbage + Neural_Ocean, ~13.6&nbsp;k images stratified by class) is published as a reproducible artefact:
 
-```
-                          +---------------------------+
-                          |     OceanGuard AI App     |
-                          |    (Jetpack Compose UI)   |
-                          +-------------|-------------+
-                                        |
-                          +-------------|-------------+
-                          | DetectionOrchestrator     |
-                          |  (parallel pipeline)      |
-                          +------|--------------|-----+
-                                 |              |
-                    +------------|--+    +------|------------+
-                    | ObjectDetector |    | VlmVisionEngine  |
-                    | (interface)    |    | (interface)       |
-                    +-------|-------+    +------|------------+
-                            |                   |
-               +------------|----------+   +----|----+
-               |            |          |   | Llama   |
-        +------+--+  +------+---+ +---+--------+  |Vision |
-        |PicoDet-S|  |RT-DETRv2  | |Gemma4Vision|  |Engine |
-        |(NCNN)   |  |(TFLite)   | |(LiteRT-LM) |  +-------+
-        +---------+  +----------+  +------------+
-                                        |
-                               +--------|--------+
-                               |LiteRTTextEngine |
-                               | (Engine API)    |
-                               | GPU auto-detect |
-                               +-----------------+
+- **Adapter:** [`asferrer/gemma-4-E2B-it-oceanguard-marine-debris`](https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris) on Hugging Face
+- **Notebook:** [`docs/submission/notebook_finetune.ipynb`](docs/submission/notebook_finetune.ipynb) &mdash; runs end-to-end on Kaggle (T4 x2), Unsloth FastVisionModel stack
+- **Reported delta:** mAP@0.5 = 0.325 (vs 0.092 base &mdash; **+252&nbsp;% relative**) on a 200-image held-out test split
 
-        Text/Report Generation:
-        +-------------------+     +-------------------+
-        | LlamaTextEngine   |     | LiteRTTextEngine  |
-        | Qwen 3.5 (GGUF)  |     | Gemma 4 E2B       |
-        | llama.cpp+Vulkan  |     | LiteRT-LM runtime |
-        | 3 tiers:          |     | ~2.6 GB .litertlm |
-        |  0.8B / 2B / 4B  |     | GPU auto-detect   |
-        +-------------------+     +-------------------+
-```
+The APK currently ships with the base Gemma 4 E2B weights; LoRA-merged `.litertlm` export is upstream-in-progress.
 
-## Tech Stack
+## Installation (end users)
 
-| Component | Technology | Details |
-|-----------|-----------|---------|
-| Language | Kotlin 2.3.20 | Single-activity architecture |
-| UI | Jetpack Compose | Material3, BOM 2026.03.00 |
-| Camera | CameraX 1.6.0 | CameraPipe backend |
-| Database | Room 2.8.4 | KSP2, type converters, migrations |
-| Maps | MapLibre 0.12.1 | OpenFreeMap tiles (no API key) |
-| Fast Detection | TensorFlow Lite 2.17.0 | RT-DETRv2, NNAPI+XNNPACK |
-| VLM Detection | LiteRT-LM | Gemma 4 E2B, GPU auto-detect |
-| Text Generation | llama.cpp (JNI) | Qwen 3.5, Vulkan GPU |
-| Images | Coil 3.4.0 | Async image loading |
-| Location | Play Services 21.3.0 | EXIF GPS fallback chain |
-| Geocoding | Photon | Reverse geocoding (offline-capable) |
+> **Requirements:** Android 8.0+, ~200&nbsp;MB storage for the APK and ~2.6&nbsp;GB additional for the Gemma 4 model (downloaded in-app on first deep analysis).
 
-## Detection Classes
+1. [Download the latest signed APK](https://github.com/asferrer/OceanguardAI/releases/latest/download/OceanGuard-AI-latest.apk).
+2. On your Android device: **Settings &rarr; Apps &rarr; &hellip; &rarr; Special access &rarr; Install unknown apps** &rarr; enable for your browser.
+3. Open the downloaded APK and tap **Install**.
 
-| Class | Material | Examples |
-|-------|----------|---------|
-| Bottle | Plastic | PET bottles, water bottles |
-| Can | Metal | Aluminum cans, tin cans |
-| Fishing_Net | Nylon/Rope | Ghost nets, trawl fragments |
-| Glove | Fabric/Rubber | Latex gloves, work gloves |
-| Mask | Fabric | Surgical masks, cloth masks |
-| Metal_Debris | Metal | Scrap metal, wire, pipes |
-| Plastic_Debris | Plastic | Bags, wrappers, fragments |
-| Tire | Rubber | Vehicle tires, tire fragments |
+Google Play Protect may show a warning &mdash; this is normal for apps distributed outside the Play Store. Tap **"Install anyway"** to proceed.
 
-## Screenshots
-
-> Screenshots will be added before submission.
-
-| Detection | Report | MarineDex | Map |
-|-----------|--------|-----------|-----|
-| ![Detection](media/screenshots/detection.png) | ![Report](media/screenshots/report.png) | ![MarineDex](media/screenshots/marinedex.png) | ![Map](media/screenshots/map.png) |
-
-## Build and Run
-
-### Prerequisites
-- Android Studio (latest stable)
-- JDK 17
-- Android device or emulator (API 26+, 4GB+ RAM)
-
-### Quick Start
+## Build from source
 
 ```bash
-# Clone the repository
-git clone https://github.com/AlejandroSanchezFerrer/OceanguardAI-App.git
+git clone https://github.com/asferrer/OceanguardAI-App.git
 cd OceanguardAI-App/android
-
-# Build and install (debug)
 ./gradlew installDebug
 ```
 
-### Model Setup
+**Requirements:** JDK 17 (Temurin or Liberica), Android SDK 34+, ~6&nbsp;GB free RAM during the build.
 
-The RT-DETRv2 model is bundled in the APK (~83 MB). VLM models are downloaded on-demand from within the app:
+The Gemma 4 E2B `.litertlm` (~2.6&nbsp;GB) is **downloaded in-app** by `VlmModelManager` from `huggingface.co/litert-community/gemma-4-E2B-it-litert-lm` the first time the user runs single-shot deep analysis or pulls the in-app benchmark &mdash; no `adb push` step is required.
 
-| Model | Size | Runtime | Purpose |
-|-------|------|---------|---------|
-| RT-DETRv2 FP16 | 83 MB | TFLite | Fast detection (bundled) |
-| Qwen 3.5 0.8B | 533 MB | llama.cpp | Fast reports |
-| Qwen 3.5 2B | 1.1 GB | llama.cpp | Balanced reports |
-| Qwen 3.5 4B | 2.7 GB | llama.cpp | Quality reports |
-| Gemma 4 E2B | 2.6 GB | LiteRT-LM | Detection + reports |
+### Release builds
 
-All VLM models are Apache 2.0 licensed and downloaded from HuggingFace without authentication.
+Releases are cut by pushing a `v*` tag; the workflow `.github/workflows/release.yml` builds a signed APK in GitHub Actions and publishes it to `asferrer/OceanguardAI/releases/latest`. The signing keystore lives in a GitHub Secret; never commit `*.jks` or `keystore.properties`.
 
-## Performance (Samsung Galaxy S22 Ultra -- Exynos 2200)
-
-| Metric | RT-DETRv2 | Gemma 4 Vision |
-|--------|-----------|----------------|
-| Inference latency | ~30ms (NNAPI) | ~4-10s (CPU/GPU) |
-| Model size | 83 MB | 2.6 GB |
-| RAM usage | ~200 MB | ~3 GB |
-| Bounding boxes | Yes (150 queries) | Yes (box_2d JSON) |
-| Classes | 8 (trained) | 8 (zero-shot) |
-
-## Project Structure
+## Repository Layout
 
 ```
 OceanguardAI-App/
-  android/
-    app/src/main/
-      java/com/oceanguard/
-        OceanGuardApp.kt              -- Application lifecycle, model management
-        inference/
-          DetectorInterface.kt        -- ObjectDetector + DetectionResult contracts
-          RTDETRInference.kt          -- TFLite RT-DETRv2 detector
-          Gemma4VisionDetector.kt     -- Gemma 4 box_2d visual detector
-          LiteRTTextEngine.kt         -- LiteRT-LM engine (Gemma 4)
-          LlamaTextEngine.kt          -- llama.cpp engine (Qwen 3.5)
-          DetectionOrchestrator.kt    -- Dual pipeline coordinator
-          ReportGenerator.kt          -- VLM report generation
-          VlmModelManager.kt          -- Model download and lifecycle
-        data/                         -- Room entities, DAOs, repositories
-        ui/                           -- Compose screens and components
-        service/                      -- Foreground services
-        utils/                        -- Image processing, geocoding, export
-      assets/models/                  -- Bundled TFLite models
-      res/values[-xx]/                -- i18n strings (6 languages)
-  conversion/                         -- Model conversion scripts (Python)
-  docs/                               -- Technical documentation
++-- android/                              # Android project root
+|   +-- app/
+|   |   +-- src/main/
+|   |   |   +-- java/com/oceanguard/
+|   |   |   |   +-- OceanGuardApp.kt          # App lifecycle + model management
+|   |   |   |   +-- data/                     # Room entities, DAOs, repositories
+|   |   |   |   +-- inference/                # Detection + report engines + ToolAgentLoop
+|   |   |   |   +-- service/                  # Foreground services
+|   |   |   |   +-- ui/                       # Compose screens & components
+|   |   |   |   +-- utils/                    # Image, geocoding, export
+|   |   |   +-- assets/models/                # Bundled TFLite (RT-DETRv2 fallback)
+|   |   |   +-- res/values[-xx]/              # i18n (en, es, fr, de, it, pt)
+|   |   +-- build.gradle.kts
+|   +-- gradle.properties
+|   +-- settings.gradle.kts
++-- conversion/                           # Python model-conversion utilities
++-- finetune/                             # LoRA fine-tuning pipeline (Unsloth)
++-- docs/                                 # Architecture, Gemma 4 detection, hackathon
+|   +-- submission/                       # Kaggle writeup, notebooks, model card
++-- scripts/                              # setup-models.sh, setup-models.ps1, test_notebooks.ps1
++-- OceanguardAI/                         # Submodule -> landing page repo
++-- requirements-mobile.txt
++-- LICENSE                               # Apache 2.0
 ```
+
+## Documentation
+
+| Doc | Purpose |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture &mdash; inference pipelines, model lifecycle, data flow |
+| [`docs/GEMMA4_DETECTION.md`](docs/GEMMA4_DETECTION.md) | `box_2d` prompt engineering, JSON parsing, coordinate conversion |
+| [`docs/HACKATHON_VIDEO_SCRIPT.md`](docs/HACKATHON_VIDEO_SCRIPT.md) | 3-min demo video shot list |
+| [`docs/submission/WRITEUP_FINAL.md`](docs/submission/WRITEUP_FINAL.md) | Long-form hackathon writeup |
+| [`docs/submission/KAGGLE_SUBMISSION_FORM.md`](docs/submission/KAGGLE_SUBMISSION_FORM.md) | Drop-in copy for every Kaggle form field |
+| [`docs/submission/hf_model_card.md`](docs/submission/hf_model_card.md) | Hugging Face model card for the LoRA adapter |
+| [`docs/submission/SMOKE_RESULTS.md`](docs/submission/SMOKE_RESULTS.md) | On-device latency &amp; memory smoke tests |
+
+## Privacy
+
+All processing happens **entirely on your device**. No data is collected, transmitted, or shared with any server.
+
+| Data | Storage | Shared? |
+|---|---|---|
+| Photos &amp; videos | Device only | Never |
+| GPS coordinates | Device only | Never |
+| Detection &amp; report results | Device only | Never |
+| Gemma 4 model weights | Device only | Downloaded once from Hugging Face, then never re-fetched |
+
+## Research
+
+OceanGuard AI is built on peer-reviewed research and ongoing doctoral work at the **Universidad de Alicante**.
+
+- **Sánchez-Ferrer, A.**, Valero-Mas, J. J., Gallego, A. J., &amp; Calvo-Zaragoza, J. (2023). *An experimental study on marine debris location and recognition using object detection.* **Pattern Recognition Letters**. [DOI](https://www.sciencedirect.com/science/article/pii/S0167865522003889)
+- **Sánchez-Ferrer, A.**, Gallego, A. J., Valero-Mas, J. J., &amp; Calvo-Zaragoza, J. (2022). *The CleanSea Set: A Benchmark Corpus for Underwater Debris Detection and Recognition.* **IbPRIA 2022**, LNCS Springer. [DOI](https://link.springer.com/chapter/10.1007/978-3-031-04881-4_49)
+- **Sánchez-Ferrer, A.** (2024). *Modelos de difusión aplicados a la detección de objetos en el fondo marino.* MSc Thesis, Universidad de Alicante. [RUA](https://rua.ua.es/entities/publication/88244474-6165-4cd9-a4af-68eff29d65c6)
+- **Sánchez-Ferrer, A.** (2021). *Deep Learning aplicado a la detección de residuos en el fondo marino.* BSc Thesis, Universidad de Alicante. [RUA](https://rua.ua.es/entities/publication/92c34588-9842-4ec3-8b15-97a8ce718e04)
 
 ## Related Repositories
 
-| Repository | Purpose |
-|------------|---------|
-| [OceanguardAI](https://github.com/AlejandroSanchezFerrer/OceanguardAI) | Training, evaluation, datasets (PyTorch, COCO) |
-| [gemma3n](https://github.com/AlejandroSanchezFerrer/gemma3n) | Streamlit web app, CLI, notebook |
-
-## Research Context
-
-OceanGuard AI is part of a doctoral research project on applying on-device AI to marine conservation challenges. The goal is to democratize marine debris monitoring by putting powerful detection tools directly in the hands of conservation teams, citizen scientists, and coastal communities worldwide -- without requiring expensive equipment or cloud infrastructure.
+| Repo | Purpose |
+|---|---|
+| [`asferrer/OceanguardAI`](https://github.com/asferrer/OceanguardAI) | Landing page + signed-APK GitHub Releases |
+| [`asferrer/gemma-4-E2B-it-oceanguard-marine-debris`](https://huggingface.co/asferrer/gemma-4-E2B-it-oceanguard-marine-debris) | LoRA adapter on Hugging Face |
 
 ## License
 
-Apache License 2.0 -- see [LICENSE](LICENSE) for details.
+The application source code is released under the **Apache License 2.0** &mdash; see [LICENSE](LICENSE). The Gemma 4 weights are governed by the [Gemma Terms of Use](https://ai.google.dev/gemma/terms). The LoRA adapter training code is Apache 2.0; the merged weights are governed by the same Gemma Terms.
 
-All models used (RT-DETRv2, Qwen 3.5, Gemma 4) are Apache 2.0 licensed.
+## Contact
 
----
+Alejandro Sánchez-Ferrer &middot; `asanc.tech@gmail.com` &middot; Universidad de Alicante, PRAI group
 
-**Powered by Gemma 4 -- Google AI Edge**
-
-Built for the Kaggle Gemma 4 Good Hackathon (Global Resilience Track, 2026).
+```bibtex
+@misc{sanchezferrer2026oceanguard,
+  author       = {S{\'a}nchez-Ferrer, Alejandro},
+  title        = {{OceanGuard AI: Fully Offline Marine Debris Intelligence
+                   on Android with Gemma 4}},
+  year         = {2026},
+  howpublished = {Kaggle Gemma 4 Good Hackathon, Global Resilience Track},
+  url          = {https://github.com/asferrer/OceanguardAI-App},
+  note         = {Apache 2.0}
+}
+```
