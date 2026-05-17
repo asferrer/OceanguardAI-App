@@ -48,6 +48,18 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         )
         private val REQUIRED_TOOLS_ZONE = REQUIRED_TOOLS_GENERIC + "get_temporal_trend"
 
+        /**
+         * Tools whose absence MUST cause the agent loop to discard a partial
+         * draft and redirect, regardless of how much prose has streamed out.
+         * For generic reports every required tool is critical (no soft tools).
+         * For zone reports, [get_temporal_trend] is soft-optional: it returns
+         * an empty payload for single-day surveys and the prose section is
+         * structured so it can be omitted without breaking the rest of the
+         * report.
+         */
+        private val CRITICAL_TOOLS_GENERIC = REQUIRED_TOOLS_GENERIC
+        private val CRITICAL_TOOLS_ZONE = REQUIRED_TOOLS_ZONE - "get_temporal_trend"
+
         private val LANGUAGE_NAMES = mapOf(
             "en" to "English",
             "es" to "Spanish (Español)",
@@ -269,6 +281,7 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             tools = tools,
             systemMessage = system,
             requiredToolNames = REQUIRED_TOOLS_GENERIC,
+            criticalToolNames = CRITICAL_TOOLS_GENERIC,
             bundle = bundle,
             canon = canon,
             onPartialResult = onPartialResult,
@@ -304,6 +317,7 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             tools = tools,
             systemMessage = system,
             requiredToolNames = REQUIRED_TOOLS_ZONE,
+            criticalToolNames = CRITICAL_TOOLS_ZONE,
             bundle = bundle,
             canon = canon,
             onPartialResult = onPartialResult,
@@ -336,18 +350,20 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         tools: OceanGuardTools,
         systemMessage: String,
         requiredToolNames: Set<String>,
+        criticalToolNames: Set<String>,
         bundle: String,
         canon: ToolDataBundleFormatter.Canon,
         onPartialResult: (String) -> Unit,
         onToolCallStarted: (String) -> Unit,
     ): String {
-        Log.i(TAG, "Agentic report: ${requiredToolNames.size} required tools, bundle=${bundle.length} chars (post-repair canon)")
+        Log.i(TAG, "Agentic report: ${requiredToolNames.size} required tools (${criticalToolNames.size} critical), bundle=${bundle.length} chars (post-repair canon)")
         val raw = engine.generateWithTools(
             prompt = phase1Prompt,
             toolSet = tools,
             systemMessage = systemMessage,
             maxToolRounds = MAX_TOOL_ROUNDS,
             requiredToolNames = requiredToolNames,
+            criticalToolNames = criticalToolNames,
             // null → ToolAgentLoop keeps every prose token and streams it to the
             // user. The single-conversation flow means the report writing phase
             // simply continues after the last tool turn with the KV cache intact.
@@ -406,8 +422,15 @@ Use the translated forms from the CONFIRMED DATA tables for the final report —
 $persona
 
 PROTOCOL:
-  Step 1: Invoke every tool listed below ONCE each, in any order, with empty arguments. Emit only tool calls in this step — no prose, no commentary.
-  Required tools (all no-argument): debris-summary, material-breakdown, type-breakdown, risk-assessment, collection-waypoints, survey-statistics, ecological-impacts, per-session-details${if (kind == ReportKind.ZONE) ", temporal-trend" else ""}.
+  Step 1: Invoke EVERY one of these tools, ONCE each, with empty arguments, BEFORE writing any prose. Emit only tool calls in this step — no commentary, no preamble. Skipping ANY tool will produce a wrong report.
+    (1) per-session-details   ← MANDATORY. Returns one row per analyzed image. The per-image table is impossible without this.
+    (2) debris-summary
+    (3) material-breakdown
+    (4) type-breakdown
+    (5) ecological-impacts
+    (6) risk-assessment
+    (7) collection-waypoints
+    (8) survey-statistics${if (kind == ReportKind.ZONE) "\n    (9) temporal-trend" else ""}
   Step 2: As soon as the last tool has returned, write the FINAL report directly in this same turn. Use ONLY the numbers, percentages, labels and rows returned by the tools — do not invent values, do not paraphrase row labels. The very next characters you produce after the last tool response MUST be the first heading of the report (see STRUCTURE).
 
 RULES:

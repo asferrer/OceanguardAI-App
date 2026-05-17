@@ -130,7 +130,7 @@ class OceanGuardTools(private val ctx: ToolReportContext) : ToolSet {
         return mapOf("count" to items.size, "items" to items)
     }
 
-    @Tool(description = "Get a row for EVERY analyzed image: sessionId, ISO date, lat/lon, totalDebris, healthScore, dominantType, top three types. Returned items array is the authoritative and complete list — use these EXACT rows for any per-session/per-image table; never invent or paraphrase session IDs, dates or counts.")
+    @Tool(description = "MANDATORY before any prose. Returns one structured row per analyzed image (sessionId, ISO date, lat/lon, totalDebris, healthScore, dominantType, top three types). This is the ONLY source of per-image data — survey-statistics returns aggregates, not per-image rows, so without this tool the per-session table CANNOT be written. Returned items array is the authoritative and complete list; never invent or paraphrase session IDs, dates or counts.")
     fun getPerSessionDetails(): Map<String, Any> {
         val items = ctx.sessionDetails.map { d ->
             mapOf(

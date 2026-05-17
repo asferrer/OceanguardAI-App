@@ -74,6 +74,15 @@ internal class ToolAgentLoop(
         prompt: String,
         maxToolRounds: Int,
         requiredToolNames: Set<String> = emptySet(),
+        /**
+         * Subset of [requiredToolNames] whose absence MUST trigger a redirect
+         * even when the model has already committed prose to the user-visible
+         * stream. The agentic escape hatch is only allowed when every missing
+         * tool is OUTSIDE this set. Default: every required tool is critical —
+         * callers must opt-in to softening a specific tool by passing a smaller
+         * set here.
+         */
+        criticalToolNames: Set<String> = requiredToolNames,
         maxRedirects: Int = DEFAULT_MAX_REDIRECTS,
         dataBundle: String? = null,
         onPartialResult: (String) -> Unit,
@@ -136,13 +145,24 @@ internal class ToolAgentLoop(
             // (≥ AGENTIC_KEEP_DRAFT_CHARS or contains a markdown heading), accept
             // it as the final report rather than discarding and restarting, which
             // would visibly wipe the report on the user's screen.
+            //
+            // BUT: never apply this escape hatch when a CRITICAL tool is missing.
+            // A wrong-numbers report is strictly worse than a brief stream
+            // restart. The caller marks a tool as soft-optional by leaving it
+            // OUT of [criticalToolNames] while still listing it in
+            // [requiredToolNames] (e.g. `get_temporal_trend` for zone reports
+            // where the survey only spans one day).
             val agenticMode = dataBundle == null
             val draftLooksLikeReport = accumulated.length >= AGENTIC_KEEP_DRAFT_CHARS ||
                 accumulated.contains("\n## ") ||
                 accumulated.contains("\n### ")
-            if (agenticMode && draftLooksLikeReport) {
-                Log.w(TAG, "AgentLoop: accepting partial report (chars=${accumulated.length}) despite missing tools=$missing — discarding would restart the visible stream")
+            val criticalMissing = missing.intersect(criticalToolNames)
+            if (agenticMode && draftLooksLikeReport && criticalMissing.isEmpty()) {
+                Log.w(TAG, "AgentLoop: accepting partial report (chars=${accumulated.length}) despite missing tools=$missing — only non-critical tools missing")
                 return accumulated.toString()
+            }
+            if (agenticMode && draftLooksLikeReport && criticalMissing.isNotEmpty()) {
+                Log.w(TAG, "AgentLoop: CRITICAL tools still missing $criticalMissing after ${accumulated.length} chars of prose — discarding draft to enforce grounding (redirect #${redirects + 1})")
             }
 
             // Premature wrap-up: discard the draft (it was built on incomplete data) and

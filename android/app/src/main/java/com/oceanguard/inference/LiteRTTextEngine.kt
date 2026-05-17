@@ -357,6 +357,8 @@ class LiteRTTextEngine(
         systemMessage: String? = null,
         maxToolRounds: Int = 8,
         requiredToolNames: Set<String> = emptySet(),
+        /** See [ToolAgentLoop.run]. */
+        criticalToolNames: Set<String> = requiredToolNames,
         dataBundle: String? = null,
         onPartialResult: (String) -> Unit = {},
         onToolCallStarted: (String) -> Unit = {},
@@ -390,6 +392,7 @@ class LiteRTTextEngine(
                 prompt = prompt,
                 maxToolRounds = maxToolRounds,
                 requiredToolNames = requiredToolNames,
+                criticalToolNames = criticalToolNames,
                 dataBundle = dataBundle,
                 onPartialResult = onPartialResult,
                 onToolCallStarted = onToolCallStarted,
