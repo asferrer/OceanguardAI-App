@@ -1,6 +1,7 @@
 package com.oceanguard.ai.data
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -371,6 +372,48 @@ abstract class OceanGuardDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Defensive schema healer that runs on every database open.
+         *
+         * Why we need this: a subset of users (observed in production v0.2.x)
+         * ended up with a corrupt schema where Room's [room_master_table]
+         * identity_hash matched the v11 expected hash, yet the underlying
+         * DDL was missing columns added in [MIGRATION_9_10] (notably
+         * `generated_reports.sessionIds`). Symptom: every report INSERT silently
+         * failed because the entity expected a column that did not exist, so
+         * no report ever persisted past app close. Root cause is suspected to
+         * be a previous partial migration that committed the hash row without
+         * committing the ALTER TABLE — Room's migration framework then treats
+         * the DB as already-on-target and skips re-running.
+         *
+         * The callback runs idempotent `ALTER TABLE` statements wrapped in
+         * try/catch — adding a column that already exists raises a SQLite
+         * error, which we swallow. This way every app open self-heals any
+         * partial-migration corruption without bumping the schema version or
+         * losing user data.
+         */
+        private val SCHEMA_HEALER = object : RoomDatabase.Callback() {
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                val expected = listOf(
+                    "ALTER TABLE generated_reports ADD COLUMN sessionIds TEXT",
+                )
+                var added = 0
+                for (sql in expected) {
+                    try {
+                        db.execSQL(sql)
+                        added++
+                        Log.i("OceanGuardDatabase", "Schema self-heal: applied `$sql`")
+                    } catch (_: Throwable) {
+                        // Column already exists or other benign error — ignore.
+                    }
+                }
+                if (added > 0) {
+                    Log.w("OceanGuardDatabase", "Schema self-heal: patched $added missing column(s) on open")
+                }
+            }
+        }
+
         private fun buildDatabase(appContext: Context): OceanGuardDatabase {
             return Room.databaseBuilder(
                 appContext,
@@ -378,6 +421,7 @@ abstract class OceanGuardDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                .addCallback(SCHEMA_HEALER)
                 // -----------------------------------------------------------------
                 // WAL mode
                 // -----------------------------------------------------------------
