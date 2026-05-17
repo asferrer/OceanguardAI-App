@@ -183,6 +183,28 @@ class MainViewModel(
     }
 
     // -----------------------------------------------------------------------
+    // Batch idempotency guard
+    // -----------------------------------------------------------------------
+    //
+    // [BatchResultsScreen] uses a hashCode() of the URI list to detect whether
+    // a batch has already been dispatched, so navigating back into the screen
+    // or any service-state drift never re-launches the same job. Hosting the
+    // set in the ViewModel — instead of `rememberSaveable<Int?>` inside the
+    // composable — lets the guard survive Compose recomposition cycles that
+    // would lose Saved state (configuration changes that wipe the Saver,
+    // navigation that destroys and recreates the screen). The set resets only
+    // when the ViewModel itself is cleared (process end / Activity finish),
+    // at which point InferenceService also resets, so there is no stale-state
+    // hazard.
+
+    private val _batchStartedHashes = MutableStateFlow<Set<Int>>(emptySet())
+    val batchStartedHashes: StateFlow<Set<Int>> = _batchStartedHashes.asStateFlow()
+
+    fun markBatchStarted(hash: Int) {
+        _batchStartedHashes.value = _batchStartedHashes.value + hash
+    }
+
+    // -----------------------------------------------------------------------
     // Research contribution prompt state
     // -----------------------------------------------------------------------
 
@@ -559,10 +581,18 @@ class MainViewModel(
 
     /**
      * Delete a single session from the database.
+     *
+     * After the row is gone, recompute the MarineDex entries from the
+     * remaining sessions so the per-type counters and the discovered-types
+     * set match the live history. If the deleted session was the only one
+     * containing a given debris type, that MarineDex entry is removed
+     * (the type goes back to "undiscovered").
      */
     fun deleteSession(session: DetectionSession) {
         viewModelScope.launch {
             repository.deleteSession(session)
+            val remaining = repository.allSessions.first()
+            app.collectionRepository.recomputeFromSessions(remaining)
         }
     }
 
@@ -579,7 +609,15 @@ class MainViewModel(
     }
 
     fun deleteSessions(ids: List<Long>) {
-        viewModelScope.launch { repository.deleteSessions(ids) }
+        viewModelScope.launch {
+            repository.deleteSessions(ids)
+            // Recompute the MarineDex against the remaining sessions so
+            // batch deletes also decrement the counters and re-lock entries
+            // whose only sightings were in the deleted set. See
+            // [deleteSession] above for the single-row equivalent.
+            val remaining = repository.allSessions.first()
+            app.collectionRepository.recomputeFromSessions(remaining)
+        }
     }
 
     /**

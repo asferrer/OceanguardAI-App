@@ -61,7 +61,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -297,34 +296,35 @@ fun BatchResultsScreen(
     //  (b) Back-navigation that re-enters the "batch" route recreates this
     //      composable; the LaunchedEffect fires again and, if state==Idle,
     //      would re-launch the previously-finished batch.
-    // We persist a hash of the uriList we have already dispatched so the
-    // effect becomes a no-op on every subsequent recomposition or re-entry.
-    var startedForUriListHash by rememberSaveable { mutableStateOf<Int?>(null) }
-
+    //
+    // The hash set is hosted in the ViewModel (not rememberSaveable) so it
+    // survives composable destruction / recomposition cycles that would lose
+    // the Saver. It only resets when the ViewModel is cleared, at which point
+    // InferenceService has also reset and there is no stale-batch hazard.
     LaunchedEffect(uriList) {
         if (uriList.isEmpty()) return@LaunchedEffect
         val hash = uriList.hashCode()
         // Already dispatched (or detected as already-complete) for this exact
         // uriList — don't launch again, regardless of service state drift.
-        if (startedForUriListHash == hash) return@LaunchedEffect
+        if (viewModel.batchStartedHashes.value.contains(hash)) return@LaunchedEffect
 
         val current = app.inferenceServiceState.value
         when {
             // Currently running this same batch — just remember the hash and
             // let the existing run finish.
             current is InferenceServiceState.BatchRunning -> {
-                startedForUriListHash = hash
+                viewModel.markBatchStarted(hash)
             }
             // Service already reports this batch as complete (e.g. user just
             // backgrounded and returned) — mark as started so we never
             // re-trigger it, and let the BatchComplete branch below render
             // the existing results.
             current is InferenceServiceState.BatchComplete && current.allUris == uriList -> {
-                startedForUriListHash = hash
+                viewModel.markBatchStarted(hash)
             }
             // Service is idle / no in-flight work — launch.
             current is InferenceServiceState.Idle -> {
-                startedForUriListHash = hash
+                viewModel.markBatchStarted(hash)
                 batchStartTimeMs = System.currentTimeMillis()
                 viewModel.startBatchInference(uriList)
                 isBatchRunning = true
