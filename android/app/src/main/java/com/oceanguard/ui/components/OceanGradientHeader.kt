@@ -20,13 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oceanguard.ai.R
-import com.oceanguard.ai.ui.theme.BioluminescentCyan
 import com.oceanguard.ai.ui.theme.GradientCTAEnd
 import com.oceanguard.ai.ui.theme.GradientCTAStart
-import com.oceanguard.ai.ui.theme.GradientHeroEnd
-import com.oceanguard.ai.ui.theme.GradientHeroStart
-import com.oceanguard.ai.ui.theme.OceanBlueLight
-import com.oceanguard.ai.ui.theme.OceanGreen
+import com.oceanguard.ai.ui.theme.LocalIsDarkTheme
+import com.oceanguard.ai.ui.theme.OceanBlueDeepInk
+import com.oceanguard.ai.ui.theme.heroGradientBrush
+import com.oceanguard.ai.ui.theme.waveThemeForCurrent
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -86,18 +85,14 @@ fun OceanGradientHeader(
         label = "floatRotation",
     )
 
+    val isDark = LocalIsDarkTheme.current
+    val titleAnchorColor = if (isDark) Color.White else OceanBlueDeepInk
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(headerHeight)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        GradientHeroStart,
-                        GradientHeroEnd,
-                    ),
-                ),
-            ),
+            .background(brush = heroGradientBrush()),
         contentAlignment = Alignment.Center,
     ) {
         AnimatedWaveBackground()
@@ -129,7 +124,7 @@ fun OceanGradientHeader(
                 text = title,
                 style = MaterialTheme.typography.headlineLarge.copy(
                     brush = Brush.linearGradient(
-                        colors = listOf(Color.White, GradientCTAStart, GradientCTAEnd),
+                        colors = listOf(titleAnchorColor, GradientCTAStart, GradientCTAEnd),
                     ),
                 ),
                 fontWeight = FontWeight.Bold,
@@ -150,9 +145,15 @@ fun OceanGradientHeader(
 
 /**
  * Filled wave shapes + caustic light patches for deep underwater atmosphere.
+ *
+ * Reads [LocalIsDarkTheme] to pick between the deep-ocean palette (low alpha,
+ * blue-cyan caustics) and the sunlit-beach palette (boosted alpha so bands
+ * remain visible against a near-white pale-sky gradient).
  */
 @Composable
 private fun AnimatedWaveBackground() {
+    val waveTheme = waveThemeForCurrent()
+    val a = waveTheme.alphaMultiplier
     val infiniteTransition = rememberInfiniteTransition(label = "wave")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -175,9 +176,9 @@ private fun AnimatedWaveBackground() {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // --- Caustic light patches ---
         val caustics = listOf(
-            Triple(0.25f, 0.35f, OceanBlueLight.copy(alpha = 0.04f)),
-            Triple(0.70f, 0.25f, BioluminescentCyan.copy(alpha = 0.03f)),
-            Triple(0.50f, 0.65f, OceanGreen.copy(alpha = 0.03f)),
+            Triple(0.25f, 0.35f, waveTheme.primary.copy(alpha = (0.04f * a).coerceAtMost(1f))),
+            Triple(0.70f, 0.25f, waveTheme.caustic.copy(alpha = (0.03f * a).coerceAtMost(1f))),
+            Triple(0.50f, 0.65f, waveTheme.secondary.copy(alpha = (0.03f * a).coerceAtMost(1f))),
         )
         caustics.forEachIndexed { i, (baseX, baseY, color) ->
             val offset = i * 2.1f
@@ -197,9 +198,9 @@ private fun AnimatedWaveBackground() {
 
         // --- Filled wave shapes ---
         val waveConfigs = listOf(
-            Triple(0.62f, 0.045f, OceanBlueLight.copy(alpha = 0.06f)),
-            Triple(0.70f, 0.035f, OceanGreen.copy(alpha = 0.05f)),
-            Triple(0.78f, 0.028f, OceanBlueLight.copy(alpha = 0.04f)),
+            Triple(0.62f, 0.045f, waveTheme.primary.copy(alpha = (0.06f * a).coerceAtMost(1f))),
+            Triple(0.70f, 0.035f, waveTheme.secondary.copy(alpha = (0.05f * a).coerceAtMost(1f))),
+            Triple(0.78f, 0.028f, waveTheme.primary.copy(alpha = (0.04f * a).coerceAtMost(1f))),
         )
 
         waveConfigs.forEachIndexed { index, (yFraction, amplitudeFraction, color) ->

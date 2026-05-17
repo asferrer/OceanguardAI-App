@@ -2,6 +2,8 @@ package com.oceanguard.ai.ui.theme
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.oceanguard.ai.data.DebrisMaterial
 
@@ -125,12 +127,37 @@ val BioluminescentCyan = Color(0xFF00E5FF)
 val GradientHeroStart = Color(0xFF0A0E1A)
 /** Hero gradient: deep ocean end (matches landing --bg-secondary #0d1225) */
 val GradientHeroEnd = Color(0xFF0D1225)
+/** Hero gradient (light mode): pale sky for sunlit beach legibility */
+val GradientHeroStartLight = Color(0xFFE0F4FA)
+/** Hero gradient (light mode): clear-water end */
+val GradientHeroEndLight = Color(0xFFB6E5F0)
+/** Strong text-on-pale-sky anchor for the gradient title in light mode (AA on #B6E5F0) */
+val OceanBlueDeepInk = Color(0xFF002A40)
 /** CTA button gradient start (cyan, matches landing page --accent-cyan) */
 val GradientCTAStart = Color(0xFF00D4FF)
 /** CTA button gradient end (emerald, matches landing page --accent-emerald) */
 val GradientCTAEnd = Color(0xFF10B981)
 /** CTA glow colour (cyan glow for button shadow effect) */
 val CTAGlow = Color(0x4D00D4FF)
+
+// ---------------------------------------------------------------------------
+// Light-mode hero / wave / glass palette
+// Used by heroGradientBrush(), waveThemeForCurrent(), glassSurfaceColor(),
+// glassBorderColor(), bubbleColor() helpers below.
+// ---------------------------------------------------------------------------
+
+/** Cyan wave tint used at ~10-12 % alpha on pale sky hero */
+val WaveTintLightPrimary = Color(0xFF0288A8)
+/** Vivid cyan caustic tint for light-mode hero (radial gradient patches) */
+val CausticTintLight = Color(0xFF00B4D8)
+/** Bubble tint on pale sky — solid OceanBlue, alpha controlled per-bubble */
+val BubbleTintLight = Color(0xFF006994)
+/** Frosted glass surface — ~40 % white on pale background */
+val GlassSurfaceLight = Color(0x66FFFFFF)
+/** Glass border tinted with OceanBlue — ~20 % opacity */
+val GlassBorderLight = Color(0x33006994)
+/** Splash subtitle colour on pale sky — readable mid-grey */
+val SplashSubtitleLight = Color(0xFF42525E)
 
 // ---------------------------------------------------------------------------
 // Bottom navigation
@@ -320,3 +347,59 @@ val OceanLightColorScheme = lightColorScheme(
     surfaceContainerHigh = Color(0xFFE9EFF3),
     surfaceContainerHighest = Color(0xFFE3E9ED),
 )
+
+// ---------------------------------------------------------------------------
+// Theme-aware helpers — read LocalIsDarkTheme to swap palettes between the
+// underwater dark hero and the sunlit-beach light hero. Keeps every screen
+// free from `if (isDark) ... else ...` plumbing.
+// ---------------------------------------------------------------------------
+
+/**
+ * Wave palette + alpha boost for light mode. `alphaMultiplier` is applied on
+ * top of the existing 3-6 % wave alphas so the bands remain visible against a
+ * near-white background.
+ */
+data class WaveTheme(
+    val primary: Color,
+    val secondary: Color,
+    val caustic: Color,
+    val alphaMultiplier: Float,
+)
+
+@Composable
+fun heroGradientBrush(): Brush =
+    if (LocalIsDarkTheme.current) {
+        Brush.verticalGradient(listOf(GradientHeroStart, GradientHeroEnd))
+    } else {
+        Brush.verticalGradient(listOf(GradientHeroStartLight, GradientHeroEndLight))
+    }
+
+@Composable
+fun glassSurfaceColor(): Color =
+    if (LocalIsDarkTheme.current) Color(0x800F172A) else GlassSurfaceLight
+
+@Composable
+fun glassBorderColor(): Color =
+    if (LocalIsDarkTheme.current) Color(0x1A94A3B8) else GlassBorderLight
+
+@Composable
+fun bubbleColor(): Color =
+    if (LocalIsDarkTheme.current) Color.White else BubbleTintLight
+
+@Composable
+fun waveThemeForCurrent(): WaveTheme =
+    if (LocalIsDarkTheme.current) {
+        WaveTheme(
+            primary = OceanBlueLight,
+            secondary = OceanGreen,
+            caustic = BioluminescentCyan,
+            alphaMultiplier = 1f,
+        )
+    } else {
+        WaveTheme(
+            primary = WaveTintLightPrimary,
+            secondary = OceanGreen,
+            caustic = CausticTintLight,
+            alphaMultiplier = 2.5f,
+        )
+    }

@@ -70,10 +70,10 @@ import com.oceanguard.ai.ui.components.OnGradientColor
 import com.oceanguard.ai.ui.theme.BioluminescentCyan
 import com.oceanguard.ai.ui.theme.GradientCTAEnd
 import com.oceanguard.ai.ui.theme.GradientCTAStart
-import com.oceanguard.ai.ui.theme.GradientHeroEnd
-import com.oceanguard.ai.ui.theme.GradientHeroStart
-import com.oceanguard.ai.ui.theme.OceanBlueLight
 import com.oceanguard.ai.ui.theme.OceanGreen
+import com.oceanguard.ai.ui.theme.glassSurfaceColor
+import com.oceanguard.ai.ui.theme.heroGradientBrush
+import com.oceanguard.ai.ui.theme.waveThemeForCurrent
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -272,11 +272,7 @@ private fun OnboardingPageContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(GradientHeroStart, GradientHeroEnd),
-                ),
-            ),
+            .background(brush = heroGradientBrush()),
         contentAlignment = Alignment.Center,
     ) {
         // Ambient effects
@@ -299,7 +295,7 @@ private fun OnboardingPageContent(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(color = Color(0x800F172A)) // landing --glass
+                    .background(color = glassSurfaceColor())
                     .border(
                         width = 1.dp,
                         brush = Brush.linearGradient(
@@ -368,6 +364,8 @@ private fun OnboardingPageContent(
 /** Per-page wave background with accent-tinted caustic. */
 @Composable
 private fun OnboardingWaves(accentColor: Color) {
+    val waveTheme = waveThemeForCurrent()
+    val a = waveTheme.alphaMultiplier
     val infiniteTransition = rememberInfiniteTransition(label = "obWave")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -387,7 +385,7 @@ private fun OnboardingWaves(accentColor: Color) {
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    accentColor.copy(alpha = 0.03f),
+                    accentColor.copy(alpha = (0.03f * a).coerceAtMost(1f)),
                     Color.Transparent,
                 ),
                 center = Offset(cx, cy),
@@ -399,8 +397,8 @@ private fun OnboardingWaves(accentColor: Color) {
 
         // Two subtle wave layers
         val waveConfigs = listOf(
-            Triple(0.72f, 0.025f, OceanBlueLight.copy(alpha = 0.035f)),
-            Triple(0.80f, 0.018f, OceanGreen.copy(alpha = 0.03f)),
+            Triple(0.72f, 0.025f, waveTheme.primary.copy(alpha = (0.035f * a).coerceAtMost(1f))),
+            Triple(0.80f, 0.018f, waveTheme.secondary.copy(alpha = (0.03f * a).coerceAtMost(1f))),
         )
         waveConfigs.forEachIndexed { index, (yFrac, ampFrac, color) ->
             val wavePath = Path()

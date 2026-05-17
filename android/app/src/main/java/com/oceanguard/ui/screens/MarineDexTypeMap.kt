@@ -1,6 +1,5 @@
 package com.oceanguard.ai.ui.screens
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +12,7 @@ import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.DetectionSession
 import com.oceanguard.ai.ui.components.LottieEmptyState
 import com.oceanguard.ai.ui.screens.map.MapStyles
+import com.oceanguard.ai.ui.theme.LocalIsDarkTheme
 import com.oceanguard.ai.ui.theme.OceanBlueLight
 import com.oceanguard.ai.utils.toGeoJsonFeatureCollection
 import kotlinx.serialization.json.jsonPrimitive
@@ -59,7 +59,10 @@ fun MarineDexTypeMap(
         return
     }
 
-    val isDark = isSystemInDarkTheme()
+    // Read the app's effective dark-mode preference (driven by Settings),
+    // not the system theme — keeps the embedded map consistent with the
+    // main MapScreen and with the rest of the app under the user's override.
+    val isDark = LocalIsDarkTheme.current
     val styleUrl = remember(isDark) { MapStyles.forDarkMode(isDark) }
     val geoJson = remember(locatedSessions) { locatedSessions.toGeoJsonFeatureCollection() }
     val centerPosition = remember(locatedSessions) { computeCenter(locatedSessions) }

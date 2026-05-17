@@ -55,6 +55,8 @@ import com.oceanguard.ai.ui.theme.GradientCTAEnd
 import com.oceanguard.ai.ui.theme.GradientCTAStart
 import com.oceanguard.ai.ui.theme.OceanGreen
 import com.oceanguard.ai.ui.theme.OceanGreenLight
+import com.oceanguard.ai.ui.theme.glassBorderColor
+import com.oceanguard.ai.ui.theme.glassSurfaceColor
 import com.oceanguard.ai.ui.theme.healthScoreColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -335,7 +337,7 @@ fun HomeScreen(
                                 icon = Icons.Filled.CameraAlt,
                                 label = stringResource(R.string.home_btn_take_photo),
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = Color(0xFF0A0E1A),
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
                                 // Enabled when the model file is missing (tap
                                 // opens the download dialog) OR fully Ready for
                                 // inference. Loading / WarmingUp / Standby /
@@ -870,9 +872,10 @@ private fun ModelStatusIndicator(
     val readyText = stringResource(R.string.home_model_ready)
     val detectorName = if (isGemma4) "Gemma 4" else "AI Detection"
 
-    // Glass style matching landing page: rgba(15,23,42,0.5) bg + rgba(148,163,184,0.1) border
-    val glassColor = Color(0x800F172A)
-    val glassBorderColor = Color(0x1A94A3B8)
+    // Glass style — theme-aware. Dark mode keeps the original navy frosted
+    // panel; light mode swaps to a white frosted overlay on the pale-sky hero.
+    val glassColor = glassSurfaceColor()
+    val glassBorderColor = glassBorderColor()
 
     when {
         // The download takes precedence over status rows because the user is
@@ -1041,9 +1044,9 @@ private fun ReadyBanner(text: String) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x1A94A3B8), RoundedCornerShape(12.dp)),
+            .border(1.dp, glassBorderColor(), RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0x800F172A),
+        color = glassSurfaceColor(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),

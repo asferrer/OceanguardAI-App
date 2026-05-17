@@ -9,12 +9,26 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+
+/**
+ * CompositionLocal that exposes the app's *effective* dark-mode preference
+ * (driven by [SettingsRepository.darkMode], not the OS setting). Branded
+ * "ocean" components read this to pick between the deep-ocean and the
+ * sunlit-beach palettes without re-collecting the DataStore.
+ *
+ * Default `false` so previews / tests that render outside [OceanGuardTheme]
+ * fall back to light-mode appearance (safer than rendering dark on a light
+ * surface).
+ */
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
 
 /**
  * Consistent corner-radius system for the OceanGuard design language.
@@ -94,10 +108,12 @@ fun OceanGuardTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = OceanGuardTypography,
-        shapes = OceanGuardShapes,
-        content = content,
-    )
+    CompositionLocalProvider(LocalIsDarkTheme provides useDarkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = OceanGuardTypography,
+            shapes = OceanGuardShapes,
+            content = content,
+        )
+    }
 }

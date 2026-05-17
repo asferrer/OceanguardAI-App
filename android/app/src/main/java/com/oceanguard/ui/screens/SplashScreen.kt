@@ -44,13 +44,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.SettingsRepository
 import com.oceanguard.ai.ui.components.BubbleParticles
-import com.oceanguard.ai.ui.theme.BioluminescentCyan
 import com.oceanguard.ai.ui.theme.GradientCTAEnd
 import com.oceanguard.ai.ui.theme.GradientCTAStart
-import com.oceanguard.ai.ui.theme.GradientHeroEnd
-import com.oceanguard.ai.ui.theme.GradientHeroStart
-import com.oceanguard.ai.ui.theme.OceanBlueLight
-import com.oceanguard.ai.ui.theme.OceanGreen
+import com.oceanguard.ai.ui.theme.LocalIsDarkTheme
+import com.oceanguard.ai.ui.theme.OceanBlueDeepInk
+import com.oceanguard.ai.ui.theme.SplashSubtitleLight
+import com.oceanguard.ai.ui.theme.heroGradientBrush
+import com.oceanguard.ai.ui.theme.waveThemeForCurrent
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -122,14 +122,14 @@ fun SplashScreen(
         label = "splashFloatY",
     )
 
+    val isDark = LocalIsDarkTheme.current
+    val titleAnchorColor = if (isDark) Color.White else OceanBlueDeepInk
+    val subtitleColor = if (isDark) Color(0xFF94A3B8) else SplashSubtitleLight
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(GradientHeroStart, GradientHeroEnd),
-                ),
-            ),
+            .background(brush = heroGradientBrush()),
         contentAlignment = Alignment.Center,
     ) {
         // Ambient effects
@@ -161,7 +161,7 @@ fun SplashScreen(
                 text = "OceanGuard AI",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     brush = Brush.linearGradient(
-                        colors = listOf(Color.White, GradientCTAStart, GradientCTAEnd),
+                        colors = listOf(titleAnchorColor, GradientCTAStart, GradientCTAEnd),
                     ),
                 ),
                 fontWeight = FontWeight.Bold,
@@ -193,11 +193,11 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Subtitle
+            // Subtitle (theme-aware: pale-grey in dark, readable mid-grey in light)
             Text(
                 text = stringResource(R.string.home_header_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF94A3B8), // landing --text-secondary
+                color = subtitleColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.graphicsLayer { alpha = subtitleAlpha.value },
             )
@@ -208,6 +208,8 @@ fun SplashScreen(
 /** Subtle filled wave shapes + caustic light patches for splash background. */
 @Composable
 private fun SplashWaves() {
+    val waveTheme = waveThemeForCurrent()
+    val a = waveTheme.alphaMultiplier
     val infiniteTransition = rememberInfiniteTransition(label = "splashWave")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -222,8 +224,8 @@ private fun SplashWaves() {
         // Caustic light patches
         val causticPhase = phase * 0.3f
         listOf(
-            Triple(0.3f, 0.4f, GradientCTAStart.copy(alpha = 0.025f)),
-            Triple(0.7f, 0.3f, BioluminescentCyan.copy(alpha = 0.02f)),
+            Triple(0.3f, 0.4f, GradientCTAStart.copy(alpha = (0.025f * a).coerceAtMost(1f))),
+            Triple(0.7f, 0.3f, waveTheme.caustic.copy(alpha = (0.02f * a).coerceAtMost(1f))),
         ).forEachIndexed { i, (baseX, baseY, color) ->
             val offset = i * 2.5f
             val cx = size.width * baseX +
@@ -244,9 +246,9 @@ private fun SplashWaves() {
 
         // Filled wave layers
         val waveConfigs = listOf(
-            Triple(0.68f, 0.03f, OceanBlueLight.copy(alpha = 0.04f)),
-            Triple(0.75f, 0.025f, OceanGreen.copy(alpha = 0.035f)),
-            Triple(0.82f, 0.02f, OceanBlueLight.copy(alpha = 0.03f)),
+            Triple(0.68f, 0.03f, waveTheme.primary.copy(alpha = (0.04f * a).coerceAtMost(1f))),
+            Triple(0.75f, 0.025f, waveTheme.secondary.copy(alpha = (0.035f * a).coerceAtMost(1f))),
+            Triple(0.82f, 0.02f, waveTheme.primary.copy(alpha = (0.03f * a).coerceAtMost(1f))),
         )
 
         waveConfigs.forEachIndexed { index, (yFrac, ampFrac, color) ->

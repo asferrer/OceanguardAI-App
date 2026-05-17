@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import com.oceanguard.ai.ui.theme.LocalIsDarkTheme
+import com.oceanguard.ai.ui.theme.bubbleColor
 import kotlin.math.sin
 
 /**
@@ -29,7 +31,12 @@ import kotlin.math.sin
 fun BubbleParticles(
     modifier: Modifier = Modifier,
     bubbleCount: Int = 10,
+    tint: Color? = null,
 ) {
+    val effectiveTint = tint ?: bubbleColor()
+    // Light-mode bubbles need a higher alpha so they remain visible on a pale
+    // sky gradient. Dark mode keeps the original delicate look.
+    val alphaBoost = if (LocalIsDarkTheme.current) 1f else 3.5f
     val bubbles = remember(bubbleCount) {
         List(bubbleCount) {
             Bubble(
@@ -70,13 +77,15 @@ fun BubbleParticles(
 
             // Bubble body
             drawCircle(
-                color = Color.White.copy(alpha = b.alpha),
+                color = effectiveTint.copy(alpha = (b.alpha * alphaBoost).coerceAtMost(1f)),
                 radius = r,
                 center = Offset(x, y),
             )
             // Highlight spot (light refraction)
             drawCircle(
-                color = Color.White.copy(alpha = b.alpha * 1.5f),
+                color = effectiveTint.copy(
+                    alpha = (b.alpha * 1.5f * alphaBoost).coerceAtMost(1f),
+                ),
                 radius = r * 0.35f,
                 center = Offset(x - r * 0.25f, y - r * 0.25f),
             )
