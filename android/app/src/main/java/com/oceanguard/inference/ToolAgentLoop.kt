@@ -51,6 +51,16 @@ internal class ToolAgentLoop(
         // report (substantial body or a markdown heading), accept whatever it
         // produced instead of restarting.
         private const val AGENTIC_KEEP_DRAFT_CHARS = 300
+        // Agentic mode early-abort threshold: when the model starts writing
+        // prose AND critical required tools are still missing, abort the turn
+        // at this many characters so the outer loop can redirect immediately.
+        // Without this guard the model would stream the full 6000-9000 char
+        // report (~10 min on Exynos CPU) before the missing-tool check fires,
+        // doubling end-to-end latency every time Gemma 4 skips one tool. Low
+        // value chosen because the model has had its chance: it already
+        // emitted tool calls THIS turn or in earlier rounds, then committed
+        // to prose. There is no benefit to waiting longer.
+        private const val AGENTIC_EARLY_PROSE_ABORT_CHARS = 240
     }
 
     private val gson = Gson()
@@ -95,8 +105,25 @@ internal class ToolAgentLoop(
         var round = 0
         var redirects = 0
 
+        // Snapshot of critical tools still missing — recomputed on each turn
+        // and passed into sendTurn so the prose stream can be aborted as soon
+        // as it crosses [AGENTIC_EARLY_PROSE_ABORT_CHARS] without all critical
+        // tools having returned. Without this, Gemma 4 E2B's 6000-9000 char
+        // wrap-up steals ~10 min of CPU on Exynos before the outer-loop check
+        // fires, doubling latency on every missed-tool round.
+        fun currentCriticalMissing(): Set<String> =
+            criticalToolNames.filterNot { req ->
+                calledTools.any { called -> req == called || req.startsWith(called) || called.startsWith(req) }
+            }.toSet()
+
         while (round <= maxToolRounds) {
-            val toolCalls = sendTurn(nextInput, accumulated, onPartialResult, phase1Mode)
+            val toolCalls = sendTurn(
+                input = nextInput,
+                accumulated = accumulated,
+                onPartialResult = onPartialResult,
+                phase1Mode = phase1Mode,
+                criticalMissingProvider = ::currentCriticalMissing,
+            )
 
             if (toolCalls.isNotEmpty()) {
                 if (round >= maxToolRounds) {
@@ -192,10 +219,14 @@ internal class ToolAgentLoop(
         accumulated: StringBuilder,
         onPartialResult: (String) -> Unit,
         phase1Mode: Boolean = false,
+        criticalMissingProvider: () -> Set<String> = { emptySet() },
     ): List<ToolCall> = suspendCancellableCoroutine { continuation ->
         val collectedToolCalls = mutableListOf<ToolCall>()
         var lastPartialMs = 0L
         var resumed = false
+        // Cache the missing-critical set for this turn — recomputing on every
+        // streamed token would be wasteful. The set only changes between turns.
+        val criticalMissingAtTurnStart = criticalMissingProvider()
 
         val callback = object : MessageCallback {
             override fun onMessage(message: Message) {
@@ -211,6 +242,31 @@ internal class ToolAgentLoop(
                     // wasted CPU. Resume early so the outer loop can move on.
                     if (phase1Mode && collectedToolCalls.isEmpty() && accumulated.length >= PHASE1_PROSE_ABORT_CHARS) {
                         Log.i(TAG, "PHASE-1 prose detected (${accumulated.length} chars); aborting turn to hand off to PHASE-2")
+                        resumed = true
+                        continuation.resume(emptyList())
+                        return
+                    }
+                    // Agentic-mode EARLY abort: the model is streaming prose
+                    // (no tool calls yet this turn) AND critical required tools
+                    // are still missing. Without this guard the model would
+                    // emit the full 6000-9000 char report (~10 min on Exynos)
+                    // before the outer-loop missing-tool check fires, only to
+                    // have its draft discarded. Abort the turn now so the
+                    // outer loop runs the redirect and the model regenerates
+                    // only ONCE with complete tool data. Empirically: 240
+                    // chars is enough prose to confirm the model has indeed
+                    // committed to writing instead of about to emit a tool
+                    // call, while keeping the wasted CPU under ~30 seconds.
+                    if (
+                        !phase1Mode &&
+                        collectedToolCalls.isEmpty() &&
+                        criticalMissingAtTurnStart.isNotEmpty() &&
+                        accumulated.length >= AGENTIC_EARLY_PROSE_ABORT_CHARS
+                    ) {
+                        Log.w(
+                            TAG,
+                            "Early-abort: model started prose (${accumulated.length} chars) with critical tools still missing $criticalMissingAtTurnStart — handing back to outer loop for redirect",
+                        )
                         resumed = true
                         continuation.resume(emptyList())
                         return
