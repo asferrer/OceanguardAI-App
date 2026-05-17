@@ -51,16 +51,6 @@ internal class ToolAgentLoop(
         // report (substantial body or a markdown heading), accept whatever it
         // produced instead of restarting.
         private const val AGENTIC_KEEP_DRAFT_CHARS = 300
-        // Agentic mode early-abort threshold: when the model starts writing
-        // prose AND critical required tools are still missing, abort the turn
-        // at this many characters so the outer loop can redirect immediately.
-        // Without this guard the model would stream the full 6000-9000 char
-        // report (~10 min on Exynos CPU) before the missing-tool check fires,
-        // doubling end-to-end latency every time Gemma 4 skips one tool. Low
-        // value chosen because the model has had its chance: it already
-        // emitted tool calls THIS turn or in earlier rounds, then committed
-        // to prose. There is no benefit to waiting longer.
-        private const val AGENTIC_EARLY_PROSE_ABORT_CHARS = 240
     }
 
     private val gson = Gson()
@@ -224,8 +214,10 @@ internal class ToolAgentLoop(
         val collectedToolCalls = mutableListOf<ToolCall>()
         var lastPartialMs = 0L
         var resumed = false
-        // Cache the missing-critical set for this turn — recomputing on every
-        // streamed token would be wasteful. The set only changes between turns.
+        // criticalMissingProvider is kept on the API for future use by the
+        // PHASE-1-only mode but is no longer consulted on the streaming path
+        // (the v0.2.7 early-abort regressed report quality — see release notes).
+        @Suppress("UNUSED_VARIABLE")
         val criticalMissingAtTurnStart = criticalMissingProvider()
 
         val callback = object : MessageCallback {
@@ -246,31 +238,16 @@ internal class ToolAgentLoop(
                         continuation.resume(emptyList())
                         return
                     }
-                    // Agentic-mode EARLY abort: the model is streaming prose
-                    // (no tool calls yet this turn) AND critical required tools
-                    // are still missing. Without this guard the model would
-                    // emit the full 6000-9000 char report (~10 min on Exynos)
-                    // before the outer-loop missing-tool check fires, only to
-                    // have its draft discarded. Abort the turn now so the
-                    // outer loop runs the redirect and the model regenerates
-                    // only ONCE with complete tool data. Empirically: 240
-                    // chars is enough prose to confirm the model has indeed
-                    // committed to writing instead of about to emit a tool
-                    // call, while keeping the wasted CPU under ~30 seconds.
-                    if (
-                        !phase1Mode &&
-                        collectedToolCalls.isEmpty() &&
-                        criticalMissingAtTurnStart.isNotEmpty() &&
-                        accumulated.length >= AGENTIC_EARLY_PROSE_ABORT_CHARS
-                    ) {
-                        Log.w(
-                            TAG,
-                            "Early-abort: model started prose (${accumulated.length} chars) with critical tools still missing $criticalMissingAtTurnStart — handing back to outer loop for redirect",
-                        )
-                        resumed = true
-                        continuation.resume(emptyList())
-                        return
-                    }
+                    // No more early-abort here. v0.2.7 aborted prose at 240 chars
+                    // when critical tools were missing, then injected a STOP redirect.
+                    // The discarded partial-draft stayed in the model's KV cache and
+                    // corrupted the subsequent retry (placeholder rows, repeated
+                    // tokens, fabricated debris types). With v0.2.8 the bundle is
+                    // injected into the user prompt at turn 0, so the model has all
+                    // CONFIRMED DATA in KV cache from the start — even if it skips a
+                    // tool call, the prose is still grounded on the bundle and the
+                    // outer loop's end-of-turn enforcement (with its single-pass
+                    // redirect) is enough as a backstop.
                     val now = System.currentTimeMillis()
                     if (now - lastPartialMs >= PARTIAL_THROTTLE_MS) {
                         onPartialResult(accumulated.toString())

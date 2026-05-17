@@ -62,10 +62,15 @@ class ToolReportGeneratorTest {
         assertFalse(repaired.contains("BOTELLA"))
     }
 
-    // ---- B.4: unknown label preserved unchanged ----
+    // ---- B.4: unknown label DROPPED (closed-world enforcement, v0.2.8+) ----
 
     @Test
-    fun `repair does not alter rows whose label is absent from canon`() {
+    fun `repair drops rows whose label is absent from canon inside a known section`() {
+        // Closed-world enforcement: if the section is recognised (here
+        // "Materiales" → materialRows) and the row's label is NOT in that
+        // canon map, the row is fabricated and must be removed. Prior to
+        // v0.2.8 such rows were kept untouched, which let the model emit
+        // sections for debris types the survey never detected.
         val canon = canonWith(
             material = mapOf("Botella" to "| Botella | 12 | 50% |"),
         )
@@ -73,9 +78,28 @@ class ToolReportGeneratorTest {
 
         val repaired = ToolReportGenerator.repairHallucinations(input, canon)
 
+        assertFalse(
+            "Closed-world strip should remove fabricated row, got: $repaired",
+            repaired.contains("ItemDesconocido"),
+        )
+    }
+
+    // ---- B.4b: rows OUTSIDE a known section are kept (totals, prose-driven tables) ----
+
+    @Test
+    fun `repair leaves rows alone outside a known data section`() {
+        val canon = canonWith(
+            material = mapOf("Botella" to "| Botella | 12 | 50% |"),
+        )
+        // No `### Materiales`/Tipos/Riesgo etc heading — section is "unknown",
+        // so the closed-world rule does not fire and totals-style rows survive.
+        val input = "| Total general | 25 | 100% |"
+
+        val repaired = ToolReportGenerator.repairHallucinations(input, canon)
+
         assertTrue(
-            "Unknown label must survive untouched, got: $repaired",
-            repaired.contains("| ItemDesconocido | 5 | 25% |"),
+            "Row outside any known section should survive, got: $repaired",
+            repaired.contains("Total general"),
         )
     }
 

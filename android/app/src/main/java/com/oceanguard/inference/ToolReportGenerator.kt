@@ -153,6 +153,16 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             val allLabels = (canon.materialRows.keys + canon.typeRows.keys).toSet()
             val lines = text.lines().toMutableList()
             var replaced = 0
+            // Lines flagged for removal — Kotlin can't delete from MutableList
+            // while iterating by index without shifting. Collect indices, drop
+            // in a second pass.
+            val linesToDrop = mutableSetOf<Int>()
+            // Detect placeholder rows ("| [Foo] | [Bar] |") that the model
+            // emitted when it lacked a real value. Closed-world enforcement
+            // requires dropping these instead of trying to repair them — the
+            // CONFIRMED DATA does not have a row for them, so they are fabricated
+            // by definition.
+            val placeholderCellPattern = Regex("""\[[^\]]+\]""")
 
             var currentNormMap: Map<String, String> = emptyMap()
             var inPerSessionSection = false
@@ -195,6 +205,14 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
                 val firstCell = line.substringAfter("|").substringBefore("|").trim()
                 if (firstCell.isEmpty()) continue
 
+                // Drop ANY row that still contains a "[...]" placeholder. The
+                // model uses these when it doesn't have real data — closed-world
+                // says: no real data means the row should not exist.
+                if (placeholderCellPattern.containsMatchIn(line)) {
+                    linesToDrop.add(i)
+                    continue
+                }
+
                 if (inPerSessionSection) {
                     // Exact match against "#<id>" cells first.
                     val exact = perSessionByExact[firstCell]
@@ -212,7 +230,11 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
                     if (byNorm != null && byNorm != line.trim()) {
                         lines[i] = byNorm
                         replaced++
+                        continue
                     }
+                    // Row that doesn't match ANY known per-session entry — the
+                    // model fabricated a session row. Drop it (closed-world).
+                    linesToDrop.add(i)
                     continue
                 }
 
@@ -229,14 +251,32 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
                 val canonical = currentNormMap[normKey]
                     ?: normEco[normKey]
                     ?: normRisk[normKey]
-                if (canonical != null && canonical != line.trim()) {
-                    lines[i] = canonical
-                    replaced++
+                if (canonical != null) {
+                    if (canonical != line.trim()) {
+                        lines[i] = canonical
+                        replaced++
+                    }
+                    continue
+                }
+                // CLOSED-WORLD STRIP: this row's first cell is NOT in any canon
+                // map. If we are inside a known data section (material/type/eco/
+                // risk), the row is fabricated — the survey did not detect this
+                // type. Drop it. Outside a known section we leave the row alone
+                // (could be a totals row, prose-driven table, etc).
+                if (currentNormMap.isNotEmpty()) {
+                    linesToDrop.add(i)
                 }
             }
 
-            if (replaced > 0) {
-                Log.i(TAG, "Canonical row repair: rewrote $replaced row(s) matching bundle labels=${allLabels.size} per-session=${perSessionByExact.size}")
+            // Drop fabricated/placeholder rows in reverse-index order so prior
+            // indices remain valid.
+            val dropped = linesToDrop.size
+            for (idx in linesToDrop.sortedDescending()) {
+                lines.removeAt(idx)
+            }
+
+            if (replaced > 0 || dropped > 0) {
+                Log.i(TAG, "Canonical row repair: rewrote=$replaced dropped=$dropped (closed-world strip + placeholders) bundle labels=${allLabels.size} per-session=${perSessionByExact.size}")
             }
             var out = lines.joinToString("\n")
             out = Regex("""^\s*\|[\s\.\|]+\|\s*$""", RegexOption.MULTILINE).replace(out, "")
@@ -272,10 +312,10 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         val languageName = LANGUAGE_NAMES[language] ?: "English"
         val firstHeading = FIRST_HEADING[language] ?: "## Executive Summary"
         val system = buildSystemMessage(languageName, audience, ReportKind.GENERIC)
-        val prompt = buildUserPrompt(languageName, firstHeading, ReportKind.GENERIC)
 
         val (bundle, canon) = ToolDataBundleFormatter.formatWithCanon(ctx)
-        Log.i(TAG, "Tool-based report: ${sessions.size} sessions, lang=$language, audience=$audience, bundle=${bundle.length} chars")
+        val prompt = buildUserPrompt(languageName, firstHeading, ReportKind.GENERIC, bundle)
+        Log.i(TAG, "Tool-based report: ${sessions.size} sessions, lang=$language, audience=$audience, bundle=${bundle.length} chars (injected in user prompt)")
         runTwoPhase(
             phase1Prompt = prompt,
             tools = tools,
@@ -308,10 +348,10 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         val languageName = LANGUAGE_NAMES[language] ?: "English"
         val firstHeading = FIRST_HEADING_ZONE[language] ?: "## Zone Profile"
         val system = buildSystemMessage(languageName, audience, ReportKind.ZONE)
-        val prompt = buildUserPrompt(languageName, firstHeading, ReportKind.ZONE, input.locationName)
 
         val (bundle, canon) = ToolDataBundleFormatter.formatWithCanon(ctx)
-        Log.i(TAG, "Tool-based zone report: ${input.locationName}, ${input.sessions.size} sessions, bundle=${bundle.length} chars")
+        val prompt = buildUserPrompt(languageName, firstHeading, ReportKind.ZONE, bundle, input.locationName)
+        Log.i(TAG, "Tool-based zone report: ${input.locationName}, ${input.sessions.size} sessions, bundle=${bundle.length} chars (injected in user prompt)")
         runTwoPhase(
             phase1Prompt = prompt,
             tools = tools,
@@ -415,9 +455,7 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         return """
 OUTPUT LANGUAGE: $languageName (headings, prose, tables — every word, including all debris-type and material labels).
 
-DEBRIS VOCABULARY (closed set — do not invent variations):
-Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris, Tire, Fabric Debris, Glass Debris, Other.
-Use the translated forms from the CONFIRMED DATA tables for the final report — never English snake_case identifiers.
+DEBRIS VOCABULARY (closed set — the FULL universe of types your training has seen is 11 entries: Bottle, Can, Fishing Net, Glove, Mask, Metal Debris, Plastic Debris, Tire, Fabric Debris, Glass Debris, Other. THIS SURVEY has typically detected only a SUBSET of those — usually 3-6. The CONFIRMED DATA section the user gave you lists EVERY row that should appear in every table. NEVER add a row for a type that is not in CONFIRMED DATA, even if you remember it from training.) Use the translated forms from the CONFIRMED DATA tables for the final report — never English snake_case identifiers.
 
 $persona
 
@@ -453,14 +491,36 @@ STYLE: markdown tables `| col | col |`, bullet lists only when genuinely enumera
         languageName: String,
         firstHeading: String,
         kind: ReportKind,
+        bundle: String,
         locationName: String? = null,
     ): String {
         val locClause = locationName?.let { " for \"$it\"" } ?: ""
         val kindLabel = if (kind == ReportKind.ZONE) "zone temporal-evolution" else "marine debris assessment"
+        // The bundle is injected as CONFIRMED DATA in the first user turn so the
+        // model has every row of every table in its KV cache BEFORE writing any
+        // prose. Tool calls in Step 1 still happen (the agentic showcase), but
+        // they now serve as a verification pass — each tool returns the same
+        // structured data that is already present in the bundle. This makes the
+        // prose generation a one-shot grounded write rather than a fragile
+        // reconstruction from JSON tool responses, eliminating the placeholder
+        // / fabricated-type / repeated-token failure modes observed up to v0.2.7.
         return """
 Produce the $kindLabel report$locClause in $languageName.
 
-PHASE 1 NOW: call every required tool (each with empty arguments). Emit no prose yet. Wait for my next turn.
+CONFIRMED DATA — every number, percentage, label, row below comes from this
+survey's database. The report MUST use ONLY these values. Do not paraphrase
+labels, do not invent rows, do not add types not present below.
+
+$bundle
+
+PROTOCOL:
+  PHASE 1 NOW: call every required tool (each with empty arguments). The
+  tool responses will repeat the data above in JSON form; that is expected
+  and is the verification pass.
+  PHASE 2 (this same turn, immediately after the last tool returns): write
+  the FINAL report. The very next characters after the last tool response
+  MUST be "$firstHeading". Use only the CONFIRMED DATA above. Do not emit
+  any token wrapped in `[...]` — every placeholder is a bug.
 """.trimIndent()
     }
 
