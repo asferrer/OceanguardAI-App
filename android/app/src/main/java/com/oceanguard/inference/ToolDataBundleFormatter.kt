@@ -33,6 +33,12 @@ object ToolDataBundleFormatter {
         val typeRows: Map<String, String>,
         val ecoRows: Map<String, String>,
         val riskRows: Map<String, String>,
+        /**
+         * One row per analyzed image (per-session table). Key is the first
+         * cell of the row exactly as it appears in the bundle (e.g. "#42") so
+         * the post-process repair can rewrite any row the model paraphrases.
+         */
+        val perSessionRows: Map<String, String>,
         val totalsBlock: String,
     )
 
@@ -54,6 +60,7 @@ object ToolDataBundleFormatter {
         val riskRows = appendRisk(sb, ctx, h, lang)
         appendWaypoints(sb, ctx, h, lang)
         appendStats(sb, ctx, h)
+        val perSessionRows = appendPerSession(sb, ctx, h, lang)
         appendTrend(sb, ctx, h)
         sb.append("---\n\n")
         sb.append(h.writeInstruction)
@@ -62,7 +69,38 @@ object ToolDataBundleFormatter {
             append("- ${h.sessionsAnalysed}: **${ctx.sessionCount}**\n")
             append("- ${h.avgHealth}: **${ctx.avgHealthScore}** / 100\n")
         }
-        return sb.toString() to Canon(materialRows, typeRows, ecoRows, riskRows, totalsBlock)
+        return sb.toString() to Canon(materialRows, typeRows, ecoRows, riskRows, perSessionRows, totalsBlock)
+    }
+
+    /**
+     * Per-session "analyzed images" table. The first column is the session id
+     * prefixed with "#" so the repair step can match each row regardless of
+     * what the model emits between the bars.
+     */
+    private fun appendPerSession(
+        sb: StringBuilder,
+        ctx: ToolReportContext,
+        h: H,
+        lang: String,
+    ): Map<String, String> {
+        if (ctx.sessionDetails.isEmpty()) return emptyMap()
+        val rows = LinkedHashMap<String, String>()
+        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        sb.append("### ${h.perSession}\n")
+        sb.append("| ${h.imageId} | ${h.date} | ${h.lat} | ${h.lon} | ${h.debris} | ${h.health} | ${h.dominant} |\n")
+        sb.append("|---|---|---:|---:|---:|---:|---|\n")
+        for (d in ctx.sessionDetails) {
+            val idCell = "#${d.sessionId}"
+            val dateCell = fmt.format(Date(d.timestampMs))
+            val latCell = d.lat?.let { "%.5f".format(Locale.US, it) } ?: "—"
+            val lonCell = d.lon?.let { "%.5f".format(Locale.US, it) } ?: "—"
+            val dominantCell = ReportGenerator.translateType(d.dominantType, lang)
+            val row = "| $idCell | $dateCell | $latCell | $lonCell | ${d.totalDebris} | ${d.healthScore} | $dominantCell |"
+            sb.append(row).append('\n')
+            rows[idCell] = row
+        }
+        sb.append('\n')
+        return rows
     }
 
     private fun appendTotals(sb: StringBuilder, ctx: ToolReportContext, h: H, lang: String) {
@@ -288,6 +326,8 @@ object ToolDataBundleFormatter {
         val sessionStats: String, val healthStatLine: String, val debrisStatLine: String,
         val temporalTrend: String, val trendLabel: String, val healthDelta: String,
         val date: String, val sessionsCol: String, val writeInstruction: String,
+        // Per-session ("analyzed images") table headers.
+        val perSession: String, val imageId: String,
     )
 
     private fun headings(lang: String): H = when (lang) {
@@ -305,6 +345,7 @@ object ToolDataBundleFormatter {
             "Evolución temporal", "Etiqueta de tendencia", "Delta de salud (último − primero)",
             "Fecha", "Sesiones",
             "Redacta el reporte final ahora usando los valores exactos anteriores. Escribe prosa fluida (3–5 frases por sección antes de las tablas), conectando los datos en narrativa científica. Reproduce las tablas EXACTAMENTE como aparecen arriba — mismas filas, mismos valores, mismas etiquetas en español. No placeholders, no filas con `| ... |`, no inventes porcentajes. Empieza con el primer encabezado de la estructura solicitada.\n",
+            "Detalle por imagen analizada", "ID de imagen",
         )
         "fr" -> H(
             "Totaux de l'étude", "Total des débris", "Sessions analysées",
@@ -320,6 +361,7 @@ object ToolDataBundleFormatter {
             "Évolution temporelle", "Étiquette de tendance", "Delta santé (dernier − premier)",
             "Date", "Sessions",
             "Rédigez le rapport final maintenant avec les valeurs exactes ci-dessus. Prose fluide (3–5 phrases par section avant les tableaux). Reproduisez les tableaux EXACTEMENT. Pas de placeholders. Commencez par le premier en-tête de la structure demandée.\n",
+            "Détail par image analysée", "ID d'image",
         )
         "de" -> H(
             "Umfrage-Summen", "Müll gesamt", "Ausgewertete Sitzungen",
@@ -335,6 +377,7 @@ object ToolDataBundleFormatter {
             "Zeitlicher Verlauf", "Trend-Label", "Gesundheits-Delta (letzter − erster)",
             "Datum", "Sitzungen",
             "Schreibe jetzt den endgültigen Bericht mit den exakten Werten oben. Flüssige Prosa (3–5 Sätze pro Abschnitt vor den Tabellen). Tabellen EXAKT reproduzieren. Keine Platzhalter. Beginne mit der ersten Überschrift der angeforderten Struktur.\n",
+            "Detail pro analysiertem Bild", "Bild-ID",
         )
         "it" -> H(
             "Totali del rilievo", "Rifiuti totali", "Sessioni analizzate",
@@ -350,6 +393,7 @@ object ToolDataBundleFormatter {
             "Evoluzione temporale", "Etichetta di tendenza", "Delta salute (ultimo − primo)",
             "Data", "Sessioni",
             "Scrivi il report finale ora con i valori esatti sopra. Prosa fluida (3–5 frasi per sezione prima delle tabelle). Riproduci le tabelle ESATTAMENTE. Niente placeholder. Inizia con la prima intestazione della struttura richiesta.\n",
+            "Dettaglio per immagine analizzata", "ID immagine",
         )
         "pt" -> H(
             "Totais do levantamento", "Resíduos totais", "Sessões analisadas",
@@ -365,6 +409,7 @@ object ToolDataBundleFormatter {
             "Evolução temporal", "Etiqueta de tendência", "Delta de saúde (último − primeiro)",
             "Data", "Sessões",
             "Escreva o relatório final agora com os valores exatos acima. Prosa fluida (3–5 frases por secção antes das tabelas). Reproduza as tabelas EXATAMENTE. Sem placeholders. Comece pelo primeiro título da estrutura solicitada.\n",
+            "Detalhe por imagem analisada", "ID de imagem",
         )
         else -> H(
             "Survey totals", "Total debris items", "Sessions analysed",
@@ -380,6 +425,7 @@ object ToolDataBundleFormatter {
             "Temporal trend", "Trend label", "Health delta (last − first)",
             "Date", "Sessions",
             "Write the final report now using the exact values above. Flowing prose (3–5 sentences per section before tables). Reproduce tables EXACTLY. No placeholders. Start with the first heading of the requested structure.\n",
+            "Per-analyzed-image detail", "Image ID",
         )
     }
 }

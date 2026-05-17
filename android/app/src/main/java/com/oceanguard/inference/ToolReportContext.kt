@@ -85,6 +85,13 @@ data class ToolReportContext(
     val sessionDetails: List<SessionDetail> = sessions
         .sortedByDescending { it.timestamp }
         .mapIndexed { idx, s ->
+            val typeCounts = s.debrisList
+                .groupingBy { it.type }
+                .eachCount()
+                .toList()
+                .sortedByDescending { it.second }
+            val top3 = typeCounts.take(3).map { (t, c) -> TypeCount(t.name, c) }
+            val dominant = typeCounts.firstOrNull()?.first?.name ?: "NONE"
             SessionDetail(
                 index = idx,
                 sessionId = s.id,
@@ -94,6 +101,8 @@ data class ToolReportContext(
                 lat = s.location?.latitude,
                 lon = s.location?.longitude,
                 imageQuality = s.imageQuality.name,
+                dominantType = dominant,
+                topTypes = top3,
             )
         }
 
@@ -149,7 +158,12 @@ data class SessionDetail(
     val lat: Double?,
     val lon: Double?,
     val imageQuality: String,
+    val dominantType: String,
+    val topTypes: List<TypeCount>,
 )
+
+/** A debris-type name paired with its count within one session. */
+data class TypeCount(val name: String, val count: Int)
 
 data class TrendData(
     val trend: HealthTrend,

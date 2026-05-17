@@ -41,6 +41,10 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             "get_collection_waypoints",
             "get_ecological_impacts",
             "get_survey_statistics",
+            // Per-session table source. Without this, the model was forced to
+            // fabricate the "Statistical Analysis (per-session table)" rows
+            // because no other tool exposed per-image data.
+            "get_per_session_details",
         )
         private val REQUIRED_TOOLS_ZONE = REQUIRED_TOOLS_GENERIC + "get_temporal_trend"
 
@@ -123,6 +127,14 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             val normType = buildNormalizedMap(canon.typeRows, "typeRows")
             val normEco = buildNormalizedMap(canon.ecoRows, "ecoRows")
             val normRisk = buildNormalizedMap(canon.riskRows, "riskRows")
+            // Per-session map keys are already in the "#<id>" form used as the
+            // first cell of the analyzed-images table, so no normalisation is
+            // needed for the section-row lookup. We still build a normalized
+            // version so paraphrased prefixes ("# 42 ", "ID 42") fall through.
+            val perSessionByExact = canon.perSessionRows
+            val perSessionByNorm = canon.perSessionRows.mapKeys { (k, _) ->
+                normalizeLabel(k.removePrefix("#"))
+            }
 
             val canonDateRows: Map<String, String> = buildCanonDateRows(canon)
 
@@ -131,6 +143,7 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             var replaced = 0
 
             var currentNormMap: Map<String, String> = emptyMap()
+            var inPerSessionSection = false
             val sectionHeadings = listOf(
                 "material" to normMaterial,
                 "type" to normType,
@@ -138,13 +151,30 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
                 "eco" to normEco,
                 "risk" to normRisk,
             )
+            // Heading fragments (lower-case) that mark the per-session table.
+            // Localised forms across the 6 supported languages.
+            val perSessionHeadings = listOf(
+                "per-analyzed-image", "analyzed image", "analyzed images",
+                "imagen analizada", "imágenes analizadas", "por imagen",
+                "image analysée", "images analysées", "par image",
+                "bild analysiert", "pro analysiertem bild", "analysiert",
+                "immagine analizzata", "immagini analizzate", "per immagine",
+                "imagem analisada", "imagens analisadas", "por imagem",
+                "statistical analysis", "análisis estadístico",
+                "analyse statistique", "statistische analyse",
+                "analisi statistica", "análise estatística",
+            )
 
             for (i in lines.indices) {
                 val line = lines[i]
                 if (line.trimStart().startsWith("###")) {
                     val lower = line.lowercase()
-                    currentNormMap = sectionHeadings.firstOrNull { lower.contains(it.first) }?.second
-                        ?: emptyMap()
+                    inPerSessionSection = perSessionHeadings.any { lower.contains(it) }
+                    currentNormMap = if (inPerSessionSection) {
+                        emptyMap()
+                    } else {
+                        sectionHeadings.firstOrNull { lower.contains(it.first) }?.second ?: emptyMap()
+                    }
                     continue
                 }
                 if (!line.trimStart().startsWith("|")) continue
@@ -152,6 +182,27 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
 
                 val firstCell = line.substringAfter("|").substringBefore("|").trim()
                 if (firstCell.isEmpty()) continue
+
+                if (inPerSessionSection) {
+                    // Exact match against "#<id>" cells first.
+                    val exact = perSessionByExact[firstCell]
+                    if (exact != null) {
+                        if (exact != line.trim()) {
+                            lines[i] = exact
+                            replaced++
+                        }
+                        continue
+                    }
+                    // Fallback: tolerate "# 42", "ID 42", "Session 42" by normalising.
+                    val normKey = normalizeLabel(firstCell.removePrefix("#"))
+                        .replace(Regex("""^(id|session|sesi[oó]n|sessione|sess[ãa]o)\s+"""), "")
+                    val byNorm = perSessionByNorm[normKey]
+                    if (byNorm != null && byNorm != line.trim()) {
+                        lines[i] = byNorm
+                        replaced++
+                    }
+                    continue
+                }
 
                 if (Regex("""\d{5,}""").containsMatchIn(line)) {
                     val restored = canonDateRows[firstCell]
@@ -173,7 +224,7 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
             }
 
             if (replaced > 0) {
-                Log.i(TAG, "Canonical row repair: rewrote $replaced row(s) matching bundle labels=${allLabels.size}")
+                Log.i(TAG, "Canonical row repair: rewrote $replaced row(s) matching bundle labels=${allLabels.size} per-session=${perSessionByExact.size}")
             }
             var out = lines.joinToString("\n")
             out = Regex("""^\s*\|[\s\.\|]+\|\s*$""", RegexOption.MULTILINE).replace(out, "")
@@ -356,7 +407,7 @@ $persona
 
 PROTOCOL:
   Step 1: Invoke every tool listed below ONCE each, in any order, with empty arguments. Emit only tool calls in this step — no prose, no commentary.
-  Required tools (all no-argument): debris-summary, material-breakdown, type-breakdown, risk-assessment, collection-waypoints, survey-statistics, ecological-impacts${if (kind == ReportKind.ZONE) ", temporal-trend" else ""}.
+  Required tools (all no-argument): debris-summary, material-breakdown, type-breakdown, risk-assessment, collection-waypoints, survey-statistics, ecological-impacts, per-session-details${if (kind == ReportKind.ZONE) ", temporal-trend" else ""}.
   Step 2: As soon as the last tool has returned, write the FINAL report directly in this same turn. Use ONLY the numbers, percentages, labels and rows returned by the tools — do not invent values, do not paraphrase row labels. The very next characters you produce after the last tool response MUST be the first heading of the report (see STRUCTURE).
 
 RULES:
@@ -364,6 +415,7 @@ RULES:
   • HUMAN LABELS: use the human-readable labels exactly as they appear in the CONFIRMED DATA tables (already in $languageName). Never revert to UPPER_SNAKE_CASE identifiers like `FISHING_NET` or `PLASTIC_DEBRIS` — the report is for human readers.
   • NO PLACEHOLDERS: never emit `[anything]`, `| ... |`, `TODO`. Every bracketed token is a bug.
   • COPY TABLES AND NUMBERS VERBATIM: reproduce each CONFIRMED DATA table with identical rows, percentages, counts, labels, degradation times ("600+ years" stays "600+ years"), risk scores, and annual volumes. Do not re-tokenize digits (13.3% never becomes 133.3%). Do not drop digits (600+ never becomes 60+).
+  • PER-SESSION TABLE: rows MUST come exclusively from get_per_session_details. The first cell is the session id (as returned, prefixed with "#"). Never invent session ids, dates or per-image counts; never describe images that are not in that tool's response. If a number contradicts the tool data, the tool data wins.
   • PROSE QUALITY: each section opens with 3–5 sentences of flowing scientific narrative that interprets the numbers (what they mean ecologically, why they matter), then presents the table. Avoid bullet fragments where prose would read better. Connect sections with transitions. Do not mention "tools", "data retrieval", or the report-generation process.
   • TONE from average health score: ≥80 excellent, 70–79 good, 50–69 degraded, <50 critical.
 

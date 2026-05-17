@@ -130,6 +130,25 @@ class OceanGuardTools(private val ctx: ToolReportContext) : ToolSet {
         return mapOf("count" to items.size, "items" to items)
     }
 
+    @Tool(description = "Get a row for EVERY analyzed image: sessionId, ISO date, lat/lon, totalDebris, healthScore, dominantType, top three types. Returned items array is the authoritative and complete list — use these EXACT rows for any per-session/per-image table; never invent or paraphrase session IDs, dates or counts.")
+    fun getPerSessionDetails(): Map<String, Any> {
+        val items = ctx.sessionDetails.map { d ->
+            mapOf(
+                "sessionId" to d.sessionId,
+                "dateMs" to d.timestampMs,
+                "lat" to (d.lat ?: ""),
+                "lon" to (d.lon ?: ""),
+                "totalDebris" to d.totalDebris,
+                "healthScore" to d.healthScore,
+                "dominantType" to d.dominantType,
+                "topTypes" to d.topTypes.map { tc ->
+                    mapOf("name" to tc.name, "count" to tc.count)
+                },
+            )
+        }
+        return mapOf("count" to items.size, "items" to items)
+    }
+
     @Tool(description = "Compute statistical metrics (min, max, avg, median, stdDev) for BOTH health_score and debris_count across all sessions in a single call.")
     fun getSurveyStatistics(): Map<String, Any> {
         val healthValues = ctx.sessions.map { it.healthScore.toDouble() }

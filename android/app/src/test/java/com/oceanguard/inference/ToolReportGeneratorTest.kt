@@ -109,6 +109,7 @@ class ToolReportGeneratorTest {
             typeRows = typeCanon,
             ecoRows = emptyMap(),
             riskRows = emptyMap(),
+            perSessionRows = emptyMap(),
             totalsBlock = "",
         )
 
@@ -150,6 +151,7 @@ class ToolReportGeneratorTest {
         typeRows = type,
         ecoRows = eco,
         riskRows = risk,
+        perSessionRows = emptyMap(),
         totalsBlock = totals,
     )
 
