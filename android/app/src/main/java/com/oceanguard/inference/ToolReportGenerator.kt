@@ -366,51 +366,81 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
     }
 
     /**
-     * Single-pass agentic generation.
+     * Two-phase generation with a fresh PHASE 2 conversation.
      *
-     * One LiteRT-LM conversation, one KV cache. The model:
-     *   1. Calls each required tool — `onToolCallStarted(name)` fires per
-     *      invocation so the UI can announce "Querying <tool>…".
-     *   2. Receives the JSON responses as `Content.ToolResponse` turns inside
-     *      the SAME conversation. The KV cache from the tool dispatch carries
-     *      into the writing turn so the model genuinely uses the tool data.
-     *   3. Writes the final markdown report. Those tokens stream live to the
-     *      user via `onPartialResult` — no swallow, no fresh-conversation
-     *      reset, no "Generating…" deadtime.
+     * PHASE 1 — Tool dispatch (showcase). LiteRT-LM conversation A is opened
+     * with every @Tool method registered. The model is asked to invoke each
+     * required tool ONCE so the UI can stream "Querying <tool>…" banners. Any
+     * prose the model tries to emit in this conversation is discarded — its
+     * KV cache is throwaway. Latency: ~5-15 s for 9 sequential dispatches.
      *
-     * The deterministic [bundle] is no longer injected as a separate PHASE-2
-     * prompt; instead it stays available for the post-pass
-     * [repairHallucinations] which rewrites any row whose label matches the
-     * canonical map. That keeps numbers/labels precise even if the model
-     * paraphrases a cell.
+     * PHASE 2 — Prose writing (clean KV). A FRESH LiteRT-LM conversation B is
+     * opened with NO tools. The system message contains only the writing
+     * rules (PROTOCOL stripped). The user message embeds the deterministic
+     * [bundle] — every row of every table the report needs, pre-rendered as
+     * markdown. The model writes the full report in ONE coherent pass with
+     * those rows already in its KV cache. Latency: ~3-6 min of decode.
+     *
+     * Why this beats single-conversation:
+     *  - No redirect cycles: PHASE 2 cannot discard prose mid-stream, so KV
+     *    cache cannot be polluted by a half-committed draft (the v0.2.7 /
+     *    v0.2.8 failure mode).
+     *  - No fabricated tables: the bundle is the SINGLE data source the
+     *    writer model sees, so it cannot invent rows for types the survey
+     *    did not detect.
+     *  - Tool-calling showcase intact: PHASE 1 still triggers every typed
+     *    Kotlin tool, every `onToolCallStarted(name)` callback still fires,
+     *    the "8-9 typed tools dispatched" narrative remains visible to the
+     *    user and in logcat.
      */
-    @Suppress("UNUSED_PARAMETER")
     private suspend fun runTwoPhase(
         phase1Prompt: String,
         tools: OceanGuardTools,
         systemMessage: String,
         requiredToolNames: Set<String>,
-        criticalToolNames: Set<String>,
+        @Suppress("UNUSED_PARAMETER") criticalToolNames: Set<String>,
         bundle: String,
         canon: ToolDataBundleFormatter.Canon,
         onPartialResult: (String) -> Unit,
         onToolCallStarted: (String) -> Unit,
     ): String {
-        Log.i(TAG, "Agentic report: ${requiredToolNames.size} required tools (${criticalToolNames.size} critical), bundle=${bundle.length} chars (post-repair canon)")
-        val raw = engine.generateWithTools(
+        // ---------- PHASE 1 — tool dispatch showcase ----------
+        Log.i(
+            TAG,
+            "PHASE 1: dispatching ${requiredToolNames.size} tools (throwaway conversation); bundle=${bundle.length} chars",
+        )
+        // Pass the bundle so ToolAgentLoop runs in PHASE-1 mode:
+        //  - any prose token past 64 chars aborts the turn immediately
+        //  - when every required tool has run, the loop returns "" so we move
+        //    on to PHASE 2 without waiting on more decode.
+        // We intentionally do NOT forward onPartialResult here — PHASE 1 prose
+        // is throwaway and should not appear in the user-visible stream.
+        engine.generateWithTools(
             prompt = phase1Prompt,
             toolSet = tools,
             systemMessage = systemMessage,
             maxToolRounds = MAX_TOOL_ROUNDS,
             requiredToolNames = requiredToolNames,
-            criticalToolNames = criticalToolNames,
-            // null → ToolAgentLoop keeps every prose token and streams it to the
-            // user. The single-conversation flow means the report writing phase
-            // simply continues after the last tool turn with the KV cache intact.
-            dataBundle = null,
-            onPartialResult = onPartialResult,
+            dataBundle = bundle,
+            onPartialResult = { /* discard PHASE 1 prose */ },
             onToolCallStarted = onToolCallStarted,
         )
+
+        // ---------- PHASE 2 — prose writing on a fresh conversation ----------
+        val writerSystem = buildWriterSystemMessage(systemMessage)
+        val phase2Prompt = buildPhase2WriterPrompt(bundle)
+        Log.i(
+            TAG,
+            "PHASE 2: writing prose on fresh conversation (system=${writerSystem.length} chars, prompt=${phase2Prompt.length} chars)",
+        )
+        val raw = engine.generateText(
+            prompt = phase2Prompt,
+            maxTokens = MAX_OUTPUT_TOKENS,
+            systemMessage = writerSystem,
+            onPartialResult = onPartialResult,
+        )
+
+        // ---------- POST-PROCESS — canonical repair + closed-world strip ----------
         val repaired = repairHallucinations(raw, canon)
         if (repaired != raw && repaired.isNotBlank()) {
             Log.i(TAG, "Post-process: ${raw.length}→${repaired.length} chars after canonical repair")
@@ -418,6 +448,23 @@ class ToolReportGenerator(private val engine: LiteRTTextEngine) {
         }
         return repaired
     }
+
+    /**
+     * Builds the PHASE 2 user prompt: the deterministic markdown bundle plus
+     * a terse "now write the report" instruction. Everything the writer needs
+     * is here — there is no agent loop, no tool calls, no second turn.
+     */
+    private fun buildPhase2WriterPrompt(bundle: String): String =
+        """
+CONFIRMED DATA — every row of every table in the report MUST come from this
+section. Do not paraphrase row labels. Do not invent rows or types. If a
+type is absent below, it is absent from the survey — do NOT add a row for it.
+
+$bundle
+
+Write the final report now. Use ONLY the data above. Follow the STRUCTURE
+laid out in the system message. Begin with the first heading.
+""".trimIndent()
 
     /**
      * Strips the PROTOCOL/PHASE-1 lines from the main system prompt — at PHASE 2
@@ -487,40 +534,29 @@ STYLE: markdown tables `| col | col |`, bullet lists only when genuinely enumera
 """.trimIndent()
     }
 
+    /**
+     * PHASE 1 user prompt — terse. The model's only job here is to dispatch
+     * every required tool so the UI showcase fires. Prose is discarded by
+     * the agent loop (PHASE-1 mode via dataBundle != null), so we don't
+     * bother instructing the model to write anything. PHASE 2 runs on a
+     * fresh conversation with the actual writing prompt.
+     */
     private fun buildUserPrompt(
         languageName: String,
-        firstHeading: String,
+        @Suppress("UNUSED_PARAMETER") firstHeading: String,
         kind: ReportKind,
-        bundle: String,
+        @Suppress("UNUSED_PARAMETER") bundle: String,
         locationName: String? = null,
     ): String {
         val locClause = locationName?.let { " for \"$it\"" } ?: ""
         val kindLabel = if (kind == ReportKind.ZONE) "zone temporal-evolution" else "marine debris assessment"
-        // The bundle is injected as CONFIRMED DATA in the first user turn so the
-        // model has every row of every table in its KV cache BEFORE writing any
-        // prose. Tool calls in Step 1 still happen (the agentic showcase), but
-        // they now serve as a verification pass — each tool returns the same
-        // structured data that is already present in the bundle. This makes the
-        // prose generation a one-shot grounded write rather than a fragile
-        // reconstruction from JSON tool responses, eliminating the placeholder
-        // / fabricated-type / repeated-token failure modes observed up to v0.2.7.
         return """
-Produce the $kindLabel report$locClause in $languageName.
+Producing the $kindLabel report$locClause in $languageName.
 
-CONFIRMED DATA — every number, percentage, label, row below comes from this
-survey's database. The report MUST use ONLY these values. Do not paraphrase
-labels, do not invent rows, do not add types not present below.
-
-$bundle
-
-PROTOCOL:
-  PHASE 1 NOW: call every required tool (each with empty arguments). The
-  tool responses will repeat the data above in JSON form; that is expected
-  and is the verification pass.
-  PHASE 2 (this same turn, immediately after the last tool returns): write
-  the FINAL report. The very next characters after the last tool response
-  MUST be "$firstHeading". Use only the CONFIRMED DATA above. Do not emit
-  any token wrapped in `[...]` — every placeholder is a bug.
+STEP 1 NOW: invoke every required tool listed in the system message ONCE
+each, with empty arguments. Emit only tool calls in this turn — no prose,
+no commentary. After the last tool returns you may stop; I will handle
+the next step.
 """.trimIndent()
     }
 
