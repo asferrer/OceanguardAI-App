@@ -72,7 +72,7 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_BATCH_MAX_IMAGES = 5
         const val DEFAULT_VLM_ENABLED = false
         const val DEFAULT_LIVE_DETECTION_RESOLUTION = 480
-        const val DEFAULT_CONFIRM_CAPTURE = true
+        const val DEFAULT_CONFIRM_CAPTURE = false
         const val DEFAULT_DETECTOR_PRECISION = "fp16"
         const val DEFAULT_VLM_MODEL_TIER = "gemma4_e2b"
         const val DEFAULT_VLM_PROVIDER = "gemma4"

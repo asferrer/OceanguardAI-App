@@ -599,6 +599,18 @@
     <string name="report_notif_complete">Relatório pronto!</string>
     <string name="report_notif_error">Falha na geração do relatório</string>
     <string name="report_querying_tool">Consultando %1$s…</string>
+    <string name="report_querying_tool_progress">(%1$d/%2$d) Consultando %3$s…</string>
+    <string name="report_phase2_composing">Redigindo o relatório…</string>
+
+    <string name="tool_per_session_details">detalhes por imagem</string>
+    <string name="tool_debris_summary">resumo dos resíduos</string>
+    <string name="tool_material_breakdown">composição por material</string>
+    <string name="tool_type_breakdown">análise por tipo</string>
+    <string name="tool_risk_assessment">avaliação de risco</string>
+    <string name="tool_ecological_impacts">impacto ecológico</string>
+    <string name="tool_survey_statistics">estatísticas</string>
+    <string name="tool_temporal_trend">tendência temporal</string>
+    <string name="saved_reports_empty_filtered">Nenhum relatório salvo corresponde aos filtros atuais.</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Baixar modelo de IA</string>

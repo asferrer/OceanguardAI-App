@@ -50,6 +50,7 @@ import com.oceanguard.ai.R
 import com.oceanguard.ai.data.SessionDatesHelper
 import com.oceanguard.ai.ui.components.DataDotDatePickerDialog
 import com.oceanguard.ai.data.ZoneAggregator
+import com.oceanguard.ai.data.ZoneCluster
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.components.LottieEmptyState
 import com.oceanguard.ai.ui.components.spotlight.GuidedTourTransitionDialog
@@ -58,7 +59,6 @@ import com.oceanguard.ai.ui.components.spotlight.TourDefinitions
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightBounds
 import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
-import com.oceanguard.ai.data.ZoneCluster
 import com.oceanguard.ai.ui.screens.map.MapFabControls
 import com.oceanguard.ai.ui.screens.map.MapFilterBar
 import com.oceanguard.ai.ui.screens.map.MapFilterState
@@ -68,6 +68,7 @@ import com.oceanguard.ai.ui.screens.map.ZoneMapBottomSheet
 import com.oceanguard.ai.ui.theme.healthScoreColor
 import com.oceanguard.ai.utils.toZoneGeoJson
 import kotlinx.coroutines.launch
+import org.maplibre.spatialk.geojson.Position
 
 /** Available map styles for cycling via the Layers FAB. */
 private val MAP_STYLE_CYCLE = listOf(
@@ -81,6 +82,8 @@ private val MAP_STYLE_CYCLE = listOf(
 fun MapScreen(
     navController: NavController,
     viewModel: MainViewModel,
+    focusLat: Double? = null,
+    focusLon: Double? = null,
 ) {
     // Collect live data
     val sessions by viewModel.allSessions.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -131,6 +134,25 @@ fun MapScreen(
     var showHeatmap by remember { mutableStateOf(false) }
     var selectedZone by remember { mutableStateOf<ZoneCluster?>(null) }
     var fitAllTrigger by remember { mutableIntStateOf(0) }
+
+    // Deep-link focus: fly to the hotspot coordinate and open its cluster sheet.
+    val focusPosition = remember(focusLat, focusLon) {
+        if (focusLat != null && focusLon != null) Position(longitude = focusLon, latitude = focusLat)
+        else null
+    }
+    var focusTrigger by remember { mutableIntStateOf(if (focusPosition != null) 1 else 0) }
+    LaunchedEffect(focusPosition, zoneClusters) {
+        val pos = focusPosition ?: return@LaunchedEffect
+        if (zoneClusters.isEmpty()) return@LaunchedEffect
+        val closest = zoneClusters.minByOrNull { zone ->
+            ZoneAggregator.haversineDistance(pos.latitude, pos.longitude, zone.centroidLat, zone.centroidLon)
+        } ?: return@LaunchedEffect
+        val dist = ZoneAggregator.haversineDistance(
+            pos.latitude, pos.longitude,
+            closest.centroidLat, closest.centroidLon,
+        )
+        if (dist < 1000.0) selectedZone = closest
+    }
 
     // Style: starts from dark mode preference, FAB cycles through all styles
     val defaultStyle = MapStyles.forDarkMode(darkMode)
@@ -215,6 +237,8 @@ fun MapScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .spotlightTarget("map_view", boundsMap),
+                        focusPosition = focusPosition,
+                        focusTrigger = focusTrigger,
                     )
 
                     MapFabControls(

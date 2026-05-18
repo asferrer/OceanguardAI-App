@@ -135,6 +135,7 @@ class ToolReportGeneratorTest {
             riskRows = emptyMap(),
             perSessionRows = emptyMap(),
             totalsBlock = "",
+            tablesByKey = emptyMap(),
         )
 
         // Production tracks section context via "###" headings whose lowercase
@@ -160,6 +161,171 @@ class ToolReportGeneratorTest {
         )
     }
 
+    // ---- B.10: prose decode-noise — fused word+digit gets a space ----
+
+    @Test
+    fun `repair inserts space between Spanish lead word and immediately-following digit`() {
+        // Real prose snippets from report ids=19,20 (2026-05-18) where SD
+        // accepted a draft token that pasted "de" + "8" without a separator.
+        val input = "La puntuación de8 indica riesgo crítico, salud de47 baja, urgencia7."
+        val out = ToolReportGenerator.repairProseDecodeNoise(input)
+        assertTrue("'de8' should become 'de 8', got: $out", out.contains("de 8"))
+        assertTrue("'de47' should become 'de 47'", out.contains("de 47"))
+        assertTrue("'urgencia7' should become 'urgencia 7'", out.contains("urgencia 7"))
+    }
+
+    @Test
+    fun `repair leaves image id markers alone`() {
+        // `#148` is a legitimate per-session ID. The lead-word whitelist
+        // doesn't include `#` so it must survive untouched.
+        val input = "La imagen #148 muestra una botella."
+        val out = ToolReportGenerator.repairProseDecodeNoise(input)
+        assertTrue("'#148' must remain intact", out.contains("#148"))
+    }
+
+    // ---- B.11: truncated Spanish words ----
+
+    @Test
+    fun `repair fixes the truncated heading "Prómos pasos"`() {
+        val input = "## Conclusiones y Prómos pasos\n\nEn conclusión…"
+        val out = ToolReportGenerator.repairProseDecodeNoise(input)
+        assertTrue(
+            "Heading should be repaired to 'Próximos Pasos': $out",
+            out.contains("## Conclusiones y Próximos Pasos"),
+        )
+    }
+
+    @Test
+    fun `repair fixes the truncated word "monitore"`() {
+        val input = "Para el monitore los residuos plásticos, se recomienda…"
+        val out = ToolReportGenerator.repairProseDecodeNoise(input)
+        assertTrue(
+            "'monitore' alone (followed by word boundary) must be repaired: $out",
+            out.contains("Para el monitoreo los"),
+        )
+    }
+
+    @Test
+    fun `repair does not touch monitoreo when already correct`() {
+        val input = "El monitoreo continuo es necesario."
+        val out = ToolReportGenerator.repairProseDecodeNoise(input)
+        assertEquals(input, out)
+    }
+
+    // ---- B.6c: combined "Material y por Tipo" heading preserves type rows ----
+
+    @Test
+    fun `repair keeps type rows under combined material-and-type heading`() {
+        // Repro of report id=13 (2026-05-18) bug. The zone-report writer
+        // emits "## Composición de Residuos (tablas por Material y por Tipo)"
+        // as a single top-level heading. The old firstOrNull lookup matched
+        // "material" first → currentNormMap = materialRows → every row whose
+        // first cell was a TYPE label ("Guante", "Botella") got dropped by
+        // the closed-world strip. The union-fallback fix should preserve them.
+        val canon = ToolDataBundleFormatter.Canon(
+            materialRows = mapOf("Plástico" to "| Plástico | 5 | 50% |"),
+            typeRows = mapOf("Guante" to "| Guante | 2 | 33% |"),
+            ecoRows = emptyMap(),
+            riskRows = emptyMap(),
+            perSessionRows = emptyMap(),
+            totalsBlock = "",
+            tablesByKey = emptyMap(),
+        )
+        val input = """
+            ## Composición de Residuos (tablas por Material y por Tipo)
+
+            | Material | Conteo | Porcentaje |
+            |---|---:|---:|
+            | Plástico | 5 | 50% |
+            | Guante | 2 | 33% |
+        """.trimIndent()
+
+        val repaired = ToolReportGenerator.repairHallucinations(input, canon)
+
+        assertTrue(
+            "Material row must survive combined heading, got: $repaired",
+            repaired.contains("| Plástico | 5 | 50% |"),
+        )
+        assertTrue(
+            "Type row must survive combined heading (was being dropped before fix), got: $repaired",
+            repaired.contains("| Guante | 2 | 33% |"),
+        )
+    }
+
+    // ---- B.7: strip removes bullet-list rows that contain >=2 pipes ----
+
+    @Test
+    fun `strip removes bullet row with two or more pipes`() {
+        // Reproduces the bug from report id=12 (2026-05-18): Gemma 4 E2B
+        // emitted duplicate "tables" as bullet lists with pipes right after
+        // each [TABLE: …] substitution. The pipe-only filter missed them and
+        // they polluted the final report with corrupt values.
+        val input = """
+            ## Composición por Material
+
+            Some prose…
+
+            * Material | Conteo | Porcentaje
+            * Plástico | 5 | 63%
+            - Tela | 2 | 25%
+            * Metal | 1 | 13%
+        """.trimIndent()
+
+        val stripped = ToolReportGenerator.stripModelWrittenTables(input)
+
+        assertFalse("Bullet pipe-row should be dropped", stripped.contains("Plástico | 5 | 63%"))
+        assertFalse("Bullet pipe-row should be dropped", stripped.contains("Tela | 2 | 25%"))
+        assertFalse("Bullet pipe-row should be dropped", stripped.contains("Metal | 1 | 13%"))
+        assertFalse("Bullet pipe header should be dropped", stripped.contains("Material | Conteo | Porcentaje"))
+        assertTrue("Prose must be preserved", stripped.contains("Some prose"))
+        assertTrue("Section heading must be preserved", stripped.contains("## Composición por Material"))
+    }
+
+    // ---- B.8: strip keeps legit bullet summaries (no pipes) ----
+
+    @Test
+    fun `strip keeps bullet summary rows that contain no pipes`() {
+        // The Zone Profile / Resumen Ejecutivo placeholder substitution emits
+        // legit bullet lists like "- Total: **8**". They have ZERO pipes and
+        // must survive the strip pass.
+        val input = """
+            ## Perfil de la Zona
+
+            - Elementos totales de residuos: **8**
+            - Sesiones analizadas: **8**
+            - Puntuación media de salud: **50** / 100
+            - Distribución de riesgo: Alto=7, Medio=1, Bajo=0
+        """.trimIndent()
+
+        val stripped = ToolReportGenerator.stripModelWrittenTables(input)
+
+        assertTrue("Pipe-free bullet must survive", stripped.contains("- Elementos totales de residuos: **8**"))
+        assertTrue("Pipe-free bullet must survive", stripped.contains("- Sesiones analizadas: **8**"))
+        assertTrue("Pipe-free bullet must survive", stripped.contains("- Distribución de riesgo: Alto=7, Medio=1, Bajo=0"))
+    }
+
+    // ---- B.9: strip leaves legit pipe tables for substitution to handle ----
+
+    @Test
+    fun `strip removes pipe-only table rows (existing behavior)`() {
+        // Sanity: the legacy pipe-row strip still works. The model's
+        // markdown-style table rows must be removed so substituteTablePlaceholders
+        // can insert the canonical bundle tables.
+        val input = """
+            ## Composición
+
+            | Material | Conteo | Porcentaje |
+            |---|---:|---:|
+            | Plástico | 5 | 63% |
+        """.trimIndent()
+
+        val stripped = ToolReportGenerator.stripModelWrittenTables(input)
+
+        assertFalse("Table header line must be stripped", stripped.contains("| Material | Conteo | Porcentaje |"))
+        assertFalse("Separator line must be stripped", stripped.contains("|---|"))
+        assertFalse("Data row must be stripped", stripped.contains("| Plástico | 5 | 63% |"))
+    }
+
     // =========================================================================
     // Helpers
     // =========================================================================
@@ -177,6 +343,7 @@ class ToolReportGeneratorTest {
         riskRows = risk,
         perSessionRows = emptyMap(),
         totalsBlock = totals,
+        tablesByKey = emptyMap(),
     )
 
     private fun emptyCanon() = canonWith()

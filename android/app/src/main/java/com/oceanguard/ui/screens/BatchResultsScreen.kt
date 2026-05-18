@@ -214,8 +214,15 @@ fun BatchResultsScreen(
     }
 
     var currentIndex by remember { mutableIntStateOf(0) }
-    var batchStartTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    // Batch wall-clock is owned by [InferenceService] (BatchRunning.startTimeMs
+    // / BatchComplete.startTimeMs+endTimeMs) — see the LaunchedEffect on
+    // serviceState below. Anchoring it on Compose-level `remember` previously
+    // made the summary show 0 s or 4 h whenever the user navigated away and
+    // back, because each composition reset the anchor to "now". The local
+    // mutableLong is kept as a fallback for legacy SingleRunning paths only.
     var isBatchRunning by remember { mutableStateOf(false) }
+    var batchStartTimeMs by remember { mutableLongStateOf(0L) }
+    var batchEndTimeMs by remember { mutableLongStateOf(0L) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Contribution upload completion snackbar
@@ -281,8 +288,19 @@ fun BatchResultsScreen(
                 .average().toFloat()
         }
     }
-    val batchTotalTimeMs = remember(allComplete) {
-        if (!allComplete) 0L else System.currentTimeMillis() - batchStartTimeMs
+    val batchTotalTimeMs = remember(allComplete, batchStartTimeMs, batchEndTimeMs) {
+        when {
+            !allComplete -> 0L
+            // Authoritative path: both timestamps came from the service —
+            // simple end − start. Survives navigation, recomposition, process
+            // restoration (the StateFlow is app-scoped).
+            batchStartTimeMs > 0L && batchEndTimeMs > batchStartTimeMs ->
+                batchEndTimeMs - batchStartTimeMs
+            // Fallback for edge cases (BatchComplete consumed before the
+            // service set both timestamps): show 0 rather than a misleading
+            // System.currentTimeMillis() delta against an unset anchor.
+            else -> 0L
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -325,9 +343,10 @@ fun BatchResultsScreen(
             // Service is idle / no in-flight work — launch.
             current is InferenceServiceState.Idle -> {
                 viewModel.markBatchStarted(hash)
-                batchStartTimeMs = System.currentTimeMillis()
                 viewModel.startBatchInference(uriList)
                 isBatchRunning = true
+                // Note: batchStartTimeMs is owned by the service and arrives
+                // via the serviceState LaunchedEffect below (BatchRunning).
             }
             // SingleRunning / VideoRunning / Error / a different BatchComplete:
             // do not pre-empt; leave the screen empty until the user navigates
@@ -347,6 +366,9 @@ fun BatchResultsScreen(
             is InferenceServiceState.BatchRunning -> {
                 currentIndex = state.currentIndex
                 isBatchRunning = true
+                if (state.startTimeMs > 0L && batchStartTimeMs != state.startTimeMs) {
+                    batchStartTimeMs = state.startTimeMs
+                }
                 // Apply completed items from the service
                 for (item in state.completedItems) {
                     val idx = uriList.indexOfFirst { it.toString() == item.uri.toString() }
@@ -371,6 +393,8 @@ fun BatchResultsScreen(
             }
             is InferenceServiceState.BatchComplete -> {
                 isBatchRunning = false
+                if (state.startTimeMs > 0L) batchStartTimeMs = state.startTimeMs
+                if (state.endTimeMs > 0L) batchEndTimeMs = state.endTimeMs
                 for (item in state.results) {
                     val idx = uriList.indexOfFirst { it.toString() == item.uri.toString() }
                     if (idx >= 0) {

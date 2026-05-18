@@ -35,6 +35,9 @@ private val DEFAULT_POSITION = CameraPosition(
  * @param showHeatmap Whether to show heatmap mode or pin mode.
  * @param zoneClusters Zone clusters for camera fit calculation.
  * @param fitAllTrigger Incremented to re-trigger camera fit animation.
+ * @param focusPosition Optional single coordinate to fly to (from deep-link).
+ * @param focusTrigger Incremented alongside [focusPosition] to retrigger on
+ *                     re-navigation to the same coordinate.
  * @param onZoneClick Callback when a zone marker is tapped.
  */
 @Composable
@@ -46,6 +49,8 @@ fun OceanGuardMap(
     fitAllTrigger: Int,
     onZoneClick: (zoneIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
+    focusPosition: Position? = null,
+    focusTrigger: Int = 0,
 ) {
     val cameraState = rememberCameraState(firstPosition = DEFAULT_POSITION)
 
@@ -53,6 +58,12 @@ fun OceanGuardMap(
         cameraState = cameraState,
         zoneClusters = zoneClusters,
         fitAllTrigger = fitAllTrigger,
+    )
+
+    AnimateCameraToFocus(
+        cameraState = cameraState,
+        focusPosition = focusPosition,
+        focusTrigger = focusTrigger,
     )
 
     MaplibreMap(
@@ -75,6 +86,25 @@ fun OceanGuardMap(
             source = zonesSource,
             showHeatmap = showHeatmap,
             onZoneClick = onZoneClick,
+        )
+    }
+}
+
+/**
+ * Animates the camera to a single focus coordinate at street-level zoom.
+ * Only fires when [focusPosition] is non-null and [focusTrigger] changes.
+ */
+@Composable
+private fun AnimateCameraToFocus(
+    cameraState: CameraState,
+    focusPosition: Position?,
+    focusTrigger: Int,
+) {
+    LaunchedEffect(focusTrigger) {
+        val pos = focusPosition ?: return@LaunchedEffect
+        cameraState.animateTo(
+            finalPosition = CameraPosition(target = pos, zoom = 14.0),
+            duration = 1.seconds,
         )
     }
 }

@@ -277,8 +277,21 @@ class MainActivity : AppCompatActivity() {
                         composable("settings") {
                             SettingsScreen(navController = navController, viewModel = viewModel)
                         }
-                        composable("map") {
-                            MapScreen(navController = navController, viewModel = viewModel)
+                        composable(
+                            route = "map?lat={lat}&lon={lon}",
+                            arguments = listOf(
+                                navArgument("lat") { type = NavType.StringType; nullable = true; defaultValue = null },
+                                navArgument("lon") { type = NavType.StringType; nullable = true; defaultValue = null },
+                            ),
+                        ) { backStackEntry ->
+                            val focusLat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+                            val focusLon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull()
+                            MapScreen(
+                                navController = navController,
+                                viewModel = viewModel,
+                                focusLat = focusLat,
+                                focusLon = focusLon,
+                            )
                         }
                         composable(
                             route = "reports?lat={lat}&lon={lon}&name={name}",
@@ -337,12 +350,22 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                         composable(
-                            route = "marinedex/{debrisType}",
-                            arguments = listOf(navArgument("debrisType") { type = NavType.StringType }),
+                            route = "marinedex/{debrisType}?tab={tab}",
+                            arguments = listOf(
+                                navArgument("debrisType") { type = NavType.StringType },
+                                navArgument("tab") {
+                                    type = NavType.IntType
+                                    defaultValue = 0
+                                },
+                            ),
                         ) { backStackEntry ->
                             val debrisType = backStackEntry.arguments?.getString("debrisType") ?: return@composable
+                            // 0 = Info (default), 1 = Gallery, 2 = Map.
+                            // Home's TopDebrisTypesCard deep-links to tab=1.
+                            val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
                             MarineDexDetailScreen(
                                 debrisType = debrisType,
+                                initialTab = initialTab,
                                 collectionRepository = app.collectionRepository,
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToSession = { sessionId ->

@@ -8,14 +8,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp01_synth100/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp01_synth100",
     "class_dist": {
-      "glove": 1389,
-      "tire": 1391,
-      "face_mask": 1410,
-      "plastic_debris": 1414,
-      "metal_can": 1390,
-      "plastic_bottle": 1400,
-      "fishing_net": 1365,
-      "metal_debris": 1391
+      "tire": 1411,
+      "metal_debris": 1425,
+      "face_mask": 1437,
+      "plastic_debris": 1382,
+      "metal_can": 1402,
+      "plastic_bottle": 1394,
+      "fishing_net": 1403,
+      "glove": 1411
     }
   },
   {
@@ -27,14 +27,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp02_synth100_real10/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp02_synth100_real10",
     "class_dist": {
-      "plastic_debris": 1348,
-      "glove": 1307,
-      "tire": 1395,
-      "fishing_net": 1332,
-      "metal_debris": 1265,
-      "plastic_bottle": 1365,
-      "metal_can": 1295,
-      "face_mask": 1361
+      "glove": 1308,
+      "plastic_bottle": 1332,
+      "fishing_net": 1324,
+      "plastic_debris": 1347,
+      "metal_can": 1254,
+      "metal_debris": 1269,
+      "tire": 1358,
+      "face_mask": 1315
     }
   },
   {
@@ -46,14 +46,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp03_synth100_real25/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp03_synth100_real25",
     "class_dist": {
-      "plastic_debris": 1318,
-      "glove": 1253,
-      "plastic_bottle": 1356,
-      "metal_can": 1118,
-      "face_mask": 1329,
-      "tire": 1286,
-      "fishing_net": 1258,
-      "metal_debris": 1047
+      "plastic_bottle": 1265,
+      "plastic_debris": 1340,
+      "metal_can": 1052,
+      "glove": 1240,
+      "metal_debris": 1040,
+      "tire": 1341,
+      "face_mask": 1251,
+      "fishing_net": 1251
     }
   },
   {
@@ -65,14 +65,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp04_synth100_real50/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp04_synth100_real50",
     "class_dist": {
-      "plastic_debris": 1298,
-      "metal_debris": 708,
-      "fishing_net": 1099,
-      "metal_can": 758,
-      "face_mask": 1201,
-      "plastic_bottle": 1196,
-      "glove": 1063,
-      "tire": 1236
+      "fishing_net": 1129,
+      "face_mask": 1184,
+      "glove": 1083,
+      "plastic_debris": 1277,
+      "plastic_bottle": 1296,
+      "metal_can": 780,
+      "tire": 1333,
+      "metal_debris": 733
     }
   },
   {
@@ -84,14 +84,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp05_synth100_real75/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp05_synth100_real75",
     "class_dist": {
-      "metal_debris": 355,
-      "tire": 1093,
-      "fishing_net": 947,
-      "glove": 898,
-      "plastic_bottle": 1319,
-      "face_mask": 1049,
-      "plastic_debris": 1215,
-      "metal_can": 439
+      "glove": 881,
+      "tire": 1085,
+      "plastic_debris": 1178,
+      "metal_can": 435,
+      "fishing_net": 963,
+      "metal_debris": 369,
+      "face_mask": 1004,
+      "plastic_bottle": 1245
     }
   },
   {
@@ -103,14 +103,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp06_synth100_real100/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp06_synth100_real100",
     "class_dist": {
+      "metal_can": 740,
+      "fishing_net": 1091,
+      "face_mask": 1162,
+      "glove": 1077,
       "tire": 1174,
-      "plastic_debris": 1285,
-      "plastic_bottle": 1337,
-      "face_mask": 1195,
-      "fishing_net": 1087,
-      "glove": 1056,
-      "metal_can": 748,
-      "metal_debris": 709
+      "metal_debris": 724,
+      "plastic_bottle": 1357,
+      "plastic_debris": 1269
     }
   },
   {
@@ -122,14 +122,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp07_real100/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp07_real100",
     "class_dist": {
-      "plastic_bottle": 1181,
-      "fishing_net": 823,
-      "plastic_debris": 1164,
-      "face_mask": 955,
-      "glove": 733,
-      "tire": 1123,
-      "metal_can": 113,
-      "metal_debris": 25
+      "plastic_debris": 1157,
+      "face_mask": 915,
+      "glove": 720,
+      "plastic_bottle": 1267,
+      "fishing_net": 832,
+      "tire": 1029,
+      "metal_can": 141,
+      "metal_debris": 32
     }
   },
   {
@@ -141,14 +141,14 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp08_real_synth_minor/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp08_real_synth_minor",
     "class_dist": {
-      "plastic_bottle": 1416,
-      "metal_debris": 687,
-      "face_mask": 1120,
-      "tire": 1188,
-      "metal_can": 751,
-      "plastic_debris": 1285,
-      "fishing_net": 1061,
-      "glove": 1040
+      "fishing_net": 1067,
+      "plastic_bottle": 1377,
+      "tire": 1397,
+      "plastic_debris": 1290,
+      "metal_debris": 704,
+      "face_mask": 1146,
+      "metal_can": 800,
+      "glove": 1065
     }
   },
   {
@@ -160,14 +160,52 @@
     "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp09_real_synth_prop/train.jsonl",
     "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp09_real_synth_prop",
     "class_dist": {
-      "plastic_bottle": 1428,
-      "plastic_debris": 1482,
-      "glove": 1285,
-      "metal_can": 977,
-      "tire": 1434,
-      "fishing_net": 1284,
-      "metal_debris": 917,
-      "face_mask": 1361
+      "glove": 1289,
+      "metal_debris": 921,
+      "plastic_debris": 1453,
+      "face_mask": 1351,
+      "tire": 1450,
+      "metal_can": 952,
+      "plastic_bottle": 1497,
+      "fishing_net": 1265
+    }
+  },
+  {
+    "name": "exp10_real_full",
+    "synth_n": 0,
+    "real_n": 13637,
+    "total_train_samples": 13637,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp10_real_full.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp10_real_full/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp10_real_full",
+    "class_dist": {
+      "plastic_debris": 5276,
+      "glove": 3437,
+      "face_mask": 4201,
+      "tire": 4870,
+      "plastic_bottle": 5801,
+      "metal_can": 549,
+      "fishing_net": 3762,
+      "metal_debris": 134
+    }
+  },
+  {
+    "name": "exp11_real_synth_full",
+    "synth_n": 10809,
+    "real_n": 13637,
+    "total_train_samples": 24446,
+    "yaml": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/configs/exp11_real_synth_full.yaml",
+    "train_jsonl": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/experiments/splits/exp11_real_synth_full/train.jsonl",
+    "output_dir": "C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/outputs/lora_exp11_real_synth_full",
+    "class_dist": {
+      "metal_debris": 5135,
+      "tire": 9870,
+      "fishing_net": 8763,
+      "face_mask": 9198,
+      "plastic_debris": 10275,
+      "plastic_bottle": 10804,
+      "metal_can": 5551,
+      "glove": 8438
     }
   }
 ]

@@ -236,6 +236,23 @@ private fun PulsingAIIcon(tint: androidx.compose.ui.graphics.Color, modifier: Mo
     )
 }
 
+/**
+ * Maps the snake_case tool name surfaced by Gemma 4's function-call parser to
+ * a human-readable, translated string resource. Keep in sync with the Kotlin
+ * @Tool method names in [com.oceanguard.ai.inference.OceanGuardTools] and the
+ * REQUIRED_TOOLS sets in [com.oceanguard.ai.inference.ToolReportGenerator].
+ */
+private val TOOL_NAME_RES_MAP: Map<String, Int> = mapOf(
+    "get_per_session_details" to R.string.tool_per_session_details,
+    "get_debris_summary"       to R.string.tool_debris_summary,
+    "get_material_breakdown"   to R.string.tool_material_breakdown,
+    "get_type_breakdown"       to R.string.tool_type_breakdown,
+    "get_risk_assessment"      to R.string.tool_risk_assessment,
+    "get_ecological_impacts"   to R.string.tool_ecological_impacts,
+    "get_survey_statistics"    to R.string.tool_survey_statistics,
+    "get_temporal_trend"       to R.string.tool_temporal_trend,
+)
+
 @Composable
 internal fun GeneratingBanner(
     isLoadingModel: Boolean,
@@ -244,6 +261,10 @@ internal fun GeneratingBanner(
     tokenCount: Int = 0,
     tokensPerSec: Float = 0f,
     maxTokens: Int = 0,
+    /** Backend phase. Null = legacy callers without this signal. */
+    phase: com.oceanguard.ai.inference.ReportPhase? = null,
+    /** (current, total) tools dispatched so far in PHASE 1. */
+    toolProgress: Pair<Int, Int>? = null,
     modifier: Modifier = Modifier,
 ) {
     val currentHeading = remember(streamingText) {
@@ -260,12 +281,34 @@ internal fun GeneratingBanner(
     val etaSeconds = if (hasTokenMetrics && tokensPerSec > 0.5f) {
         ((maxTokens - tokenCount) / tokensPerSec).toInt()
     } else null
-    val humanToolName = remember(currentToolName) {
-        currentToolName
-            ?.removePrefix("get_")
-            ?.split('_')
-            ?.filter { it.isNotEmpty() }
-            ?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+    val toolLabel: String? = currentToolName?.let { snake ->
+        val resId = TOOL_NAME_RES_MAP[snake]
+        if (resId != null) {
+            stringResource(resId)
+        } else {
+            // Fallback: humanize unknown snake_case tools so a future tool
+            // added in OceanGuardTools doesn't break the banner.
+            snake.removePrefix("get_")
+                .split('_')
+                .filter { it.isNotEmpty() }
+                .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+        }
+    }
+
+    val bannerText: String = when {
+        isLoadingModel -> stringResource(R.string.report_loading_engine)
+        phase == com.oceanguard.ai.inference.ReportPhase.PHASE_2_PROSE ->
+            stringResource(R.string.report_phase2_composing)
+        !toolLabel.isNullOrBlank() && toolProgress != null ->
+            stringResource(
+                R.string.report_querying_tool_progress,
+                toolProgress.first,
+                toolProgress.second,
+                toolLabel,
+            )
+        !toolLabel.isNullOrBlank() ->
+            stringResource(R.string.report_querying_tool, toolLabel)
+        else -> stringResource(R.string.report_btn_generating)
     }
 
     Surface(
@@ -286,11 +329,7 @@ internal fun GeneratingBanner(
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = when {
-                        isLoadingModel -> stringResource(R.string.report_loading_engine)
-                        !humanToolName.isNullOrBlank() -> stringResource(R.string.report_querying_tool, humanToolName)
-                        else -> stringResource(R.string.report_btn_generating)
-                    },
+                    text = bannerText,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,

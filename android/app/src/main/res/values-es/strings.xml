@@ -34,6 +34,14 @@
     <string name="home_btn_take_photo">Iniciar escaneo</string>
     <string name="home_btn_live_detection">Análisis en lote</string>
     <string name="home_btn_select_gallery">Escanear desde galería</string>
+    <string name="home_top_debris_title">Residuos más frecuentes</string>
+    <string name="home_top_debris_subtitle">Últimos 7 días</string>
+    <string name="home_top_debris_total">Total %1$d</string>
+    <string name="home_top_debris_empty">Sin detecciones en los últimos 7 días.</string>
+    <string name="home_hotspots_title">Zonas más contaminadas</string>
+    <string name="home_hotspots_subtitle">Toca para ver en el mapa</string>
+    <string name="home_hotspots_row_meta">%1$d residuos en %2$d imágenes</string>
+    <string name="home_hotspots_empty">Aún no hay sesiones con GPS. Captura con ubicación activada para ver zonas críticas.</string>
     <string name="home_btn_batch_analysis">Análisis en lote</string>
 
     <!-- Estado del modelo -->

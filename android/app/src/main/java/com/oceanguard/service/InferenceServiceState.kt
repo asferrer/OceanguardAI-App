@@ -41,6 +41,8 @@ sealed class InferenceServiceState {
         val currentIndex: Int,
         val completedItems: List<BatchItemResult>,
         val queueInfo: QueueInfo = QueueInfo(),
+        /** Wall-clock millis when the service started this batch. */
+        val startTimeMs: Long = System.currentTimeMillis(),
     ) : InferenceServiceState()
 
     /** All images in the batch have been processed. Sessions saved by the service. */
@@ -49,6 +51,10 @@ sealed class InferenceServiceState {
         val results: List<BatchItemResult>,
         /** Number of images automatically enqueued for contribution (consent given). */
         val contributionQueuedCount: Int = 0,
+        /** Wall-clock millis when the service started the batch. */
+        val startTimeMs: Long = 0L,
+        /** Wall-clock millis when the service finished the batch. */
+        val endTimeMs: Long = 0L,
     ) : InferenceServiceState()
 
     /** A video is being processed frame by frame. */

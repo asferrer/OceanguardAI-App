@@ -99,6 +99,12 @@ fun MarineDexDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSession: (Long) -> Unit = {},
     navController: NavController? = null,
+    /**
+     * Tab to land on when the screen opens. 0 = Info (default), 1 = Gallery,
+     * 2 = Map. Home's TopDebrisTypesCard passes `1` to deep-link straight to
+     * the gallery of all images that detected this debris type.
+     */
+    initialTab: Int = 0,
 ) {
     val allEntries by collectionRepository.allDexEntries.collectAsStateWithLifecycle(
         initialValue = emptyList(),
@@ -127,7 +133,11 @@ fun MarineDexDetailScreen(
     }
 
     var contentVisible by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Seed selectedTab with [initialTab] so deep-links from Home land on the
+    // requested tab (e.g. ?tab=1 lands on the Gallery directly). The state
+    // remains user-mutable after the initial render — taps on the tab row
+    // overwrite it as expected.
+    var selectedTab by remember { mutableIntStateOf(initialTab.coerceIn(0, 2)) }
 
     LaunchedEffect(Unit) { contentVisible = true }
 

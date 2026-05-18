@@ -34,6 +34,17 @@
     <string name="home_btn_take_photo">Start Scanning</string>
     <string name="home_btn_live_detection">Batch Analysis</string>
     <string name="home_btn_select_gallery">Scan from Gallery</string>
+    <!-- Home: Top 3 debris types this week card (replaces HealthTrendChart) -->
+    <string name="home_top_debris_title">Top debris this week</string>
+    <string name="home_top_debris_subtitle">Last 7 days</string>
+    <string name="home_top_debris_total">Total %1$d</string>
+    <string name="home_top_debris_empty">No detections in the last 7 days.</string>
+    <!-- Home: Top 3 contamination hotspots card -->
+    <string name="home_hotspots_title">Top hotspots</string>
+    <string name="home_hotspots_subtitle">Tap to view on map</string>
+    <!-- Format: "%1$d items in %2$d images" -->
+    <string name="home_hotspots_row_meta">%1$d items in %2$d images</string>
+    <string name="home_hotspots_empty">No located sessions yet. Capture with GPS enabled to see hotspots.</string>
     <string name="home_btn_batch_analysis">Batch Analysis</string>
 
     <!-- Model status -->
@@ -130,6 +141,8 @@
     <string name="camera_result_summary_health">health</string>
     <string name="camera_result_btn_new_scan">New Scan</string>
     <string name="camera_result_btn_view_details">View Details</string>
+    <!-- Format: "Scanning again in 5 s…" — countdown shown after analysis completes -->
+    <string name="camera_result_auto_return">Scanning again in %1$d s…</string>
 
     <!-- ================================================================== -->
     <!-- Live Detection screen                                                -->

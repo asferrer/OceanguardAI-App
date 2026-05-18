@@ -163,11 +163,12 @@ def main() -> int:
 
         out_dir = EXP_OUTPUTS_BASE / f"lora_{name}"
         cfg = dict(template)
+        exp_epochs = int(exp.get("epochs", TRAIN_EPOCHS))
         cfg.update({
             "dataset": str(train_jsonl_path).replace("\\", "/"),
             "eval_dataset": None,
             "output_dir": str(out_dir).replace("\\", "/"),
-            "num_train_epochs": TRAIN_EPOCHS,
+            "num_train_epochs": exp_epochs,
             "save_steps": SAVE_STEPS,
             "save_total_limit": SAVE_TOTAL_LIMIT,
             "eval_strategy": "no",

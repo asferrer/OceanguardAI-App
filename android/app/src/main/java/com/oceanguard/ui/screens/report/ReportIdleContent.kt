@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.LocationOn
@@ -30,6 +33,10 @@ import androidx.compose.material.icons.filled.Masks
 import androidx.compose.material.icons.filled.Phishing
 import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +44,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,11 +59,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.GeneratedReport
+import com.oceanguard.ai.ui.components.DataDotDatePickerDialog
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.LottieEmptyState
 import com.oceanguard.ai.ui.components.pressableScale
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 
 // ---------------------------------------------------------------------------
@@ -110,41 +125,224 @@ internal fun IdleContent(
     } else {
         val listState = rememberLazyListState()
 
+        // Filter state — mirrors the HistoryScreen.FilterChipRow pattern, only
+        // without "debris type" because GeneratedReport doesn't store
+        // per-debris details (the underlying sessions are denormalised away
+        // by the time a report is saved).
+        var selectedLocationName by remember { mutableStateOf<String?>(null) }
+        var dateRangeStart by remember { mutableStateOf<Long?>(null) }
+        var dateRangeEnd by remember { mutableStateOf<Long?>(null) }
+        var showDatePicker by remember { mutableStateOf(false) }
+
+        val availableLocations = remember(savedReports) {
+            savedReports.mapNotNull { it.locationName?.takeIf { n -> n.isNotBlank() } }
+                .distinct()
+                .sorted()
+        }
+        // Calendar dots in the date picker correspond to days where reports
+        // exist — same UX as History/Map. Convert millis → LocalDate at the
+        // boundary because DataDotDatePickerDialog works with LocalDate.
+        val datesWithData = remember(savedReports) {
+            val zone = ZoneId.systemDefault()
+            savedReports
+                .map { Instant.ofEpochMilli(it.timestamp.time).atZone(zone).toLocalDate() }
+                .toSet()
+        }
+
+        val filteredReports by remember(
+            savedReports,
+            selectedLocationName,
+            dateRangeStart,
+            dateRangeEnd,
+        ) {
+            derivedStateOf {
+                savedReports.filter { report ->
+                    val matchesLocation = selectedLocationName == null ||
+                        report.locationName == selectedLocationName
+                    val matchesDate = (dateRangeStart == null && dateRangeEnd == null) ||
+                        (report.timestamp.time >= (dateRangeStart ?: 0L) &&
+                            report.timestamp.time <= (dateRangeEnd ?: Long.MAX_VALUE))
+                    matchesLocation && matchesDate
+                }
+            }
+        }
+
         LaunchedEffect(highlightReportId) {
             if (highlightReportId != null) {
                 listState.animateScrollToItem(0)
             }
         }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item {
-                Text(
-                    text = stringResource(R.string.report_saved_title, savedReports.size),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-            }
-            items(savedReports, key = { it.id }) { report ->
-                val isHighlighted = report.id == highlightReportId
-                SavedReportCard(
-                    report = report,
-                    onClick = { onViewReport(report) },
-                    onDelete = { onDeleteReport(report) },
-                    highlight = isHighlighted,
-                    onHighlightFinished = {
-                        if (isHighlighted) onHighlightConsumed()
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Filter chip row — sticks above the list so the LazyColumn can
+            // scroll independently.
+            SavedReportsFilterChipRow(
+                selectedLocationName = selectedLocationName,
+                availableLocations = availableLocations,
+                onLocationSelected = { selectedLocationName = it },
+                dateRangeStart = dateRangeStart,
+                dateRangeEnd = dateRangeEnd,
+                onDateRangeCleared = {
+                    dateRangeStart = null
+                    dateRangeEnd = null
+                },
+                onDateRangeClick = { showDatePicker = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (showDatePicker) {
+                DataDotDatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    initialStartDateMillis = dateRangeStart,
+                    initialEndDateMillis = dateRangeEnd,
+                    datesWithData = datesWithData,
+                    onConfirm = { start, end ->
+                        dateRangeStart = start
+                        dateRangeEnd = end
+                        showDatePicker = false
                     },
-                    modifier = Modifier.animateItem(),
                 )
             }
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            if (filteredReports.isEmpty()) {
+                // Filters narrowed everything out. Show a small empty hint
+                // rather than the full Lottie empty state, since the user is
+                // actively filtering.
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.saved_reports_empty_filtered),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.report_saved_title, filteredReports.size),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+                    items(filteredReports, key = { it.id }) { report ->
+                        val isHighlighted = report.id == highlightReportId
+                        SavedReportCard(
+                            report = report,
+                            onClick = { onViewReport(report) },
+                            onDelete = { onDeleteReport(report) },
+                            highlight = isHighlighted,
+                            onHighlightFinished = {
+                                if (isHighlighted) onHighlightConsumed()
+                            },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(8.dp)) }
+                }
+            }
         }
+    }
+}
+
+/**
+ * Two-chip filter row for the Saved Reports list: Location and Date Range.
+ * Mirrors the visual + interaction pattern of HistoryScreen's FilterChipRow
+ * (HistoryScreen.kt:841) so users get a consistent filter UX across screens.
+ * Debris-type chip is omitted because GeneratedReport doesn't carry per-debris
+ * data — the report is a summary of N sessions, not a single observation.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SavedReportsFilterChipRow(
+    selectedLocationName: String?,
+    availableLocations: List<String>,
+    onLocationSelected: (String?) -> Unit,
+    dateRangeStart: Long?,
+    dateRangeEnd: Long?,
+    onDateRangeCleared: () -> Unit,
+    onDateRangeClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dateFormatter = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
+
+    Row(
+        modifier = modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (availableLocations.isNotEmpty()) {
+            var locationExpanded by remember { mutableStateOf(false) }
+            Box {
+                FilterChip(
+                    selected = selectedLocationName != null,
+                    onClick = {
+                        if (selectedLocationName != null) onLocationSelected(null)
+                        else locationExpanded = true
+                    },
+                    label = {
+                        Text(
+                            text = selectedLocationName
+                                ?: stringResource(R.string.history_filter_location),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    leadingIcon = if (selectedLocationName != null) {
+                        { Icon(Icons.Filled.Clear, contentDescription = null, Modifier.size(16.dp)) }
+                    } else null,
+                )
+                DropdownMenu(
+                    expanded = locationExpanded,
+                    onDismissRequest = { locationExpanded = false },
+                ) {
+                    availableLocations.forEach { place ->
+                        DropdownMenuItem(
+                            text = { Text(place) },
+                            onClick = {
+                                onLocationSelected(place)
+                                locationExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        val hasDateRange = dateRangeStart != null || dateRangeEnd != null
+        FilterChip(
+            selected = hasDateRange,
+            onClick = {
+                if (hasDateRange) onDateRangeCleared()
+                else onDateRangeClick()
+            },
+            label = {
+                if (hasDateRange) {
+                    val s = dateRangeStart?.let { dateFormatter.format(java.util.Date(it)) } ?: "…"
+                    val e = dateRangeEnd?.let { dateFormatter.format(java.util.Date(it)) } ?: "…"
+                    Text("$s – $e", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                } else {
+                    Text(
+                        stringResource(R.string.history_filter_date_range),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            },
+            leadingIcon = if (hasDateRange) {
+                { Icon(Icons.Filled.Clear, contentDescription = null, Modifier.size(16.dp)) }
+            } else null,
+        )
     }
 }
 

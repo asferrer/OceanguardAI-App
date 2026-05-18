@@ -600,6 +600,18 @@
     <string name="report_notif_complete">Rapport prêt !</string>
     <string name="report_notif_error">Échec de la génération du rapport</string>
     <string name="report_querying_tool">Interrogation de %1$s…</string>
+    <string name="report_querying_tool_progress">(%1$d/%2$d) Interrogation de %3$s…</string>
+    <string name="report_phase2_composing">Rédaction du rapport…</string>
+
+    <string name="tool_per_session_details">détails par image</string>
+    <string name="tool_debris_summary">résumé des débris</string>
+    <string name="tool_material_breakdown">composition par matériau</string>
+    <string name="tool_type_breakdown">analyse par type</string>
+    <string name="tool_risk_assessment">évaluation des risques</string>
+    <string name="tool_ecological_impacts">impact écologique</string>
+    <string name="tool_survey_statistics">statistiques</string>
+    <string name="tool_temporal_trend">tendance temporelle</string>
+    <string name="saved_reports_empty_filtered">Aucun rapport enregistré ne correspond aux filtres actuels.</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Télécharger le modèle IA</string>

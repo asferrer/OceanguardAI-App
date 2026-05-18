@@ -76,6 +76,9 @@ class ReportGenerationService : LifecycleService() {
                         val human = humanizeToolName(state.toolName)
                         updateNotification(getString(R.string.report_notif_querying, human))
                     }
+                    is ReportGenerationState.ComposingProse -> {
+                        updateNotification(getString(R.string.report_notif_generating))
+                    }
                     is ReportGenerationState.StreamingText -> {
                         // Throttle notification updates to max 1 every 2s during
                         // streaming to avoid main-thread jank from PendingIntent
@@ -159,7 +162,8 @@ class ReportGenerationService : LifecycleService() {
                 val state = app.reportGenerationState.value
                 if (state is ReportGenerationState.LoadingModel ||
                     state is ReportGenerationState.Generating ||
-                    state is ReportGenerationState.ToolExecuting
+                    state is ReportGenerationState.ToolExecuting ||
+                    state is ReportGenerationState.ComposingProse
                 ) {
                     builder.setProgress(0, 0, true)
                 }

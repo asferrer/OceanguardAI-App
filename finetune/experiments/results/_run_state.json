@@ -2,9 +2,14 @@
   "started_at": 1778802265.743,
   "exps": {
     "exp11_real_synth_full": {
-      "status": "training",
-      "started": 1778802265.743
+      "status": "train_done",
+      "started": 1778802265.743,
+      "train_success": true,
+      "info": "rc=0 elapsed=41547s adapter_dir_present=True",
+      "ended": 1778843812.673809,
+      "eval": "timeout"
     }
   },
-  "base_eval": "pending"
+  "base_eval": "running",
+  "finished_at": 1778846022.5676992
 }

@@ -85,11 +85,22 @@ sealed class ReportGenerationState {
      * The model has issued a tool call and we are about to run the Kotlin
      * function backing it. Lets the UI announce "Querying debris summary…"
      * during the otherwise-silent PHASE 1 of the agentic loop.
+     *
+     * [progressCurrent] / [progressTotal] track unique-tools-dispatched-so-far
+     * within this report, surfaced as "(3/8)" in the GeneratingBanner.
      */
     data class ToolExecuting(
         val toolName: String,
         val sequence: Int,
+        val progressCurrent: Int = 0,
+        val progressTotal: Int = 0,
     ) : ReportGenerationState()
+    /**
+     * PHASE 1 finished, PHASE 2 has started but the first token has not yet
+     * landed. Brief window (a few seconds of prefill) during which the banner
+     * should show "Composing report prose…" instead of an empty progress bar.
+     */
+    data object ComposingProse : ReportGenerationState()
     data class StreamingText(
         val partialText: String,
         val tokenCount: Int = 0,
@@ -103,22 +114,51 @@ sealed class ReportGenerationState {
 /**
  * Tracks token generation metrics for the streaming UI.
  *
- * Estimates token count from the partial text length (1 token ~ 4 chars for
- * most GGUF models). Computes a rolling tokens/second rate.
+ * Token-count estimation: Gemma 4 + Spanish output averages ~3 chars/token
+ * (empirical: 5751-chars / 1917-tokens in report id=13). LLaMA/English models
+ * are closer to 4. We use 3 to keep the progress bar honest for our typical
+ * report workload.
+ *
+ * Rate calculation: a rolling 10-sample EWMA of recent throughput, not the
+ * global average. The first few hundred ms of PHASE 2 are dominated by
+ * prefill — counting them in the average permanently underestimates decode
+ * speed and inflates the ETA. The EWMA forgets prefill within ~10 samples.
+ *
+ * maxTokens: expected output, not a hard cap. Reports typically finish at
+ * 1800-2200 tokens; using 6144 here used to display ETAs of "8 min" when
+ * the model was actually 30 s from finishing.
  */
 class GenerationTracker(val maxTokens: Int) {
     private val startMs = System.currentTimeMillis()
+    private var lastSnapshotMs = startMs
     private var lastTokenCount = 0
+    // Rolling EWMA of tok/s computed between consecutive snapshots; weight 0.3
+    // means the most recent sample contributes ~30% and older ones decay by
+    // ~70% per snapshot. Smooth enough to look stable, fast enough to react
+    // when prefill ends and steady-state decode kicks in.
+    private var ewmaTokPerSec = 0f
+    private val ewmaAlpha = 0.3f
 
     fun snapshot(partialText: String): ReportGenerationState.StreamingText {
-        val estimatedTokens = partialText.length / 4
-        val elapsedSec = (System.currentTimeMillis() - startMs) / 1000f
-        val tokPerSec = if (elapsedSec > 0.5f) estimatedTokens / elapsedSec else 0f
+        val nowMs = System.currentTimeMillis()
+        val estimatedTokens = partialText.length / 3
+
+        // Instantaneous tok/s between this snapshot and the previous one.
+        val deltaTokens = (estimatedTokens - lastTokenCount).coerceAtLeast(0)
+        val deltaSec = (nowMs - lastSnapshotMs) / 1000f
+        if (deltaSec > 0.1f && deltaTokens > 0) {
+            val sampleRate = deltaTokens / deltaSec
+            ewmaTokPerSec = if (ewmaTokPerSec <= 0f) sampleRate
+                else ewmaAlpha * sampleRate + (1f - ewmaAlpha) * ewmaTokPerSec
+        }
+
         lastTokenCount = estimatedTokens
+        lastSnapshotMs = nowMs
+
         return ReportGenerationState.StreamingText(
             partialText  = partialText,
             tokenCount   = estimatedTokens,
-            tokensPerSec = tokPerSec,
+            tokensPerSec = ewmaTokPerSec,
             maxTokens    = maxTokens,
         )
     }
@@ -671,10 +711,21 @@ class OceanGuardApp : Application() {
                 try {
                     val engine = loadTextEngineIfNeeded(forceTier = tier)
                     reportGenerationState.value = ReportGenerationState.Generating
-                    val tracker = GenerationTracker(maxTokens = 6144)
+                    // Expected output for a zone report (PHASE 2 prose).
+                    // Measured at 1900-2100 tokens across reports id=13..16
+                    // (5500-6100 chars / 3 chars-per-token). Using the real
+                    // expected value here keeps the GeneratingBanner progress
+                    // bar honest — 6144 used to show 30% when the model was
+                    // actually 95% done, and ETA "5 min" 20 s before completion.
+                    val tracker = GenerationTracker(maxTokens = 2200)
                     val toolCounter = java.util.concurrent.atomic.AtomicInteger(0)
                     val reportText = if (engine is LiteRTTextEngine) {
                         Log.i(TAG, "Using tool-calling report path (LiteRT-LM / Gemma 4) tier=${tier.displayName}")
+                        // Last (current, total) seen — kept here so the
+                        // onToolCallStarted callback can attach the latest
+                        // progress to the ToolExecuting state without coupling
+                        // both callbacks via an extra StateFlow.
+                        var lastProgress: Pair<Int, Int> = 0 to 0
                         ToolReportGenerator(engine).generateReportWithToolsStreaming(
                             sessions = sessions,
                             language = language,
@@ -686,8 +737,20 @@ class OceanGuardApp : Application() {
                                 // Surface "Querying <tool>…" to the UI so the user sees
                                 // progress during the agentic PHASE-1, before report
                                 // tokens start streaming.
-                                reportGenerationState.value =
-                                    ReportGenerationState.ToolExecuting(name, seq)
+                                reportGenerationState.value = ReportGenerationState.ToolExecuting(
+                                    toolName = name,
+                                    sequence = seq,
+                                    progressCurrent = lastProgress.first,
+                                    progressTotal = lastProgress.second,
+                                )
+                            },
+                            onToolCallProgress = { current, total, _ ->
+                                lastProgress = current to total
+                            },
+                            onPhaseChanged = { phase ->
+                                if (phase == com.oceanguard.ai.inference.ReportPhase.PHASE_2_PROSE) {
+                                    reportGenerationState.value = ReportGenerationState.ComposingProse
+                                }
                             },
                         )
                     } else {
@@ -747,10 +810,17 @@ class OceanGuardApp : Application() {
                 try {
                     val engine = loadTextEngineIfNeeded(forceTier = tier)
                     reportGenerationState.value = ReportGenerationState.Generating
-                    val tracker = GenerationTracker(maxTokens = 6144)
+                    // Expected output for a zone report (PHASE 2 prose).
+                    // Measured at 1900-2100 tokens across reports id=13..16
+                    // (5500-6100 chars / 3 chars-per-token). Using the real
+                    // expected value here keeps the GeneratingBanner progress
+                    // bar honest — 6144 used to show 30% when the model was
+                    // actually 95% done, and ETA "5 min" 20 s before completion.
+                    val tracker = GenerationTracker(maxTokens = 2200)
                     val toolCounter = java.util.concurrent.atomic.AtomicInteger(0)
                     val reportText = if (engine is LiteRTTextEngine) {
                         Log.i(TAG, "Using tool-calling zone report path (LiteRT-LM / Gemma 4) tier=${tier.displayName}")
+                        var lastProgress: Pair<Int, Int> = 0 to 0
                         ToolReportGenerator(engine).generateZoneReportWithToolsStreaming(
                             input = input,
                             language = language,
@@ -759,8 +829,20 @@ class OceanGuardApp : Application() {
                             onToolCallStarted = { name ->
                                 val seq = toolCounter.incrementAndGet()
                                 Log.d(TAG, "Tool call: $name (#$seq)")
-                                reportGenerationState.value =
-                                    ReportGenerationState.ToolExecuting(name, seq)
+                                reportGenerationState.value = ReportGenerationState.ToolExecuting(
+                                    toolName = name,
+                                    sequence = seq,
+                                    progressCurrent = lastProgress.first,
+                                    progressTotal = lastProgress.second,
+                                )
+                            },
+                            onToolCallProgress = { current, total, _ ->
+                                lastProgress = current to total
+                            },
+                            onPhaseChanged = { phase ->
+                                if (phase == com.oceanguard.ai.inference.ReportPhase.PHASE_2_PROSE) {
+                                    reportGenerationState.value = ReportGenerationState.ComposingProse
+                                }
                             },
                         )
                     } else {

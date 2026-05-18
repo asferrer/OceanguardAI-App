@@ -169,6 +169,7 @@ fun ReportScreen(
             generationState is ReportGenerationState.Generating ||
                 generationState is ReportGenerationState.LoadingModel ||
                 generationState is ReportGenerationState.ToolExecuting ||
+                generationState is ReportGenerationState.ComposingProse ||
                 generationState is ReportGenerationState.StreamingText
         }
     }
@@ -176,6 +177,30 @@ fun ReportScreen(
     // Currently-running tool name (only set during the agentic PHASE 1).
     val currentToolName by remember {
         derivedStateOf { (generationState as? ReportGenerationState.ToolExecuting)?.toolName }
+    }
+    // (current, total) for the GeneratingBanner — drives the "(3/8)" prefix.
+    // Null until the first onToolCallProgress lands and when total <= 0 so the
+    // banner falls back to the no-progress variant cleanly.
+    val toolProgress: Pair<Int, Int>? by remember {
+        derivedStateOf {
+            val s = generationState as? ReportGenerationState.ToolExecuting
+            if (s != null && s.progressTotal > 0) s.progressCurrent to s.progressTotal else null
+        }
+    }
+    // PHASE the banner is rendering. PHASE_2_PROSE is the brief
+    // "Composing report prose…" window between the last tool and the first
+    // streamed token; once StreamingText arrives the banner keeps its
+    // phase-aware copy because streamingText takes over the heading line.
+    val reportPhase: com.oceanguard.ai.inference.ReportPhase? by remember {
+        derivedStateOf {
+            when (generationState) {
+                is ReportGenerationState.LoadingModel -> com.oceanguard.ai.inference.ReportPhase.LOADING
+                is ReportGenerationState.ToolExecuting -> com.oceanguard.ai.inference.ReportPhase.PHASE_1_TOOLS
+                is ReportGenerationState.ComposingProse -> com.oceanguard.ai.inference.ReportPhase.PHASE_2_PROSE
+                is ReportGenerationState.StreamingText -> com.oceanguard.ai.inference.ReportPhase.PHASE_2_PROSE
+                else -> null
+            }
+        }
     }
     // Wrap streaming reads in derivedStateOf so token-level emissions only
     // recompose the GeneratingBanner, not the entire ReportScreen.
@@ -298,6 +323,7 @@ fun ReportScreen(
             is ReportGenerationState.LoadingModel,
             is ReportGenerationState.Generating,
             is ReportGenerationState.ToolExecuting,
+            is ReportGenerationState.ComposingProse,
             is ReportGenerationState.StreamingText -> {} // inline banner handles this
             is ReportGenerationState.Complete -> {
                 val completedReport = state.report
@@ -526,6 +552,8 @@ fun ReportScreen(
                         tokenCount        = tokenCount,
                         tokensPerSec      = tokensPerSec,
                         maxTokens         = maxTokens,
+                        phase             = reportPhase,
+                        toolProgress      = toolProgress,
                     )
                 }
 

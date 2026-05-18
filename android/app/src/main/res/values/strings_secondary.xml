@@ -79,6 +79,7 @@
     <!-- History advanced filters -->
     <string name="history_filter_debris_type">Debris Type</string>
     <string name="history_filter_location">Location</string>
+    <string name="saved_reports_empty_filtered">No saved reports match the current filters.</string>
     <string name="history_filter_date_range">Date Range</string>
 
     <!-- ================================================================== -->
@@ -603,6 +604,21 @@
     <string name="report_notif_error">Report generation failed</string>
     <!-- Format: "Querying Debris Summary…" (inline banner). -->
     <string name="report_querying_tool">Querying %1$s…</string>
+    <!-- Format: "(3/8) Querying material composition…" — PHASE 1 progress. -->
+    <string name="report_querying_tool_progress">(%1$d/%2$d) Querying %3$s…</string>
+    <!-- PHASE 2 banner: the model is writing the report prose on a fresh conversation. -->
+    <string name="report_phase2_composing">Composing report prose…</string>
+
+    <!-- Human-readable tool labels for the PHASE 1 banner. Keys mirror the
+         snake_case names that Gemma 4 receives from LiteRT-LM reflection. -->
+    <string name="tool_per_session_details">per-image details</string>
+    <string name="tool_debris_summary">debris summary</string>
+    <string name="tool_material_breakdown">material composition</string>
+    <string name="tool_type_breakdown">debris-type analysis</string>
+    <string name="tool_risk_assessment">risk assessment</string>
+    <string name="tool_ecological_impacts">ecological impact</string>
+    <string name="tool_survey_statistics">survey statistics</string>
+    <string name="tool_temporal_trend">temporal trend</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">Download AI Model</string>

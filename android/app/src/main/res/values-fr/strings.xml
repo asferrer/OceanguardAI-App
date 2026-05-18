@@ -34,6 +34,14 @@
     <string name="home_btn_take_photo">Lancer le scan</string>
     <string name="home_btn_live_detection">Analyse par lot</string>
     <string name="home_btn_select_gallery">Scanner la galerie</string>
+    <string name="home_top_debris_title">Déchets fréquents</string>
+    <string name="home_top_debris_subtitle">7 derniers jours</string>
+    <string name="home_top_debris_total">Total %1$d</string>
+    <string name="home_top_debris_empty">Aucune détection ces 7 derniers jours.</string>
+    <string name="home_hotspots_title">Zones les plus polluées</string>
+    <string name="home_hotspots_subtitle">Appuyer pour voir sur la carte</string>
+    <string name="home_hotspots_row_meta">%1$d déchets dans %2$d images</string>
+    <string name="home_hotspots_empty">Aucune session avec GPS. Capturer avec la localisation activée pour voir les zones critiques.</string>
     <string name="home_btn_batch_analysis">Analyse par lot</string>
 
     <!-- Statut du modèle -->

@@ -267,6 +267,14 @@ class InferenceService : LifecycleService() {
             val skipVLM = !app.settingsRepository.vlmEnabled.first()
             val threshold = app.settingsRepository.confidenceThreshold.first()
             val timeoutMs = if (skipVLM) BATCH_ITEM_TIMEOUT_NO_VLM_MS else BATCH_ITEM_TIMEOUT_MS
+            // Single source of truth for the batch wall-clock start: anchored
+            // on the service (foreground) so the elapsed time the UI shows
+            // matches the user's perception ("how long did processing take")
+            // regardless of when BatchResultsScreen first composes. Previously
+            // the screen anchored `batchStartTimeMs` on its own composition,
+            // which is reset whenever the user navigates away and back —
+            // producing nonsensical "took 0 s" or "took 4 h" deltas.
+            val batchStartTimeMs = System.currentTimeMillis()
 
             // Strictly sequential loop: each item runs analyze → persist →
             // annotate → save → enqueue completely before the next iteration
@@ -280,6 +288,7 @@ class InferenceService : LifecycleService() {
                 )
                 app.inferenceServiceState.value = InferenceServiceState.BatchRunning(
                     job.uris, index, results.toList(), buildQueueInfo(job),
+                    startTimeMs = batchStartTimeMs,
                 )
 
                 try {
@@ -324,7 +333,11 @@ class InferenceService : LifecycleService() {
                 it is BatchItemResult.Done && it.contributionQueued
             }
             app.inferenceServiceState.value =
-                InferenceServiceState.BatchComplete(job.uris, results, contributionQueuedCount)
+                InferenceServiceState.BatchComplete(
+                    job.uris, results, contributionQueuedCount,
+                    startTimeMs = batchStartTimeMs,
+                    endTimeMs = System.currentTimeMillis(),
+                )
             updateNotification(
                 "Batch done! $successCount/${job.uris.size} processed.",
                 job.deepLinkRoute,

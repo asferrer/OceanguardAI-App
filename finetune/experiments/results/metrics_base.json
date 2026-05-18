@@ -17,6 +17,6 @@
   "adapter_path": null,
   "n_samples": 200,
   "json_validity": 0.995,
-  "mean_latency_s": 1.9328559482097625,
-  "elapsed_s": 390.7720613479614
+  "mean_latency_s": 1.8824469149112701,
+  "elapsed_s": 380.5268921852112
 }

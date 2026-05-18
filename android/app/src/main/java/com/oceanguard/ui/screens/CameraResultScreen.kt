@@ -133,6 +133,30 @@ fun CameraResultScreen(
     val currentResult: AnalysisResult? = (uiState as? UiState.AnalysisComplete)?.result
     val completedSessionId: Long? = (serviceState as? InferenceServiceState.SingleComplete)?.sessionId
 
+    // Hoist the "new scan" action so both the button and the auto-return
+    // LaunchedEffect reference the same lambda.
+    val onNewScan: () -> Unit = {
+        viewModel.resetState()
+        navController.navigate("camera") {
+            popUpTo("home") { inclusive = false }
+        }
+    }
+
+    // Auto-return countdown — fires only once analysis is complete (completedSessionId
+    // becomes a stable non-null Long). If the user taps "New Scan" first, the screen
+    // leaves composition and the effect is cancelled automatically.
+    var autoReturnCountdown by remember { mutableIntStateOf(10) }
+    LaunchedEffect(completedSessionId) {
+        if (completedSessionId != null) {
+            autoReturnCountdown = 10
+            repeat(10) { tick ->
+                delay(1_000L)
+                autoReturnCountdown = 9 - tick
+            }
+            onNewScan()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -209,6 +233,7 @@ fun CameraResultScreen(
                 result = currentResult,
                 liveDetectionCount = currentDetections.size,
                 isComplete = uiState is UiState.AnalysisComplete,
+                autoReturnCountdown = autoReturnCountdown,
                 onViewDetails = if (completedSessionId != null && completedSessionId > 0) {
                     {
                         viewModel.resetState()
@@ -217,12 +242,7 @@ fun CameraResultScreen(
                         }
                     }
                 } else null,
-                onNewScan = {
-                    viewModel.resetState()
-                    navController.navigate("camera") {
-                        popUpTo("home") { inclusive = false }
-                    }
-                },
+                onNewScan = onNewScan,
             )
         }
 
@@ -307,6 +327,7 @@ private fun BottomActionBar(
     result: AnalysisResult?,
     liveDetectionCount: Int,
     isComplete: Boolean,
+    autoReturnCountdown: Int,
     onViewDetails: (() -> Unit)?,
     onNewScan: () -> Unit,
 ) {
@@ -392,6 +413,18 @@ private fun BottomActionBar(
                         )
                     }
                 }
+            }
+
+            // Auto-return countdown hint — stays visible until the timer fires or
+            // the user taps a button manually. Hidden once countdown reaches 0 to
+            // avoid a flash of "Scanning again in 0 s…" before navigation settles.
+            if (autoReturnCountdown > 0) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.camera_result_auto_return, autoReturnCountdown),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.55f),
+                )
             }
         }
     }

@@ -197,18 +197,35 @@ class DetectionRepository(
         dao.getSessionsByDateRange(startMs, endMs)
 
     /**
-     * Emit sessions that contain at least one [Debris] item of the given
-     * [DebrisType], ordered newest-first.
+     * Emit sessions that contain at least one [Debris] item whose
+     * canonical type matches [type], ordered newest-first.
      *
-     * The query relies on a LIKE substring match against the JSON-serialised
-     * [DetectionSession.debrisList] column. Re-emits automatically on any
-     * table change, so the MarineDex gallery and map stay up-to-date without
-     * manual refresh calls.
+     * Why client-side filtering instead of a tight LIKE query:
+     *  - The previous DAO query `LIKE '%BOTTLE%'` over-matched, because the
+     *    JSON-serialised debrisList contains BOTTLE not only in `type:"BOTTLE"`
+     *    but also in `subType:"GLASS_BOTTLE"` and `rawLabel:"glass_bottle"`.
+     *    Result: a glass-bottle detection (type GLASS_DEBRIS) leaked into the
+     *    MarineDex BOTTLE gallery — user-reported on 2026-05-18.
+     *  - A strict `LIKE '%"type":"BOTTLE"%'` would fix that one case but
+     *    wouldn't expand correctly for canonical types: tapping
+     *    PLASTIC_DEBRIS in MarineDex should also surface sessions whose
+     *    debris is BOTTLE_CAP / PLASTIC_BAG / STRAW / etc., because those
+     *    canonicalise to PLASTIC_DEBRIS.
      *
-     * @param type The debris type to filter by.
+     * Implementation: pull every session via [DetectionSessionDao.getAllSessions]
+     * (already-reactive Room Flow, cached internally) and filter in-memory by
+     * `debrisList.any { it.type.canonical() == type }`. The cost is O(N · D)
+     * per emission where N=sessions, D=avg debris per session — both tiny in
+     * a single-user device. The trade-off vs SQL is acceptable until N grows
+     * past ~10k sessions, at which point a denormalised `session_debris_types`
+     * join table would be the right move.
      */
     fun getSessionsByDebrisType(type: DebrisType): Flow<List<DetectionSession>> =
-        dao.getSessionsContainingDebrisType(type.name)
+        dao.getAllSessions().map { sessions ->
+            sessions.filter { session ->
+                session.debrisList.any { debris -> debris.type.canonical() == type }
+            }
+        }
 
     // -----------------------------------------------------------------------
     // Statistics helper

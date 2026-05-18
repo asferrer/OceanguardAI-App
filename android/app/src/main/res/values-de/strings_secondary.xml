@@ -598,6 +598,18 @@
     <string name="report_notif_complete">Bericht fertig!</string>
     <string name="report_notif_error">Berichterstellung fehlgeschlagen</string>
     <string name="report_querying_tool">Abfrage von %1$s…</string>
+    <string name="report_querying_tool_progress">(%1$d/%2$d) Abfrage von %3$s…</string>
+    <string name="report_phase2_composing">Bericht wird verfasst…</string>
+
+    <string name="tool_per_session_details">Details pro Bild</string>
+    <string name="tool_debris_summary">Abfallzusammenfassung</string>
+    <string name="tool_material_breakdown">Materialzusammensetzung</string>
+    <string name="tool_type_breakdown">Typanalyse</string>
+    <string name="tool_risk_assessment">Risikobewertung</string>
+    <string name="tool_ecological_impacts">ökologische Auswirkungen</string>
+    <string name="tool_survey_statistics">Statistik</string>
+    <string name="tool_temporal_trend">zeitlicher Trend</string>
+    <string name="saved_reports_empty_filtered">Keine gespeicherten Berichte entsprechen den aktuellen Filtern.</string>
 
     <!-- VLM model download -->
     <string name="vlm_download_dialog_title">KI-Modell herunterladen</string>

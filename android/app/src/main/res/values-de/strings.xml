@@ -34,6 +34,14 @@
     <string name="home_btn_take_photo">Scan starten</string>
     <string name="home_btn_live_detection">Stapelanalyse</string>
     <string name="home_btn_select_gallery">Galerie scannen</string>
+    <string name="home_top_debris_title">Häufigster Abfall</string>
+    <string name="home_top_debris_subtitle">Letzte 7 Tage</string>
+    <string name="home_top_debris_total">Gesamt %1$d</string>
+    <string name="home_top_debris_empty">Keine Erkennungen in den letzten 7 Tagen.</string>
+    <string name="home_hotspots_title">Hotspots der Verschmutzung</string>
+    <string name="home_hotspots_subtitle">Tippen, um auf der Karte zu sehen</string>
+    <string name="home_hotspots_row_meta">%1$d Funde in %2$d Bilder</string>
+    <string name="home_hotspots_empty">Noch keine Sitzungen mit GPS. Mit aktiviertem Standort aufnehmen, um Hotspots zu sehen.</string>
     <string name="home_btn_batch_analysis">Stapelanalyse</string>
 
     <!-- Modellstatus -->

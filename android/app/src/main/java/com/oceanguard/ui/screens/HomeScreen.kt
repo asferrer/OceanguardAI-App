@@ -44,9 +44,9 @@ import com.oceanguard.ai.data.DetectionStatistics
 import com.oceanguard.ai.ui.MainViewModel
 import com.oceanguard.ai.ui.UiState
 import com.oceanguard.ai.ui.components.AnimatedCounter
-import com.oceanguard.ai.ui.components.DebrisDistributionChart
 import com.oceanguard.ai.ui.components.GlassCard
-import com.oceanguard.ai.ui.components.HealthTrendChart
+import com.oceanguard.ai.ui.components.TopDebrisTypesCard
+import com.oceanguard.ai.ui.components.TopHotspotsCard
 import com.oceanguard.ai.ui.components.OceanGradientHeader
 import com.oceanguard.ai.ui.components.ShimmerCard
 import com.oceanguard.ai.ui.components.pressableScale
@@ -452,24 +452,46 @@ fun HomeScreen(
                 }
 
                 // ----------------------------------------------------------------
-                // Debris distribution chart (staggered entry)
+                // Top 3 debris types this week (staggered entry)
+                // Replaced the previous HealthTrendChart — user feedback was that
+                // the health-score sparkline duplicated info already shown in
+                // History/Map, while a top-3 types view drives attention to the
+                // dominant threats and reuses the MarineDex sprite catalogue.
                 // ----------------------------------------------------------------
-                if (statistics.materialBreakdown.isNotEmpty()) {
-                    StaggeredEntry(delayMs = 300) {
-                        DebrisDistributionChart(
-                            materialBreakdown = statistics.materialBreakdown,
+                if (allSessions.isNotEmpty()) {
+                    val uiLanguageCode = remember {
+                        val tag = androidx.core.os.ConfigurationCompat
+                            .getLocales(homeContext.resources.configuration)
+                            .get(0)
+                            ?.language ?: "en"
+                        tag.lowercase()
+                    }
+                    StaggeredEntry(delayMs = 400) {
+                        TopDebrisTypesCard(
+                            sessions = allSessions,
+                            language = uiLanguageCode,
+                            onItemClick = { debrisType ->
+                                // Land on the MarineDex detail Gallery tab
+                                // (tab=1) for the tapped type — same screen
+                                // the user reaches from MarineDex grid, just
+                                // pre-selected on the gallery so they see the
+                                // images that detected this debris.
+                                navController.navigate("marinedex/${debrisType.name}?tab=1")
+                            },
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                }
 
-                // ----------------------------------------------------------------
-                // Health trend chart (staggered entry)
-                // ----------------------------------------------------------------
-                if (allSessions.isNotEmpty()) {
-                    StaggeredEntry(delayMs = 400) {
-                        HealthTrendChart(
+                    // Top 3 contamination hotspots → Map screen.
+                    // Sessions without GPS are filtered out by ZoneAggregator;
+                    // if the user has no located sessions yet the card shows
+                    // an empty-state hint instead of disappearing entirely.
+                    StaggeredEntry(delayMs = 500) {
+                        TopHotspotsCard(
                             sessions = allSessions,
+                            onHotspotClick = { lat, lon ->
+                                navController.navigate("map?lat=$lat&lon=$lon")
+                            },
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))

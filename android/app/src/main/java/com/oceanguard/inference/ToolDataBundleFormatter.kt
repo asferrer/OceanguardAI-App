@@ -40,6 +40,19 @@ object ToolDataBundleFormatter {
          */
         val perSessionRows: Map<String, String>,
         val totalsBlock: String,
+        /**
+         * Pre-rendered full markdown blocks (header + table) keyed by the
+         * stable English identifier the writer model is asked to emit as a
+         * placeholder. Used by [ToolReportGenerator.substituteTablePlaceholders]
+         * to replace every `[TABLE: <key>]` token in the model's prose with
+         * the deterministic, source-of-truth table. Keys:
+         *   "material", "type", "ecological", "risk",
+         *   "per_session", "temporal", "waypoints", "stats"
+         * Tables that are not relevant for the current report (e.g. "temporal"
+         * for a GENERIC survey) are simply absent from the map; their
+         * placeholders are stripped by the substituter.
+         */
+        val tablesByKey: Map<String, String>,
     )
 
     fun format(ctx: ToolReportContext): String = buildFormatted(ctx).first
@@ -51,17 +64,56 @@ object ToolDataBundleFormatter {
         val lang = ctx.language
         val h = headings(lang)
         val sb = StringBuilder()
+        val tablesByKey = LinkedHashMap<String, String>()
+
         sb.append("## CONFIRMED DATA — USE THESE EXACT VALUES\n\n")
         sb.append("The tool calls returned the data below. Copy the numbers and labels into the report verbatim. Do NOT emit placeholders (`[Valor]`, `[Tipo_A]`, `| ... |`). Tables below are already in ${languageName(lang)}; reproduce them exactly — same rows, same values, same labels.\n\n")
+
+        val totalsStart = sb.length
         appendTotals(sb, ctx, h, lang)
+        tablesByKey["totals"] = extractTableBlock(sb, totalsStart)
+
+        val matStart = sb.length
         val materialRows = appendMaterials(sb, ctx, h, lang)
+        tablesByKey["material"] = extractTableBlock(sb, matStart)
+
+        val typeStart = sb.length
         val typeRows = appendTypes(sb, ctx, h, lang)
+        tablesByKey["type"] = extractTableBlock(sb, typeStart)
+
+        val ecoStart = sb.length
         val ecoRows = appendEcological(sb, ctx, h, lang)
+        tablesByKey["ecological"] = extractTableBlock(sb, ecoStart)
+
+        val riskStart = sb.length
         val riskRows = appendRisk(sb, ctx, h, lang)
-        appendWaypoints(sb, ctx, h, lang)
+        tablesByKey["risk"] = extractTableBlock(sb, riskStart)
+
+        // Waypoints intentionally skipped: the spatial coordinate table was
+        // discarded in v0.2.x. The per-image table already carries lat/lon per
+        // analyzed image, and the Monitoring Protocol is now type-specific
+        // prose. Rendering it here let the model copy the rows AND fed the
+        // force-append fallback in substituteTablePlaceholders, which leaked
+        // a "| Lat | Lon | ... |" table into the final report (report id=11,
+        // 2026-05-17). The tool itself stays callable for the agentic
+        // showcase; only the bundle rendering is suppressed.
+
+        val statsStart = sb.length
         appendStats(sb, ctx, h)
+        tablesByKey["stats"] = extractTableBlock(sb, statsStart)
+
+        val perSessionStart = sb.length
         val perSessionRows = appendPerSession(sb, ctx, h, lang)
+        if (ctx.sessionDetails.isNotEmpty()) {
+            tablesByKey["per_session"] = extractTableBlock(sb, perSessionStart)
+        }
+
+        val trendStart = sb.length
         appendTrend(sb, ctx, h)
+        if (ctx.temporalTrend != null) {
+            tablesByKey["temporal"] = extractTableBlock(sb, trendStart)
+        }
+
         sb.append("---\n\n")
         sb.append(h.writeInstruction)
         val totalsBlock = buildString {
@@ -69,7 +121,38 @@ object ToolDataBundleFormatter {
             append("- ${h.sessionsAnalysed}: **${ctx.sessionCount}**\n")
             append("- ${h.avgHealth}: **${ctx.avgHealthScore}** / 100\n")
         }
-        return sb.toString() to Canon(materialRows, typeRows, ecoRows, riskRows, perSessionRows, totalsBlock)
+        return sb.toString() to Canon(
+            materialRows = materialRows,
+            typeRows = typeRows,
+            ecoRows = ecoRows,
+            riskRows = riskRows,
+            perSessionRows = perSessionRows,
+            totalsBlock = totalsBlock,
+            tablesByKey = tablesByKey,
+        )
+    }
+
+    /**
+     * Extracts the table-or-bullet block from [sb] starting at [startIdx],
+     * skipping the leading "### Heading" line. The result is what
+     * [ToolReportGenerator.substituteTablePlaceholders] inserts when the
+     * writer model emits a `[TABLE: <key>]` placeholder.
+     *
+     * For tables: returns everything from the first `|` to the end of the
+     * section (trimmed).
+     * For bullet sections (totals, stats): returns everything from the first
+     * `-` to the end.
+     */
+    private fun extractTableBlock(sb: StringBuilder, startIdx: Int): String {
+        val section = sb.substring(startIdx).trimEnd()
+        if (section.isEmpty()) return ""
+        val lines = section.lines()
+        // Drop leading lines until we hit a `|` (table) or `-` (bullet list).
+        val bodyLines = lines.dropWhile {
+            val t = it.trimStart()
+            !t.startsWith("|") && !t.startsWith("-")
+        }
+        return bodyLines.joinToString("\n").trimEnd()
     }
 
     /**
@@ -252,41 +335,144 @@ object ToolDataBundleFormatter {
         else -> "tonnes/year"
     }
 
-    // Translations for canonical English impact strings from EnvironmentalImpact.
-    // Unmapped strings fall through unchanged.
+    // Translations for canonical English impact strings from
+    // [EnvironmentalImpact]. Must cover EVERY primaryRisk string defined there
+    // — unmapped strings fall through to English in the report, producing the
+    // mixed-language Eco table seen in id=16 ("Ingestion risk, microplastic
+    // release" + "Physical injury to marine life" leaked in EN inside an ES
+    // report).
     private val RISK_TRANSLATIONS: Map<String, Map<String, String>> = mapOf(
         "es" to mapOf(
-            "Microplastic fragmentation, ingestion by marine fauna" to "Fragmentación en microplásticos, ingestión por fauna marina",
-            "Ghost fishing, entanglement of marine life" to "Pesca fantasma, enredo de fauna marina",
             "Ingestion risk, microplastic fragmentation" to "Riesgo de ingestión, fragmentación en microplásticos",
             "Sharp edges, toxic chemical leaching" to "Bordes afilados, lixiviación de sustancias tóxicas",
+            "Ghost fishing, entanglement of marine life" to "Pesca fantasma, enredo de fauna marina",
+            "Ingestion risk, microplastic release" to "Riesgo de ingestión, liberación de microplásticos",
+            "Entanglement of small marine organisms" to "Enredo de pequeños organismos marinos",
+            "Sharp edges, chemical leaching, habitat disruption" to "Bordes afilados, lixiviación química, alteración del hábitat",
+            "Microplastic fragmentation, ingestion by marine fauna" to "Fragmentación en microplásticos, ingestión por fauna marina",
+            "Toxic chemicals (zinc, cadmium, heavy metals)" to "Sustancias tóxicas (zinc, cadmio, metales pesados)",
+            "Microfiber release, entanglement" to "Liberación de microfibras, enredo",
+            "Physical injury to marine life" to "Lesiones físicas a la fauna marina",
             "Unknown environmental impact" to "Impacto ambiental no determinado",
         ),
         "fr" to mapOf(
-            "Microplastic fragmentation, ingestion by marine fauna" to "Fragmentation en microplastiques, ingestion par la faune marine",
-            "Ghost fishing, entanglement of marine life" to "Pêche fantôme, enchevêtrement de la faune marine",
             "Ingestion risk, microplastic fragmentation" to "Risque d'ingestion, fragmentation en microplastiques",
             "Sharp edges, toxic chemical leaching" to "Bords tranchants, lixiviation de substances toxiques",
+            "Ghost fishing, entanglement of marine life" to "Pêche fantôme, enchevêtrement de la faune marine",
+            "Ingestion risk, microplastic release" to "Risque d'ingestion, libération de microplastiques",
+            "Entanglement of small marine organisms" to "Enchevêtrement de petits organismes marins",
+            "Sharp edges, chemical leaching, habitat disruption" to "Bords tranchants, lixiviation chimique, perturbation de l'habitat",
+            "Microplastic fragmentation, ingestion by marine fauna" to "Fragmentation en microplastiques, ingestion par la faune marine",
+            "Toxic chemicals (zinc, cadmium, heavy metals)" to "Substances toxiques (zinc, cadmium, métaux lourds)",
+            "Microfiber release, entanglement" to "Libération de microfibres, enchevêtrement",
+            "Physical injury to marine life" to "Blessures physiques à la faune marine",
             "Unknown environmental impact" to "Impact environnemental indéterminé",
+        ),
+        "de" to mapOf(
+            "Ingestion risk, microplastic fragmentation" to "Verschluckungsrisiko, Mikroplastik-Fragmentierung",
+            "Sharp edges, toxic chemical leaching" to "Scharfe Kanten, Auslaugung giftiger Chemikalien",
+            "Ghost fishing, entanglement of marine life" to "Geisterfischerei, Verfangung von Meereslebewesen",
+            "Ingestion risk, microplastic release" to "Verschluckungsrisiko, Freisetzung von Mikroplastik",
+            "Entanglement of small marine organisms" to "Verfangung kleiner Meeresorganismen",
+            "Sharp edges, chemical leaching, habitat disruption" to "Scharfe Kanten, chemische Auslaugung, Lebensraumstörung",
+            "Microplastic fragmentation, ingestion by marine fauna" to "Mikroplastik-Fragmentierung, Verschlucken durch Meeresfauna",
+            "Toxic chemicals (zinc, cadmium, heavy metals)" to "Giftige Chemikalien (Zink, Cadmium, Schwermetalle)",
+            "Microfiber release, entanglement" to "Mikrofaser-Freisetzung, Verfangung",
+            "Physical injury to marine life" to "Physische Verletzungen für Meereslebewesen",
+            "Unknown environmental impact" to "Unbekannte Umweltauswirkung",
+        ),
+        "it" to mapOf(
+            "Ingestion risk, microplastic fragmentation" to "Rischio di ingestione, frammentazione in microplastiche",
+            "Sharp edges, toxic chemical leaching" to "Bordi taglienti, rilascio di sostanze tossiche",
+            "Ghost fishing, entanglement of marine life" to "Pesca fantasma, intrappolamento della fauna marina",
+            "Ingestion risk, microplastic release" to "Rischio di ingestione, rilascio di microplastiche",
+            "Entanglement of small marine organisms" to "Intrappolamento di piccoli organismi marini",
+            "Sharp edges, chemical leaching, habitat disruption" to "Bordi taglienti, rilascio chimico, alterazione dell'habitat",
+            "Microplastic fragmentation, ingestion by marine fauna" to "Frammentazione in microplastiche, ingestione da fauna marina",
+            "Toxic chemicals (zinc, cadmium, heavy metals)" to "Sostanze tossiche (zinco, cadmio, metalli pesanti)",
+            "Microfiber release, entanglement" to "Rilascio di microfibre, intrappolamento",
+            "Physical injury to marine life" to "Lesioni fisiche alla fauna marina",
+            "Unknown environmental impact" to "Impatto ambientale indeterminato",
+        ),
+        "pt" to mapOf(
+            "Ingestion risk, microplastic fragmentation" to "Risco de ingestão, fragmentação em microplásticos",
+            "Sharp edges, toxic chemical leaching" to "Bordas afiadas, lixiviação de substâncias tóxicas",
+            "Ghost fishing, entanglement of marine life" to "Pesca fantasma, emaranhamento da fauna marinha",
+            "Ingestion risk, microplastic release" to "Risco de ingestão, libertação de microplásticos",
+            "Entanglement of small marine organisms" to "Emaranhamento de pequenos organismos marinhos",
+            "Sharp edges, chemical leaching, habitat disruption" to "Bordas afiadas, lixiviação química, perturbação do habitat",
+            "Microplastic fragmentation, ingestion by marine fauna" to "Fragmentação em microplásticos, ingestão pela fauna marinha",
+            "Toxic chemicals (zinc, cadmium, heavy metals)" to "Substâncias tóxicas (zinco, cádmio, metais pesados)",
+            "Microfiber release, entanglement" to "Libertação de microfibras, emaranhamento",
+            "Physical injury to marine life" to "Lesões físicas à fauna marinha",
+            "Unknown environmental impact" to "Impacto ambiental indeterminado",
         ),
     )
 
+    // Covers every degradationTime string in [EnvironmentalImpact]. Must
+    // include the unusual entries ("1,000,000+ years" for glass, "200-500
+    // years" for metal, "1-200+ years" for fabric) that were missing in the
+    // previous map and leaked English into the ES report.
     private val DEGRADATION_TRANSLATIONS: Map<String, Map<String, String>> = mapOf(
         "es" to mapOf(
-            "600+ years" to "Más de 600 años",
             "450+ years" to "Más de 450 años",
+            "600+ years" to "Más de 600 años",
             "200+ years" to "Más de 200 años",
-            "50+ years" to "Más de 50 años",
             "100+ years" to "Más de 100 años",
+            "50+ years" to "Más de 50 años",
+            "2000+ years" to "Más de 2000 años",
+            "200-500 years" to "200-500 años",
+            "1-200+ years" to "1-200+ años",
+            "1,000,000+ years" to "Más de 1.000.000 de años",
             "Variable" to "Variable",
         ),
         "fr" to mapOf(
-            "600+ years" to "Plus de 600 ans",
             "450+ years" to "Plus de 450 ans",
+            "600+ years" to "Plus de 600 ans",
             "200+ years" to "Plus de 200 ans",
-            "50+ years" to "Plus de 50 ans",
             "100+ years" to "Plus de 100 ans",
+            "50+ years" to "Plus de 50 ans",
+            "2000+ years" to "Plus de 2000 ans",
+            "200-500 years" to "200-500 ans",
+            "1-200+ years" to "1-200+ ans",
+            "1,000,000+ years" to "Plus de 1 000 000 d'ans",
             "Variable" to "Variable",
+        ),
+        "de" to mapOf(
+            "450+ years" to "Über 450 Jahre",
+            "600+ years" to "Über 600 Jahre",
+            "200+ years" to "Über 200 Jahre",
+            "100+ years" to "Über 100 Jahre",
+            "50+ years" to "Über 50 Jahre",
+            "2000+ years" to "Über 2000 Jahre",
+            "200-500 years" to "200-500 Jahre",
+            "1-200+ years" to "1-200+ Jahre",
+            "1,000,000+ years" to "Über 1.000.000 Jahre",
+            "Variable" to "Variabel",
+        ),
+        "it" to mapOf(
+            "450+ years" to "Oltre 450 anni",
+            "600+ years" to "Oltre 600 anni",
+            "200+ years" to "Oltre 200 anni",
+            "100+ years" to "Oltre 100 anni",
+            "50+ years" to "Oltre 50 anni",
+            "2000+ years" to "Oltre 2000 anni",
+            "200-500 years" to "200-500 anni",
+            "1-200+ years" to "1-200+ anni",
+            "1,000,000+ years" to "Oltre 1.000.000 di anni",
+            "Variable" to "Variabile",
+        ),
+        "pt" to mapOf(
+            "450+ years" to "Mais de 450 anos",
+            "600+ years" to "Mais de 600 anos",
+            "200+ years" to "Mais de 200 anos",
+            "100+ years" to "Mais de 100 anos",
+            "50+ years" to "Mais de 50 anos",
+            "2000+ years" to "Mais de 2000 anos",
+            "200-500 years" to "200-500 anos",
+            "1-200+ years" to "1-200+ anos",
+            "1,000,000+ years" to "Mais de 1.000.000 de anos",
+            "Variable" to "Variável",
         ),
     )
 

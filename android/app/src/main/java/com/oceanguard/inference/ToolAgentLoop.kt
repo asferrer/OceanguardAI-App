@@ -235,6 +235,14 @@ internal class ToolAgentLoop(
                     if (phase1Mode && collectedToolCalls.isEmpty() && accumulated.length >= PHASE1_PROSE_ABORT_CHARS) {
                         Log.i(TAG, "PHASE-1 prose detected (${accumulated.length} chars); aborting turn to hand off to PHASE-2")
                         resumed = true
+                        // CRITICAL: cancel the native decode loop before resuming.
+                        // Without this, `conv.close()` in the engine's finally
+                        // block waits for the async decode to finish on its own —
+                        // observed to hang 5+ min (logcat 2026-05-18 09:51/09:59/
+                        // 10:02), during which the PHASE 2 prose generation
+                        // NEVER starts. cancelProcess() drops the native session
+                        // back to idle so close() returns immediately.
+                        try { conversation.cancelProcess() } catch (_: Throwable) {}
                         continuation.resume(emptyList())
                         return
                     }

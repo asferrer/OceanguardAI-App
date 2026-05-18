@@ -447,6 +447,16 @@ class MainViewModel(
         if (imageUris.isNotEmpty()) {
             app.inferenceServiceState.value = InferenceServiceState.Idle
             setBatchUris(imageUris)
+            // Mark the hash BEFORE firing the foreground-service intent.
+            // ContextCompat.startForegroundService is asynchronous: the service
+            // state stays Idle for several ms after the call returns, exactly
+            // the window in which BatchResultsScreen mounts and its
+            // LaunchedEffect runs. Without this pre-mark, the screen reads
+            // `state == Idle`, hash NOT in batchStartedHashes → dispatches a
+            // SECOND batchIntent, and the InferenceJobQueue ends up with two
+            // ImageBatch jobs for the same URIs (the user-visible
+            // "batch processed twice" bug — reported 2026-05-17).
+            markBatchStarted(imageUris.hashCode())
             // Enqueue the image batch BEFORE the video jobs so the queue
             // processes images first. Images take ~6-10 s each with Gemma 4;
             // videos take minutes per clip. Surfacing the fast image results

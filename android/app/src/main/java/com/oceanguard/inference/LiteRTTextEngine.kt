@@ -3,12 +3,14 @@ package com.oceanguard.ai.inference
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Capabilities
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
@@ -40,9 +42,20 @@ class LiteRTTextEngine(
     companion object {
         private const val TAG = "LiteRTTextEngine"
         // Context window: prompt + output. Gemma 4 E2B supports up to 32K but
-        // higher values increase KV cache RAM. 8192 gives ~6K tokens for output
-        // after a typical report prompt (~2K tokens).
-        private const val MAX_TOKENS = 8192
+        // higher values increase KV cache RAM AND rob GPU bandwidth from the
+        // compute kernels — the KV cache lives in VRAM and bigger preallocation
+        // means smaller workspace for matmul tiles.
+        //
+        // google-ai-edge/gallery uses DEFAULT_MAX_TOKEN = 1024 (Consts.kt:41)
+        // for general chat. Our zone reports need more — the last report (id=13,
+        // 2026-05-18) consumed ~1.6K prompt + ~2.4K output = ~4K total tokens.
+        //
+        // 5120 keeps a 25% safety margin (1.6K prompt + 2.4K output = 4K real)
+        // while shrinking KV cache footprint 37% vs the previous 8192. Smaller
+        // KV cache frees GPU bandwidth for matmul kernels, which speculative
+        // decoding leverages — the SD speedup on Exynos 2200 is gated by
+        // compute throughput, not by Capabilities support (already true).
+        private const val MAX_TOKENS = 5120
     }
 
     override val displayName: String = "Gemma 4 E2B (LiteRT-LM)"
@@ -64,6 +77,14 @@ class LiteRTTextEngine(
     @Volatile var activeBackendName: String = "CPU"
         private set
 
+    /**
+     * True when the loaded `.litertlm` advertised speculative-decoding support
+     * (probed via Capabilities at init time). Logged to logcat and surfaced
+     * here in case the UI ever wants to show a "fast decode" badge.
+     */
+    @Volatile var speculativeDecodingEnabled: Boolean = false
+        private set
+
     override suspend fun initialize(modelPath: String) = withContext(Dispatchers.IO) {
         initMutex.withLock {
             if (isReady()) {
@@ -77,6 +98,21 @@ class LiteRTTextEngine(
     private suspend fun doInitialize(modelPath: String) {
         Log.i(TAG, "Loading Gemma 4 E2B: $modelPath")
 
+        // Speculative decoding doubles decode tok/s when the .litertlm bundle
+        // ships a draft model. Pattern lifted from google-ai-edge/gallery
+        // (commit 115d355, 2026-05-06) in LlmChatModelHelper. The flag is a
+        // process-wide ExperimentalFlag — set it ON before Engine() + reset
+        // immediately after initialize() so other engines aren't affected.
+        //
+        // We probe Capabilities for diagnostic logging only — the .litertlm of
+        // Gemma 4 E2B (HF: litert-community/gemma-4-E2B-it-litert-lm) ships the
+        // mtp_drafter required for SD. If a future model lacks the drafter,
+        // engine.initialize() falls through harmlessly (the flag becomes a
+        // no-op at the native layer).
+        val probeResult = probeSpeculativeDecodingSupport(modelPath)
+        speculativeDecodingEnabled = true   // always opt in; harmless if unsupported
+        Log.i(TAG, "Speculative decoding: ENABLED (probe=$probeResult, model=$modelPath)")
+
         // Try GPU first, fall back to CPU if unavailable or initialization fails
         val (backend, visionBackend, backendLabel) = selectBackends()
 
@@ -88,6 +124,7 @@ class LiteRTTextEngine(
             cacheDir = cacheDir,
         )
         try {
+            ExperimentalFlags.enableSpeculativeDecoding = speculativeDecodingEnabled
             val eng = Engine(config)
             eng.initialize()
             engine = eng
@@ -103,6 +140,7 @@ class LiteRTTextEngine(
                     maxNumTokens = MAX_TOKENS,
                     cacheDir = cacheDir,
                 )
+                ExperimentalFlags.enableSpeculativeDecoding = speculativeDecodingEnabled
                 val eng = Engine(cpuConfig)
                 eng.initialize()
                 engine = eng
@@ -111,6 +149,26 @@ class LiteRTTextEngine(
             } else {
                 throw e
             }
+        } finally {
+            // Process-wide flag — clear it once the engine has been created so
+            // subsequent unrelated engines (vision model, future second text
+            // engine) don't inherit an unintended override.
+            ExperimentalFlags.enableSpeculativeDecoding = false
+        }
+    }
+
+    /**
+     * Returns true when the `.litertlm` bundle at [modelPath] ships a draft
+     * model usable for speculative decoding. Silently returns false on any
+     * probe failure — speculative decoding is a no-op upgrade, never a
+     * correctness gate.
+     */
+    private fun probeSpeculativeDecodingSupport(modelPath: String): Boolean {
+        return try {
+            Capabilities(modelPath).use { it.hasSpeculativeDecodingSupport() }
+        } catch (e: Exception) {
+            Log.d(TAG, "Capabilities probe failed (assume no SD): ${e.message}")
+            false
         }
     }
 
@@ -167,7 +225,17 @@ class LiteRTTextEngine(
         val prefill = assistantPrefill?.takeIf { it.isNotEmpty() }?.let { "$it\n" } ?: ""
         val system = systemMessage ?: PromptFormatter.DEFAULT_SYSTEM_PROMPT
 
-        val conv = eng.createConversation(
+        // Constrained decoding (LiteRT-LM ExperimentalFlag) was tried in an
+        // earlier iteration of this method but observed to **negate the
+        // speculative-decoding speedup** on Exynos 2200: each speculated token
+        // had to be re-verified against a grammar, killing the SD win.
+        // Empirical measurement (report id=13, 2026-05-18): ~7 tok/s with
+        // constrained ON vs ~7.6 tok/s baseline — no speedup despite
+        // `enable_speculative_decoding: true` confirmed in native logs.
+        //
+        // Kept disabled until we have a use case where structured output is
+        // worth the throughput regression.
+        val conv: com.google.ai.edge.litertlm.Conversation = eng.createConversation(
             ConversationConfig(
                 systemInstruction = Contents.of(system),
                 samplerConfig = SamplerConfig(
@@ -401,6 +469,15 @@ class LiteRTTextEngine(
             Log.d(TAG, "Tool-calling generation complete: ${result.length} chars")
             result
         } finally {
+            // Belt-and-braces: cancel any in-flight decode before closing.
+            // ToolAgentLoop already calls cancelProcess() on PHASE-1 prose
+            // abort, but if the loop returns via a different path (max rounds,
+            // an exception, an early "all tools done" exit) the decode can
+            // still be running native-side. close() would otherwise block
+            // until the model hits maxTokens — observed at 5+ min in the
+            // 2026-05-18 logcat. cancelProcess() is idempotent and safe to
+            // call even when no decode is in flight.
+            try { conv.cancelProcess() } catch (_: Throwable) {}
             conv.close()
         }
     }
