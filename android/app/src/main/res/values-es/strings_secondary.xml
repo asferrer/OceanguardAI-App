@@ -661,6 +661,8 @@
     <!-- ================================================================== -->
     <string name="biodex_title">BioDex</string>
     <string name="biodex_home_subtitle">Identifica especies marinas</string>
+    <string name="biodex_empty_title">Aún no hay especies</string>
+    <string name="biodex_empty_message">Las especies marinas que identifiques aparecerán aquí. Escanea fauna marina para empezar tu colección.</string>
     <string name="biodex_cd_go_back">Volver</string>
     <!-- El recuento de descubrimientos se construye en el código: "$discoveredCount / $total Descubiertos" -->
     <string name="biodex_stat_discovered">Descubiertas</string>

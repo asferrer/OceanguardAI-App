@@ -654,4 +654,49 @@
     <string name="model_variant_current">v%1$s — aktuell</string>
     <string name="model_variant_update_available">Update auf v%1$s verfügbar</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex                                                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_title">BioDex</string>
+    <string name="biodex_home_subtitle">Meeresarten bestimmen</string>
+    <string name="biodex_empty_title">Noch keine Arten</string>
+    <string name="biodex_empty_message">Hier erscheinen die von dir bestimmten Meeresarten. Scanne Meereslebewesen, um deine Sammlung zu beginnen.</string>
+    <string name="biodex_cd_go_back">Zurück</string>
+    <!-- Der Entdeckungszähler wird im Code erstellt: "$discoveredCount / $total Entdeckt" -->
+    <string name="biodex_stat_discovered">Entdeckt</string>
+    <string name="biodex_stat_favorites">Favoriten</string>
+    <string name="biodex_stat_observations">Beobachtungen</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex-Detailbildschirm                                              -->
+    <!-- ================================================================== -->
+    <string name="biodex_detail_cd_go_back">Zurück</string>
+    <string name="biodex_detail_cd_remove_favorite">Aus Favoriten entfernen</string>
+    <string name="biodex_detail_cd_add_favorite">Zu Favoriten hinzufügen</string>
+    <string name="biodex_detail_tab_info">Info</string>
+    <string name="biodex_detail_tab_gallery">Galerie</string>
+    <string name="biodex_detail_tab_map">Karte</string>
+    <string name="biodex_detail_stat_observations">Mal\nBeobachtet</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex-Galerie                                                       -->
+    <!-- ================================================================== -->
+    <string name="biodex_gallery_cd_observation">Artbeobachtungsbild</string>
+    <string name="biodex_gallery_empty_title">Noch keine Beobachtungen</string>
+    <!-- %1$s ist der gebräuchliche Name der Art -->
+    <string name="biodex_gallery_empty_message">Noch keine Fotos von %1$s aufgezeichnet. Nehmen Sie ein Bild dieser Art auf, um es hier zu sehen.</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex-Abzeichen                                                     -->
+    <!-- ================================================================== -->
+    <!-- Wird auf Galerie-Miniaturansichten angezeigt, wenn die Beobachtung außerhalb des Verbreitungsgebiets liegt -->
+    <string name="biodex_badge_out_of_range">Außerhalb des Verbreitungsgebiets</string>
+    <!-- Wird im Info-Tab angezeigt, wenn cosmopolitan=true -->
+    <string name="biodex_badge_cosmopolitan">Kosmopolitisch</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex-Karten-Platzhalter                                            -->
+    <!-- ================================================================== -->
+    <string name="biodex_map_placeholder">Karte demnächst verfügbar.\nBeobachtungsstandorte erscheinen hier, sobald die Kartenebene eingebunden ist.</string>
+
 </resources>

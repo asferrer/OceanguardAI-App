@@ -272,6 +272,9 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    // Mockito 5 (inline mock maker by default) — used to mock final android.* stub
+    // classes such as Bitmap in pure-JVM unit tests (no Robolectric needed).
+    testImplementation("org.mockito:mockito-core:5.14.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(composeBom)

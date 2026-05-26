@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +65,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Pets
 import androidx.compose.runtime.rememberCoroutineScope
 import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.EnvironmentalImpact
@@ -1461,7 +1461,7 @@ private fun BioDexPreviewCard(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Filled.Pets,
+                painter = painterResource(id = R.drawable.ic_fish),
                 contentDescription = null,
                 tint = OceanGreen,
                 modifier = Modifier.size(28.dp),

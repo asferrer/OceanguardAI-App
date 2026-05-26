@@ -55,7 +55,7 @@ import kotlin.math.min
 class MarineRegionResolver(
     private val rasterFile: File,
     private val hierarchyFile: File,
-) {
+) : RegionResolverPort {
     companion object {
         private const val MAGIC = 0x4D455257.toInt()
         private const val EXPECTED_VERSION = 1
@@ -101,7 +101,10 @@ class MarineRegionResolver(
      *  - The resolver is not loaded.
      *  - The point is on land AND no marine cell is found within [maxRingSearch] degrees.
      */
-    fun resolve(lat: Double, lon: Double, maxRingSearch: Double = MAX_RING_SEARCH.toDouble()): MarineRegion? {
+    override fun resolve(lat: Double, lon: Double): MarineRegion? =
+        resolve(lat, lon, MAX_RING_SEARCH.toDouble())
+
+    fun resolve(lat: Double, lon: Double, maxRingSearch: Double): MarineRegion? {
         if (!loaded) return null
 
         val cellVal = lookupCell(lat, lon)
@@ -127,7 +130,7 @@ class MarineRegionResolver(
      * the hierarchy was not loaded or the id is unknown.
      * Exposed for injection into [GeoPrior.matchLevel].
      */
-    fun hierarchy(ecoregionId: Int): Pair<Int, Int>? {
+    override fun hierarchy(ecoregionId: Int): Pair<Int, Int>? {
         val t = hierarchyMap[ecoregionId] ?: return null
         return Pair(t.first, t.second)
     }

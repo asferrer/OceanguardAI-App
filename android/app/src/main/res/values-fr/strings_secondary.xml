@@ -656,4 +656,49 @@
     <string name="model_variant_current">v%1$s — actuelle</string>
     <string name="model_variant_update_available">mise à jour vers v%1$s disponible</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex                                                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_title">BioDex</string>
+    <string name="biodex_home_subtitle">Identifier les espèces marines</string>
+    <string name="biodex_empty_title">Aucune espèce pour l\'instant</string>
+    <string name="biodex_empty_message">Les espèces marines que vous identifiez apparaîtront ici. Scannez la vie marine pour commencer votre collection.</string>
+    <string name="biodex_cd_go_back">Retour</string>
+    <!-- Le compteur de découvertes est construit dans le code : "$discoveredCount / $total Découvertes" -->
+    <string name="biodex_stat_discovered">Découvertes</string>
+    <string name="biodex_stat_favorites">Favoris</string>
+    <string name="biodex_stat_observations">Observations</string>
+
+    <!-- ================================================================== -->
+    <!-- Écran de détail BioDex                                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_detail_cd_go_back">Retour</string>
+    <string name="biodex_detail_cd_remove_favorite">Retirer des favoris</string>
+    <string name="biodex_detail_cd_add_favorite">Ajouter aux favoris</string>
+    <string name="biodex_detail_tab_info">Info</string>
+    <string name="biodex_detail_tab_gallery">Galerie</string>
+    <string name="biodex_detail_tab_map">Carte</string>
+    <string name="biodex_detail_stat_observations">Fois\nObservée</string>
+
+    <!-- ================================================================== -->
+    <!-- Galerie BioDex                                                       -->
+    <!-- ================================================================== -->
+    <string name="biodex_gallery_cd_observation">Image d\'observation d\'espèce</string>
+    <string name="biodex_gallery_empty_title">Aucune observation pour l\'instant</string>
+    <!-- %1$s est le nom commun de l\'espèce -->
+    <string name="biodex_gallery_empty_message">Aucune photo enregistrée pour %1$s. Capturez une image de cette espèce pour la voir ici.</string>
+
+    <!-- ================================================================== -->
+    <!-- Badges BioDex                                                        -->
+    <!-- ================================================================== -->
+    <!-- Affiché sur les miniatures lorsque l\'observation est hors de l\'aire de répartition -->
+    <string name="biodex_badge_out_of_range">Hors zone</string>
+    <!-- Affiché dans l\'onglet Info quand cosmopolitan=true -->
+    <string name="biodex_badge_cosmopolitan">Cosmopolite</string>
+
+    <!-- ================================================================== -->
+    <!-- Espace réservé carte BioDex                                          -->
+    <!-- ================================================================== -->
+    <string name="biodex_map_placeholder">Carte bientôt disponible.\nLes lieux d\'observation apparaîtront ici une fois la couche carte intégrée.</string>
+
 </resources>

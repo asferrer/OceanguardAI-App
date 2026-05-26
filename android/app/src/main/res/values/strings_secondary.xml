@@ -668,6 +668,8 @@
     <!-- ================================================================== -->
     <string name="biodex_title">BioDex</string>
     <string name="biodex_home_subtitle">Identify marine species</string>
+    <string name="biodex_empty_title">No species yet</string>
+    <string name="biodex_empty_message">Marine species you identify will appear here. Scan marine life to start your collection.</string>
     <string name="biodex_cd_go_back">Go back</string>
     <!-- discovered count label built in code: "$discoveredCount / $total Discovered" -->
     <string name="biodex_stat_discovered">Discovered</string>

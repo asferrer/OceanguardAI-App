@@ -655,4 +655,49 @@
     <string name="model_variant_current">v%1$s — atual</string>
     <string name="model_variant_update_available">atualização para v%1$s disponível</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex                                                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_title">BioDex</string>
+    <string name="biodex_home_subtitle">Identificar espécies marinhas</string>
+    <string name="biodex_empty_title">Ainda sem espécies</string>
+    <string name="biodex_empty_message">As espécies marinhas que identificares aparecerão aqui. Faz scan da vida marinha para começar a tua coleção.</string>
+    <string name="biodex_cd_go_back">Voltar</string>
+    <!-- O contador de descobertas é construído no código: "$discoveredCount / $total Descobertas" -->
+    <string name="biodex_stat_discovered">Descobertas</string>
+    <string name="biodex_stat_favorites">Favoritos</string>
+    <string name="biodex_stat_observations">Observações</string>
+
+    <!-- ================================================================== -->
+    <!-- Tela de detalhes do BioDex                                           -->
+    <!-- ================================================================== -->
+    <string name="biodex_detail_cd_go_back">Voltar</string>
+    <string name="biodex_detail_cd_remove_favorite">Remover dos favoritos</string>
+    <string name="biodex_detail_cd_add_favorite">Adicionar aos favoritos</string>
+    <string name="biodex_detail_tab_info">Info</string>
+    <string name="biodex_detail_tab_gallery">Galeria</string>
+    <string name="biodex_detail_tab_map">Mapa</string>
+    <string name="biodex_detail_stat_observations">Vezes\nObservada</string>
+
+    <!-- ================================================================== -->
+    <!-- Galeria do BioDex                                                    -->
+    <!-- ================================================================== -->
+    <string name="biodex_gallery_cd_observation">Imagem de observação de espécie</string>
+    <string name="biodex_gallery_empty_title">Nenhuma observação ainda</string>
+    <!-- %1$s é o nome comum da espécie -->
+    <string name="biodex_gallery_empty_message">Nenhuma foto registrada para %1$s ainda. Capture uma imagem desta espécie para vê-la aqui.</string>
+
+    <!-- ================================================================== -->
+    <!-- Selos do BioDex                                                      -->
+    <!-- ================================================================== -->
+    <!-- Exibido nas miniaturas da galeria quando a observação está fora da área de distribuição -->
+    <string name="biodex_badge_out_of_range">Fora da área</string>
+    <!-- Exibido na aba Info quando cosmopolitan=true -->
+    <string name="biodex_badge_cosmopolitan">Cosmopolita</string>
+
+    <!-- ================================================================== -->
+    <!-- Espaço reservado do mapa do BioDex                                   -->
+    <!-- ================================================================== -->
+    <string name="biodex_map_placeholder">Mapa em breve.\nAs localizações das observações aparecerão aqui quando a camada do mapa estiver integrada.</string>
+
 </resources>
