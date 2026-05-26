@@ -700,4 +700,15 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Mapa em breve.\nAs localizações das observações aparecerão aqui quando a camada do mapa estiver integrada.</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Identificação de espécies (M5)                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_identify_cta">Identificar espécie</string>
+    <string name="biodex_result_title">Resultados de identificação</string>
+    <string name="biodex_result_confidence">Confiança: %1$d%%</string>
+    <string name="biodex_result_uncatalogued">Não catalogada</string>
+    <string name="biodex_result_none">Nenhuma espécie identificada nesta imagem.</string>
+    <string name="biodex_result_done">Concluído</string>
+    <string name="species_identifying">A identificar espécie…</string>
+
 </resources>

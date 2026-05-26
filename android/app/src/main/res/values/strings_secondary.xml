@@ -708,4 +708,22 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Map coming soon.\nObservation locations will appear here once the map layer is wired.</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Species Identification (M5)                                  -->
+    <!-- ================================================================== -->
+    <!-- FAB label in SpeciesDexScreen — opens PhotoPicker to identify a species -->
+    <string name="biodex_identify_cta">Identify species</string>
+    <!-- TopAppBar title of SpeciesResultScreen -->
+    <string name="biodex_result_title">Identification results</string>
+    <!-- Confidence percentage, e.g. "Confidence: 87%" -->
+    <string name="biodex_result_confidence">Confidence: %1$d%%</string>
+    <!-- Badge shown when result.uncatalogued == true -->
+    <string name="biodex_result_uncatalogued">Uncatalogued</string>
+    <!-- Message shown when the identifier returns an empty list -->
+    <string name="biodex_result_none">No species identified in this image.</string>
+    <!-- Button that pops back to BioDex from SpeciesResultScreen -->
+    <string name="biodex_result_done">Done</string>
+    <!-- Label shown while SpeciesIdentifier is running -->
+    <string name="species_identifying">Identifying species…</string>
+
 </resources>

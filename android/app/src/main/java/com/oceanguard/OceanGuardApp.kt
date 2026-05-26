@@ -295,6 +295,28 @@ class OceanGuardApp : Application() {
             speciesCatalog,
         )
     }
+
+    val speciesImagePreprocessor: com.oceanguard.ai.utils.ImagePreprocessor by lazy {
+        com.oceanguard.ai.utils.ImagePreprocessor(this)
+    }
+
+    /**
+     * BioDex identification pipeline. DEMO wiring: until the real ONNX encoder,
+     * reference index and MEOW raster assets are downloaded, this uses in-memory
+     * [SampleSpeciesData] (4 species) so the biology capture flow is verifiable
+     * end-to-end. TODO(swap to real asset): OnnxSpeciesEmbedder +
+     * SpeciesReferenceIndex.load(file) + MarineRegionResolver, gated on M4 assets.
+     */
+    val speciesIdentifier: com.oceanguard.ai.inference.species.SpeciesIdentifier by lazy {
+        speciesCatalog.seedInMemory(com.oceanguard.ai.data.species.SampleSpeciesData.catalogEntries())
+        com.oceanguard.ai.inference.species.SpeciesIdentifier(
+            embedder = com.oceanguard.ai.data.species.SampleSpeciesData.embedder(),
+            index = com.oceanguard.ai.data.species.SampleSpeciesData.buildIndex(),
+            resolver = null,
+            describer = com.oceanguard.ai.inference.species.SpeciesDescriber(),
+            locator = com.oceanguard.ai.inference.species.OrganismLocator(),
+        )
+    }
     val achievementChecker: AchievementChecker by lazy {
         AchievementChecker(
             collectionRepo = collectionRepository,

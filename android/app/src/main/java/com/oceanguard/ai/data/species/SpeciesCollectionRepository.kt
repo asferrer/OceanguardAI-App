@@ -1,9 +1,12 @@
 package com.oceanguard.ai.data.species
 
 import android.util.Log
+import com.oceanguard.ai.data.Location
+import com.oceanguard.ai.inference.species.IdentificationResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.Date
 
 /**
  * Repository for the BioDex species collection.
@@ -52,6 +55,66 @@ class SpeciesCollectionRepository(
     val favoriteCount: Flow<Int> = speciesDexDao.getFavoriteCount()
 
     val totalObservations: Flow<Int> = speciesDexDao.getTotalObservations()
+
+    /**
+     * Persist a single [IdentificationResult] as a [SpeciesObservation] and
+     * update the dex entry for the matched species.
+     *
+     * Mapping rules:
+     * - [IdentificationResult.speciesKey].toLongOrNull() → [SpeciesObservation.aphiaId]
+     *   (null for uncatalogued "uncat:*" keys).
+     * - [IdentificationResult.idSource].name → [SpeciesObservation.idSource].
+     * - All score/confidence/bbox/geo fields are forwarded verbatim.
+     *
+     * Even for uncatalogued results ([IdentificationResult.uncatalogued] == true)
+     * a dex entry is created so the organism appears on the BioDex screen.
+     *
+     * @param result       Identification produced by [com.oceanguard.ai.inference.species.SpeciesIdentifier].
+     * @param imageUri     Content URI of the full-resolution capture.
+     * @param thumbnailUri Optional content URI of the annotated thumbnail.
+     * @param location     GPS position at capture time; null when unavailable.
+     * @return             The auto-generated primary key of the inserted [SpeciesObservation].
+     */
+    suspend fun saveObservation(
+        result: IdentificationResult,
+        imageUri: String,
+        thumbnailUri: String?,
+        location: Location?,
+    ): Long {
+        val observation = toObservation(result, imageUri, thumbnailUri, location)
+        val obsId = speciesObservationDao.insert(observation)
+        discoverOrUpdate(result.speciesKey, result.scientificName, obsId)
+        return obsId
+    }
+
+    /**
+     * Pure mapping from [IdentificationResult] to [SpeciesObservation].
+     *
+     * Extracted as a package-internal helper so it can be tested without a
+     * Room database (no DAO calls here).
+     */
+    internal fun toObservation(
+        result: IdentificationResult,
+        imageUri: String,
+        thumbnailUri: String?,
+        location: Location?,
+    ): SpeciesObservation = SpeciesObservation(
+        imageUri       = imageUri,
+        thumbnailUri   = thumbnailUri,
+        aphiaId        = result.speciesKey.toLongOrNull(),
+        scientificName = result.scientificName,
+        bbox           = result.bbox,
+        cosineScore    = result.cosineScore,
+        confidence     = result.confidence,
+        idSource       = result.idSource.name,
+        vlmDescription = result.vlmDescription,
+        uncatalogued   = result.uncatalogued,
+        ecoregionId    = null,
+        geoMatchLevel  = result.geoMatchLevel,
+        outOfRange     = result.outOfRange,
+        timestamp      = Date(),
+        location       = location,
+    )
 
     /**
      * Record a new or repeat sighting of [speciesKey].

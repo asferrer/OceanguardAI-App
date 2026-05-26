@@ -699,4 +699,15 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Karte demnächst verfügbar.\nBeobachtungsstandorte erscheinen hier, sobald die Kartenebene eingebunden ist.</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Artenbestimmung (M5)                                         -->
+    <!-- ================================================================== -->
+    <string name="biodex_identify_cta">Art bestimmen</string>
+    <string name="biodex_result_title">Bestimmungsergebnisse</string>
+    <string name="biodex_result_confidence">Konfidenz: %1$d%%</string>
+    <string name="biodex_result_uncatalogued">Nicht katalogisiert</string>
+    <string name="biodex_result_none">In diesem Bild wurde keine Art erkannt.</string>
+    <string name="biodex_result_done">Fertig</string>
+    <string name="species_identifying">Art wird bestimmt…</string>
+
 </resources>

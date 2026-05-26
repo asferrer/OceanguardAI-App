@@ -52,6 +52,42 @@ class SpeciesReferenceIndex(
         private const val MAGIC = 0x53504558.toInt()
         private const val EXPECTED_VERSION = 1
         const val EMBEDDING_DIM = 512
+
+        /**
+         * Seed data for an in-memory prototype used by [inMemory].
+         *
+         * @param speciesKey     Key that matches a [SpeciesCatalogEntry].
+         * @param scientificName Binomial name copied to index metadata.
+         * @param vector         L2-normalised float32 embedding of length [EMBEDDING_DIM].
+         *                       Callers are responsible for normalisation before passing.
+         */
+        data class ProtoSeed(
+            val speciesKey: String,
+            val scientificName: String,
+            val vector: FloatArray,
+        )
+
+        /**
+         * Build a [SpeciesReferenceIndex] already populated from in-memory data.
+         *
+         * Intended for demo / integration testing where no binary asset file is
+         * available on disk.  The returned instance has [loaded] = true and is
+         * ready for [search] immediately.
+         *
+         * @param catalogEntries Map from speciesKey → [SpeciesCatalogEntry].
+         * @param prototypes     One or more [ProtoSeed]s (each vector must be
+         *                       L2-normalised and of length [EMBEDDING_DIM]).
+         * @return A fully initialised [SpeciesReferenceIndex].
+         * @throws IllegalArgumentException if any vector has the wrong dimension.
+         */
+        fun inMemory(
+            catalogEntries: Map<String, SpeciesCatalogEntry>,
+            prototypes: List<ProtoSeed>,
+        ): SpeciesReferenceIndex {
+            val index = SpeciesReferenceIndex(catalogEntries)
+            index.loadFromSeeds(prototypes)
+            return index
+        }
     }
 
     // Parallel arrays: prototypes[i] is a float32 L2-norm vector; meta[i] is its metadata.
@@ -112,6 +148,29 @@ class SpeciesReferenceIndex(
 
         prototypes = protoProtos
         meta = parsedMeta
+        loaded = true
+    }
+
+    /**
+     * Populate the index directly from [ProtoSeed] objects without file I/O.
+     *
+     * Called exclusively by [Companion.inMemory]; idempotent (no-op if already
+     * loaded from file or from a prior [loadFromSeeds] call).
+     */
+    private fun loadFromSeeds(seeds: List<ProtoSeed>) {
+        if (loaded) return
+        require(seeds.all { it.vector.size == EMBEDDING_DIM }) {
+            "All ProtoSeed vectors must have dimension $EMBEDDING_DIM"
+        }
+        prototypes = Array(seeds.size) { i -> seeds[i].vector.copyOf() }
+        meta = Array(seeds.size) { i ->
+            ProtoMeta(
+                speciesKey     = seeds[i].speciesKey,
+                scientificName = seeds[i].scientificName,
+                viewTag        = "in_memory",
+                nRefs          = 1,
+            )
+        }
         loaded = true
     }
 

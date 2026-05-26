@@ -701,4 +701,15 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Carte bientôt disponible.\nLes lieux d\'observation apparaîtront ici une fois la couche carte intégrée.</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Identification d\'espèces (M5)                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_identify_cta">Identifier une espèce</string>
+    <string name="biodex_result_title">Résultats d\'identification</string>
+    <string name="biodex_result_confidence">Confiance : %1$d%%</string>
+    <string name="biodex_result_uncatalogued">Non cataloguée</string>
+    <string name="biodex_result_none">Aucune espèce identifiée dans cette image.</string>
+    <string name="biodex_result_done">Terminé</string>
+    <string name="species_identifying">Identification en cours…</string>
+
 </resources>

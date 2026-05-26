@@ -63,4 +63,22 @@ class SpeciesCatalog(private val catalogFile: File) {
 
     /** True if the catalog has been loaded into memory. */
     fun isLoaded(): Boolean = entries != null
+
+    /**
+     * Populate the catalog from [entries] without reading the JSON file on disk.
+     *
+     * Only takes effect when the catalog has not already been loaded from file
+     * (i.e. [isLoaded] == false).  Idempotent: calling it multiple times with
+     * the same data is safe.
+     *
+     * Use this in demo/integration scenarios (e.g. with [SampleSpeciesData])
+     * where the real downloaded asset is not yet available.
+     *
+     * @param entries List of [SpeciesCatalogEntry]; entries are keyed by
+     *                [SpeciesCatalogEntry.speciesKey].
+     */
+    fun seedInMemory(entries: List<SpeciesCatalogEntry>) {
+        if (this.entries != null) return
+        this.entries = entries.associateBy { it.speciesKey }
+    }
 }

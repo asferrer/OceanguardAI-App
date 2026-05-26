@@ -52,6 +52,8 @@ import com.oceanguard.ai.ui.screens.MarineDexDetailScreen
 import com.oceanguard.ai.ui.screens.MarineDexScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexDetailScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexScreen
+import com.oceanguard.ai.ui.screens.SpeciesResultScreen
+import com.oceanguard.ai.ui.screens.SpeciesViewModel
 import com.oceanguard.ai.ui.screens.SplashScreen
 import com.oceanguard.ai.ui.screens.VideoDetailScreen
 import com.oceanguard.ai.ui.screens.VideoResultsScreen
@@ -159,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val viewModel = MainViewModel(applicationContext, app.detectionOrchestrator, app.repository, app.settingsRepository, app.locationProvider)
+        val speciesViewModel = SpeciesViewModel(applicationContext, app.speciesIdentifier, app.speciesCollectionRepository, app.speciesImagePreprocessor, app.locationProvider)
 
         // Deep-link route from notification click (initial intent + onNewIntent)
         _pendingDeepLink.value = intent?.getStringExtra(InferenceService.EXTRA_DEEP_LINK_ROUTE)
@@ -382,6 +385,17 @@ class MainActivity : AppCompatActivity() {
                                 catalog = app.speciesCatalog,
                                 onNavigateToDetail = { key -> navController.navigate("biodex/$key") },
                                 onNavigateBack = { navController.popBackStack() },
+                                onIdentifyImage = { uri ->
+                                    speciesViewModel.identifyFromImage(uri)
+                                    navController.navigate("species_result")
+                                },
+                            )
+                        }
+                        composable("species_result") {
+                            SpeciesResultScreen(
+                                navController = navController,
+                                viewModel = speciesViewModel,
+                                catalog = app.speciesCatalog,
                             )
                         }
                         composable(

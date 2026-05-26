@@ -699,4 +699,15 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Mappa in arrivo.\nLe posizioni delle osservazioni appariranno qui una volta integrato il livello mappa.</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Identificazione specie (M5)                                  -->
+    <!-- ================================================================== -->
+    <string name="biodex_identify_cta">Identifica specie</string>
+    <string name="biodex_result_title">Risultati di identificazione</string>
+    <string name="biodex_result_confidence">Confidenza: %1$d%%</string>
+    <string name="biodex_result_uncatalogued">Non catalogata</string>
+    <string name="biodex_result_none">Nessuna specie identificata in questa immagine.</string>
+    <string name="biodex_result_done">Fine</string>
+    <string name="species_identifying">Identificazione in corso…</string>
+
 </resources>

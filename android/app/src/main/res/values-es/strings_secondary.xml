@@ -701,9 +701,15 @@
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Mapa próximamente.\nLas ubicaciones de las observaciones aparecerán aquí cuando se integre la capa del mapa.</string>
 
-    <!-- TODO(fr): Traducciones francesas de biodex_* pendientes -->
-    <!-- TODO(de): Traducciones alemanas de biodex_* pendientes -->
-    <!-- TODO(it): Traducciones italianas de biodex_* pendientes -->
-    <!-- TODO(pt): Traducciones portuguesas de biodex_* pendientes -->
+    <!-- ================================================================== -->
+    <!-- BioDex Identificación de Especies (M5)                              -->
+    <!-- ================================================================== -->
+    <string name="biodex_identify_cta">Identificar especie</string>
+    <string name="biodex_result_title">Resultados de identificación</string>
+    <string name="biodex_result_confidence">Confianza: %1$d%%</string>
+    <string name="biodex_result_uncatalogued">Sin catalogar</string>
+    <string name="biodex_result_none">No se identificó ninguna especie en esta imagen.</string>
+    <string name="biodex_result_done">Listo</string>
+    <string name="species_identifying">Identificando especie…</string>
 
 </resources>
