@@ -1,0 +1,173 @@
+package com.oceanguard.ai.data.species
+
+import android.util.Log
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+
+/**
+ * Repository for the BioDex species collection.
+ *
+ * Mirrors [com.oceanguard.ai.data.collection.CollectionRepository] for the
+ * species track. Provides reactive Flows for the UI and suspend functions for
+ * write operations.
+ *
+ * [completionPercentage] is computed against [SpeciesCatalog.size]; if the
+ * catalog is not loaded yet it falls back to 0f gracefully.
+ *
+ * @param speciesObservationDao  DAO for raw observation data.
+ * @param speciesDexDao          DAO for the deduplicated dex entries.
+ * @param catalog                In-memory species catalog (must be loaded).
+ */
+class SpeciesCollectionRepository(
+    private val speciesObservationDao: SpeciesObservationDao,
+    private val speciesDexDao: SpeciesDexDao,
+    private val catalog: SpeciesCatalog,
+) {
+    private companion object {
+        const val TAG = "SpeciesCollectionRepo"
+    }
+
+    /** Reactive stream of all dex entries, newest first. */
+    val allDexEntries: Flow<List<SpeciesDexEntry>> = speciesDexDao.getAll()
+
+    /** Number of distinct species discovered. */
+    fun discoveredCount(): Flow<Int> = speciesDexDao.getDiscoveredCount()
+
+    /** All observations for a given species key. */
+    fun observationsForSpecies(speciesKey: String): Flow<List<SpeciesObservation>> {
+        return speciesObservationDao.getByAphiaId(speciesKey)
+    }
+
+    /**
+     * Completion percentage as a fraction in [0, 1].
+     * Denominator is the number of taxons in the loaded catalog.
+     * Returns 0f if the catalog is empty or not loaded.
+     */
+    val completionPercentage: Flow<Float> = speciesDexDao.getDiscoveredCount().map { discovered ->
+        val total = catalog.size()
+        if (total <= 0) 0f else discovered.toFloat() / total.toFloat()
+    }
+
+    val favoriteCount: Flow<Int> = speciesDexDao.getFavoriteCount()
+
+    val totalObservations: Flow<Int> = speciesDexDao.getTotalObservations()
+
+    /**
+     * Record a new or repeat sighting of [speciesKey].
+     *
+     * Creates a [SpeciesDexEntry] if this is the first sighting, otherwise
+     * increments [SpeciesDexEntry.timesObserved] and updates [SpeciesDexEntry.lastSeenAt].
+     *
+     * @return true if this was a NEW discovery (first time seeing this species).
+     */
+    suspend fun discoverOrUpdate(
+        speciesKey: String,
+        scientificName: String,
+        observationId: Long,
+    ): Boolean {
+        val now = System.currentTimeMillis()
+        val existing = speciesDexDao.getByKey(speciesKey)
+        return if (existing == null) {
+            speciesDexDao.upsert(
+                SpeciesDexEntry(
+                    speciesKey = speciesKey,
+                    scientificName = scientificName,
+                    firstSeenAt = now,
+                    firstSeenObservationId = observationId,
+                    timesObserved = 1,
+                    lastSeenAt = now,
+                )
+            )
+            true
+        } else {
+            speciesDexDao.upsert(
+                existing.copy(
+                    timesObserved = existing.timesObserved + 1,
+                    lastSeenAt = now,
+                )
+            )
+            false
+        }
+    }
+
+    /** Toggle the favourite flag for a dex entry. No-op if key not found. */
+    suspend fun setFavorite(speciesKey: String, favorite: Boolean) {
+        speciesDexDao.setFavorite(speciesKey, favorite)
+    }
+
+    /**
+     * Rebuild all [SpeciesDexEntry] rows from the surviving [SpeciesObservation]
+     * table.
+     *
+     * Call after deleting one or more observations so the denormalised dex stays
+     * consistent. Species with no remaining observations are removed (re-locked).
+     * [SpeciesDexEntry.isFavorite] is preserved across the recompute.
+     */
+    suspend fun recomputeFromObservations() {
+        val observations = speciesObservationDao.getAllAscending()
+        val agg = mutableMapOf<String, ObsAgg>()
+
+        for (obs in observations) {
+            val key = obs.aphiaId?.toString() ?: continue   // skip uncatalogued
+            val current = agg[key]
+            if (current == null) {
+                agg[key] = ObsAgg(
+                    scientificName = obs.scientificName,
+                    count = 1,
+                    firstSeenAt = obs.timestamp.time,
+                    firstObservationId = obs.id,
+                    lastSeenAt = obs.timestamp.time,
+                )
+            } else {
+                agg[key] = current.copy(
+                    count = current.count + 1,
+                    lastSeenAt = maxOf(current.lastSeenAt, obs.timestamp.time),
+                )
+            }
+        }
+
+        val currentEntries = speciesDexDao.getAll().first()
+        var relocked = 0
+        var updated = 0
+
+        for (entry in currentEntries) {
+            val target = agg[entry.speciesKey]
+            if (target == null) {
+                speciesDexDao.deleteByKey(entry.speciesKey)
+                relocked++
+            } else if (
+                entry.timesObserved != target.count ||
+                entry.firstSeenAt != target.firstSeenAt ||
+                entry.lastSeenAt != target.lastSeenAt
+            ) {
+                speciesDexDao.upsert(
+                    entry.copy(
+                        timesObserved = target.count,
+                        firstSeenAt = target.firstSeenAt,
+                        firstSeenObservationId = target.firstObservationId,
+                        lastSeenAt = target.lastSeenAt,
+                    )
+                )
+                updated++
+            }
+        }
+
+        if (relocked + updated > 0) {
+            Log.i(TAG, "Dex recompute: $relocked re-locked, $updated updated")
+        }
+    }
+
+    /** Delete all dex entries and observations. Irreversible. */
+    suspend fun resetAll() {
+        speciesDexDao.deleteAll()
+    }
+
+    private data class ObsAgg(
+        val scientificName: String,
+        val count: Int,
+        val firstSeenAt: Long,
+        val firstObservationId: Long,
+        val lastSeenAt: Long,
+    )
+}

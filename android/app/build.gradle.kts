@@ -152,7 +152,7 @@ android {
 
     // CRITICAL: Don't compress model files (gguf added for Qwen3.5 GGUF models)
     androidResources {
-        noCompress += listOf("bin", "tflite", "litert", "task", "litertlm", "gguf")
+        noCompress += listOf("bin", "tflite", "litert", "task", "litertlm", "gguf", "onnx")
     }
 
     // Asset pack configuration (for large model files)
@@ -262,6 +262,10 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze:1.7.2")
     // Konfetti - celebration particle effects
     implementation("nl.dionsegijn:konfetti-compose:2.0.5")
+
+    // ONNX Runtime Mobile — BioDex species encoder (OpenCLIP ViT-B/32)
+    // Uses NNAPI EP; GPU TFLite delegate is intentionally excluded (roto en Exynos Xclipse 920).
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
     // WorkManager — background upload scheduling (ktx merged into runtime since 2.9.0)
     implementation("androidx.work:work-runtime-ktx:2.11.2")

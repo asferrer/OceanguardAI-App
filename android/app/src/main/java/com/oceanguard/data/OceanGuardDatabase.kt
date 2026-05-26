@@ -14,10 +14,15 @@ import com.oceanguard.ai.data.collection.MarineDexDao
 import com.oceanguard.ai.data.collection.MarineDexEntry
 import com.oceanguard.ai.data.contribution.ContributionQueueDao
 import com.oceanguard.ai.data.contribution.ContributionQueueItem
+import com.oceanguard.ai.data.converters.BoundingBoxConverter
 import com.oceanguard.ai.data.converters.DateConverter
 import com.oceanguard.ai.data.converters.DebrisListConverter
 import com.oceanguard.ai.data.converters.ImageQualityConverter
 import com.oceanguard.ai.data.converters.LocationConverter
+import com.oceanguard.ai.data.species.SpeciesDexDao
+import com.oceanguard.ai.data.species.SpeciesDexEntry
+import com.oceanguard.ai.data.species.SpeciesObservation
+import com.oceanguard.ai.data.species.SpeciesObservationDao
 
 /**
  * Room database for OceanGuard AI.
@@ -60,15 +65,18 @@ import com.oceanguard.ai.data.converters.LocationConverter
         Achievement::class,
         VideoAnalysis::class,
         ContributionQueueItem::class,
+        SpeciesObservation::class,
+        SpeciesDexEntry::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(
     DebrisListConverter::class,
     LocationConverter::class,
     DateConverter::class,
-    ImageQualityConverter::class
+    ImageQualityConverter::class,
+    BoundingBoxConverter::class,
 )
 abstract class OceanGuardDatabase : RoomDatabase() {
 
@@ -81,6 +89,8 @@ abstract class OceanGuardDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun videoAnalysisDao(): VideoAnalysisDao
     abstract fun contributionQueueDao(): ContributionQueueDao
+    abstract fun speciesObservationDao(): SpeciesObservationDao
+    abstract fun speciesDexDao(): SpeciesDexDao
 
     // -----------------------------------------------------------------------
     // Singleton
@@ -373,6 +383,62 @@ abstract class OceanGuardDatabase : RoomDatabase() {
         }
 
         /**
+         * v11 -> v12: BioDex species track (additive — no existing table is touched).
+         *
+         * Creates two new tables:
+         *  - species_observations: one row per species identification event.
+         *    Soft-linked to detection_sessions via sessionId (no FK constraint so
+         *    the debris pipeline is never blocked by species data).
+         *  - species_dex_entries: one row per distinct species discovered (dex).
+         *
+         * Both tables are created with IF NOT EXISTS so the migration is idempotent
+         * (safe to re-run on a partially-migrated DB without data loss).
+         */
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS species_observations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        imageUri TEXT NOT NULL,
+                        thumbnailUri TEXT,
+                        sessionId INTEGER,
+                        aphiaId INTEGER,
+                        scientificName TEXT NOT NULL,
+                        commonNameKey TEXT,
+                        bbox TEXT,
+                        cosineScore REAL NOT NULL,
+                        confidence REAL NOT NULL,
+                        idSource TEXT NOT NULL,
+                        vlmDescription TEXT,
+                        uncatalogued INTEGER NOT NULL DEFAULT 0,
+                        ecoregionId INTEGER,
+                        geoMatchLevel TEXT,
+                        outOfRange INTEGER NOT NULL DEFAULT 0,
+                        timestamp INTEGER NOT NULL,
+                        location TEXT
+                    )
+                """.trimIndent())
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_species_observations_sessionId ON species_observations (sessionId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_species_observations_aphiaId ON species_observations (aphiaId)"
+                )
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS species_dex_entries (
+                        speciesKey TEXT NOT NULL PRIMARY KEY,
+                        scientificName TEXT NOT NULL,
+                        firstSeenAt INTEGER NOT NULL,
+                        firstSeenObservationId INTEGER NOT NULL,
+                        timesObserved INTEGER NOT NULL DEFAULT 1,
+                        lastSeenAt INTEGER NOT NULL,
+                        isFavorite INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
+        /**
          * Defensive schema healer that runs on every database open.
          *
          * Why we need this: a subset of users (observed in production v0.2.x)
@@ -420,7 +486,7 @@ abstract class OceanGuardDatabase : RoomDatabase() {
                 OceanGuardDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .addCallback(SCHEMA_HEALER)
                 // -----------------------------------------------------------------
                 // WAL mode

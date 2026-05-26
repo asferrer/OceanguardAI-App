@@ -64,6 +64,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.runtime.rememberCoroutineScope
 import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.EnvironmentalImpact
@@ -434,6 +435,15 @@ fun HomeScreen(
                             onClick = { navController.navigate("marinedex") },
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ----------------------------------------------------------------
+                // BioDex preview card — parallel species collection track
+                // ----------------------------------------------------------------
+                StaggeredEntry(delayMs = 150) {
+                    BioDexPreviewCard(onClick = { navController.navigate("biodex") })
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -1431,6 +1441,49 @@ private fun MarineDexPreviewCard(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = stringResource(R.string.cd_view_marinedex),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// BioDex Preview Card — mirrors MarineDexPreviewCard, routes to "biodex"
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun BioDexPreviewCard(onClick: () -> Unit) {
+    GlassCard(
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Pets,
+                contentDescription = null,
+                tint = OceanGreen,
+                modifier = Modifier.size(28.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.biodex_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.biodex_home_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

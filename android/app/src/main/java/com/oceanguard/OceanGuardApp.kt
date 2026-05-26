@@ -276,6 +276,25 @@ class OceanGuardApp : Application() {
     val collectionRepository: CollectionRepository by lazy {
         CollectionRepository(database.marineDexDao(), database.achievementDao())
     }
+
+    // BioDex (species) — parallel collection track. Catalog is created unloaded;
+    // it loads lazily once species_catalog_v1.json has been downloaded, and
+    // degrades gracefully (empty BioDex) until then.
+    val speciesCatalog: com.oceanguard.ai.data.species.SpeciesCatalog by lazy {
+        com.oceanguard.ai.data.species.SpeciesCatalog(
+            java.io.File(
+                getExternalFilesDir(null) ?: filesDir,
+                "models/species/species_catalog_v1.json",
+            )
+        )
+    }
+    val speciesCollectionRepository: com.oceanguard.ai.data.species.SpeciesCollectionRepository by lazy {
+        com.oceanguard.ai.data.species.SpeciesCollectionRepository(
+            database.speciesObservationDao(),
+            database.speciesDexDao(),
+            speciesCatalog,
+        )
+    }
     val achievementChecker: AchievementChecker by lazy {
         AchievementChecker(
             collectionRepo = collectionRepository,

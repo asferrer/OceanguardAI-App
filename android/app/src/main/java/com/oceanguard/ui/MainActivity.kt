@@ -50,6 +50,8 @@ import com.oceanguard.ai.ui.screens.AchievementsScreen
 import com.oceanguard.ai.ui.screens.LocationPickerScreen
 import com.oceanguard.ai.ui.screens.MarineDexDetailScreen
 import com.oceanguard.ai.ui.screens.MarineDexScreen
+import com.oceanguard.ai.ui.screens.SpeciesDexDetailScreen
+import com.oceanguard.ai.ui.screens.SpeciesDexScreen
 import com.oceanguard.ai.ui.screens.SplashScreen
 import com.oceanguard.ai.ui.screens.VideoDetailScreen
 import com.oceanguard.ai.ui.screens.VideoResultsScreen
@@ -372,6 +374,35 @@ class MainActivity : AppCompatActivity() {
                                     navController.navigate("session/$sessionId")
                                 },
                                 navController = navController,
+                            )
+                        }
+                        composable("biodex") {
+                            SpeciesDexScreen(
+                                repo = app.speciesCollectionRepository,
+                                catalog = app.speciesCatalog,
+                                onNavigateToDetail = { key -> navController.navigate("biodex/$key") },
+                                onNavigateBack = { navController.popBackStack() },
+                            )
+                        }
+                        composable(
+                            route = "biodex/{speciesKey}?tab={tab}",
+                            arguments = listOf(
+                                navArgument("speciesKey") { type = NavType.StringType },
+                                navArgument("tab") {
+                                    type = NavType.IntType
+                                    defaultValue = 0
+                                },
+                            ),
+                        ) { backStackEntry ->
+                            val speciesKey = backStackEntry.arguments?.getString("speciesKey") ?: return@composable
+                            // 0 = Info (default), 1 = Gallery, 2 = Map.
+                            val initialTab = backStackEntry.arguments?.getInt("tab") ?: 0
+                            SpeciesDexDetailScreen(
+                                speciesKey = speciesKey,
+                                repo = app.speciesCollectionRepository,
+                                catalog = app.speciesCatalog,
+                                onNavigateBack = { navController.popBackStack() },
+                                initialTab = initialTab,
                             )
                         }
                         composable("achievements") {

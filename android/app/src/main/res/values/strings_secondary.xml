@@ -663,4 +663,47 @@
     <string name="model_variant_current">v%1$s — current</string>
     <string name="model_variant_update_available">update to v%1$s available</string>
 
+    <!-- ================================================================== -->
+    <!-- BioDex Screen                                                        -->
+    <!-- ================================================================== -->
+    <string name="biodex_title">BioDex</string>
+    <string name="biodex_home_subtitle">Identify marine species</string>
+    <string name="biodex_cd_go_back">Go back</string>
+    <!-- discovered count label built in code: "$discoveredCount / $total Discovered" -->
+    <string name="biodex_stat_discovered">Discovered</string>
+    <string name="biodex_stat_favorites">Favorites</string>
+    <string name="biodex_stat_observations">Observations</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Detail Screen                                                 -->
+    <!-- ================================================================== -->
+    <string name="biodex_detail_cd_go_back">Go back</string>
+    <string name="biodex_detail_cd_remove_favorite">Remove from favorites</string>
+    <string name="biodex_detail_cd_add_favorite">Add to favorites</string>
+    <string name="biodex_detail_tab_info">Info</string>
+    <string name="biodex_detail_tab_gallery">Gallery</string>
+    <string name="biodex_detail_tab_map">Map</string>
+    <string name="biodex_detail_stat_observations">Times\nObserved</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Gallery                                                       -->
+    <!-- ================================================================== -->
+    <string name="biodex_gallery_cd_observation">Species observation image</string>
+    <string name="biodex_gallery_empty_title">No observations yet</string>
+    <!-- %1$s is the species common name -->
+    <string name="biodex_gallery_empty_message">No photos recorded for %1$s yet. Capture an image of this species to see it here.</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Badges                                                        -->
+    <!-- ================================================================== -->
+    <!-- Shown on gallery thumbnails when idSource is outside the species range -->
+    <string name="biodex_badge_out_of_range">Out of range</string>
+    <!-- Shown in the Info tab when cosmopolitan=true -->
+    <string name="biodex_badge_cosmopolitan">Cosmopolitan</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Map Placeholder                                               -->
+    <!-- ================================================================== -->
+    <string name="biodex_map_placeholder">Map coming soon.\nObservation locations will appear here once the map layer is wired.</string>
+
 </resources>

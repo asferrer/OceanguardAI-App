@@ -58,6 +58,10 @@ class SettingsRepository(private val context: Context) {
         val CONTRIBUTE_DECLINE_COUNT  = intPreferencesKey("contribute_decline_count")
         val CONTRIBUTE_NEVER_PROMPT   = booleanPreferencesKey("contribute_never_prompt")
 
+        // BioDex species feature
+        val SPECIES_ONLINE_ENRICHMENT_ENABLED = booleanPreferencesKey("species_online_enrichment_enabled")
+        val GEO_FILTER_SENSITIVITY            = stringPreferencesKey("geo_filter_sensitivity")
+
         // Fine-tuned model update checker
         val INSTALLED_FINETUNED_VERSION  = stringPreferencesKey("installed_finetuned_version")
         val SKIPPED_FINETUNED_VERSION    = stringPreferencesKey("skipped_finetuned_version")
@@ -79,6 +83,12 @@ class SettingsRepository(private val context: Context) {
         const val DEFAULT_REPORT_AUDIENCE = "scientific"
         const val DEFAULT_DETECTOR_MODE = "gemma4"
         const val DEFAULT_VLM_MODEL_VARIANT = "base"
+
+        /**
+         * Default geo-filter sensitivity for the BioDex species RAG pre-filter.
+         * BALANCED = hard-filter at realm level + soft geo-prior.
+         */
+        const val DEFAULT_GEO_FILTER_SENSITIVITY = "BALANCED"
 
         /** Supported audience modes for report generation. Keys match ReportAudience.fromKey(). */
         val REPORT_AUDIENCES = mapOf(
@@ -498,6 +508,40 @@ class SettingsRepository(private val context: Context) {
     /** Permanently silence the contribution prompt. Reversible from Settings. */
     suspend fun setContributeNeverPrompt(v: Boolean) {
         context.dataStore.edit { prefs -> prefs[Keys.CONTRIBUTE_NEVER_PROMPT] = v }
+    }
+
+    // -----------------------------------------------------------------------
+    // BioDex species feature
+    // -----------------------------------------------------------------------
+
+    /**
+     * Whether online species enrichment is enabled (WoRMS / GBIF / iNaturalist).
+     * Default: false (privacy-safe, off by default).
+     * When enabled, only taxonomy metadata and AphiaIDs are sent — NEVER the image.
+     */
+    val speciesOnlineEnrichmentEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SPECIES_ONLINE_ENRICHMENT_ENABLED] ?: false
+    }
+
+    /**
+     * Geographic filter sensitivity for the BioDex RAG pre-filter.
+     * Values: "STRICT" | "BALANCED" | "OFF" (see [GeoFilterSensitivity]).
+     * Default: "BALANCED".
+     */
+    val geoFilterSensitivity: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.GEO_FILTER_SENSITIVITY] ?: DEFAULT_GEO_FILTER_SENSITIVITY
+    }
+
+    suspend fun setSpeciesOnlineEnrichmentEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SPECIES_ONLINE_ENRICHMENT_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setGeoFilterSensitivity(sensitivity: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.GEO_FILTER_SENSITIVITY] = sensitivity
+        }
     }
 
     // -----------------------------------------------------------------------
