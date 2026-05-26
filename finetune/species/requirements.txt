@@ -1,0 +1,34 @@
+# BioDex offline pipeline — dependencias Python
+#
+# Instalación base (sin GPU):
+#   pip install -r requirements.txt
+#
+# Para usar OpenCLIPEmbedder (producción):
+#   pip install open_clip_torch torch torchvision Pillow
+#
+# Para modo --online de build_distribution_filter.py:
+#   pip install geopandas shapely
+#
+# Para build_meow_raster.py con shapefile real:
+#   pip install geopandas rasterio shapely
+
+# === Core (siempre requeridas) ===
+numpy>=1.24
+scikit-learn>=1.3
+pyyaml>=6.0
+requests>=2.28
+
+# === Export ONNX ===
+onnx>=1.14
+onnxruntime>=1.16      # solo para verificación local; en Android: ORT Mobile
+
+# === Encoder visual (producción) ===
+# open_clip_torch>=2.20  # MIT license — instalar si se necesita OpenCLIPEmbedder
+# torch>=2.0
+# torchvision>=0.15
+# Pillow>=9.0
+
+# === Distribución online (opcional) ===
+# geopandas>=0.13       # para cruzar ocurrencias con shapefile MEOW
+# rasterio>=1.3         # para rasterizar el shapefile MEOW
+# shapely>=2.0
