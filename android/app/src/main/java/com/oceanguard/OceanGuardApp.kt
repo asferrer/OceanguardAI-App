@@ -307,14 +307,51 @@ class OceanGuardApp : Application() {
      * end-to-end. TODO(swap to real asset): OnnxSpeciesEmbedder +
      * SpeciesReferenceIndex.load(file) + MarineRegionResolver, gated on M4 assets.
      */
-    val speciesIdentifier: com.oceanguard.ai.inference.species.SpeciesIdentifier by lazy {
+    val speciesIdentifier: com.oceanguard.ai.inference.species.SpeciesIdentifier by lazy { buildSpeciesIdentifier() }
+
+    /**
+     * Builds the species identifier. M4: when the real downloadable assets
+     * (ONNX encoder + reference index + catalog [+ MEOW raster]) are present in
+     * `models/species/`, use the on-device OpenCLIP encoder + reference index;
+     * otherwise fall back to [SampleSpeciesData] DEMO so the biology flow stays
+     * verifiable end-to-end. The ORT session loads lazily on first embed.
+     * TODO(M4 assets): publish encoder/index/raster/catalog to HF + wire the
+     * download CTA so this path activates on-device.
+     */
+    private fun buildSpeciesIdentifier(): com.oceanguard.ai.inference.species.SpeciesIdentifier {
+        val dir = java.io.File(getExternalFilesDir(null) ?: filesDir, "models/species")
+        val encoder = java.io.File(dir, "clip_vitb32.onnx")
+        val indexBin = java.io.File(dir, "species_index_v1.bin")
+        val catalogJson = java.io.File(dir, "species_catalog_v1.json")
+        val raster = java.io.File(dir, "meow_raster_v1.bin")
+        val hierarchy = java.io.File(dir, "ecoregion_hierarchy_v1.json")
+
+        if (encoder.exists() && indexBin.exists() && catalogJson.exists()) {
+            try {
+                speciesCatalog.load()
+                val catalogMap = speciesCatalog.all().associateBy { it.speciesKey }
+                val refIndex = com.oceanguard.ai.inference.species.SpeciesReferenceIndex(catalogMap)
+                    .apply { load(indexBin) }
+                val resolver = if (raster.exists() && hierarchy.exists()) {
+                    com.oceanguard.ai.inference.species.MarineRegionResolver(raster, hierarchy).apply { load() }
+                } else null
+                Log.i(TAG, "BioDex: using REAL on-device species encoder + index")
+                return com.oceanguard.ai.inference.species.SpeciesIdentifier(
+                    embedder = com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder(encoder),
+                    index = refIndex,
+                    resolver = resolver,
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Real species assets present but failed to load; falling back to demo", e)
+            }
+        }
+
+        // DEMO fallback — in-memory sample data (4 species, deterministic embedder).
         speciesCatalog.seedInMemory(com.oceanguard.ai.data.species.SampleSpeciesData.catalogEntries())
-        com.oceanguard.ai.inference.species.SpeciesIdentifier(
+        return com.oceanguard.ai.inference.species.SpeciesIdentifier(
             embedder = com.oceanguard.ai.data.species.SampleSpeciesData.embedder(),
             index = com.oceanguard.ai.data.species.SampleSpeciesData.buildIndex(),
             resolver = null,
-            describer = com.oceanguard.ai.inference.species.SpeciesDescriber(),
-            locator = com.oceanguard.ai.inference.species.OrganismLocator(),
         )
     }
 

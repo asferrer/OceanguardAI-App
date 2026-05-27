@@ -46,9 +46,11 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
     private var ortEnv: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
 
-    @Volatile
-    override var isReady: Boolean = false
-        private set
+    /** Ready once the model file is present; the ORT session is loaded lazily on
+     *  the first [embed] call (on Dispatchers.IO), so no suspend init is needed
+     *  at construction time. */
+    override val isReady: Boolean
+        get() = modelFile.exists()
 
     /**
      * Load the ONNX model and initialise the ORT session.
@@ -69,11 +71,10 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
         val session = env.createSession(modelFile.absolutePath, opts)
         ortEnv = env
         ortSession = session
-        isReady = true
     }
 
     override suspend fun embed(bitmap: Bitmap): FloatArray = withContext(Dispatchers.IO) {
-        check(isReady) { "OnnxSpeciesEmbedder not initialized. Call initialize() first." }
+        if (ortSession == null) initialize()   // lazy one-time session load
         val session = ortSession ?: error("ORT session is null")
         val env = ortEnv ?: error("ORT environment is null")
 
@@ -96,7 +97,8 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
     override fun close() {
         ortSession?.close()
         ortEnv?.close()
-        isReady = false
+        ortSession = null
+        ortEnv = null
     }
 
     // -----------------------------------------------------------------------
