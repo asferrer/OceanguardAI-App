@@ -30,6 +30,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -71,6 +72,7 @@ fun SpeciesDexScreen(
     catalog: SpeciesCatalog,
     onNavigateToDetail: (speciesKey: String) -> Unit,
     onNavigateBack: () -> Unit,
+    onDownloadPack: () -> Unit = {},
 ) {
     val vm: SpeciesDexViewModel = viewModel(factory = SpeciesDexViewModel.Factory(repo, catalog))
 
@@ -136,7 +138,7 @@ fun SpeciesDexScreen(
 
             if (allItems.isEmpty()) {
                 item(span = { GridItemSpan(3) }) {
-                    BioDexEmptyState()
+                    BioDexEmptyState(onDownloadPack = onDownloadPack)
                 }
             }
 
@@ -192,7 +194,7 @@ private fun buildLockedItems(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun BioDexEmptyState() {
+private fun BioDexEmptyState(onDownloadPack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,5 +221,9 @@ private fun BioDexEmptyState() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(onClick = onDownloadPack) {
+            Text(text = stringResource(R.string.biodex_download_pack))
+        }
     }
 }

@@ -1010,6 +1010,19 @@ class OceanGuardApp : Application() {
     // -----------------------------------------------------------------------
 
     /** Launch text model download for [tier] and [variant]. */
+    /** Launch the BioDex species pack download (encoder + index + catalog + raster)
+     *  in the background. No-op-safe; surfaces errors via [VlmModelManager.downloadState]. */
+    fun launchSpeciesPackDownload() {
+        startForegroundDownloadService()
+        applicationScope.launch {
+            try {
+                vlmModelManager.downloadSpeciesPack()
+            } catch (e: Exception) {
+                Log.w(TAG, "Species pack download failed", e)
+            }
+        }
+    }
+
     fun launchVlmDownload(
         tier: TextModelTier = TextModelTier.FAST,
         variant: TextModelVariant = TextModelVariant.BASE,

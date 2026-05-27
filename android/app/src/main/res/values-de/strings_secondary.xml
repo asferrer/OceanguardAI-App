@@ -6,6 +6,7 @@
     <string name="scan_mode_debris_desc">Meeresmüll finden und klassifizieren</string>
     <string name="scan_mode_species_title">Arten bestimmen</string>
     <string name="scan_mode_species_desc">Meereslebewesen erkennen und zum BioDex hinzufügen</string>
+    <string name="biodex_download_pack">Artenpaket herunterladen</string>
 
     <!-- ================================================================== -->
     <!-- Sitzungsdetailbildschirm                                             -->

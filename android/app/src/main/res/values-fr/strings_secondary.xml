@@ -6,6 +6,7 @@
     <string name="scan_mode_debris_desc">Repérer et classer les déchets marins</string>
     <string name="scan_mode_species_title">Identifier les espèces</string>
     <string name="scan_mode_species_desc">Reconnaître la faune marine et l\'ajouter à votre BioDex</string>
+    <string name="biodex_download_pack">Télécharger le pack d\'espèces</string>
 
     <!-- ================================================================== -->
     <!-- Écran Détail de Session                                              -->

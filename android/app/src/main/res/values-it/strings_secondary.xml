@@ -6,6 +6,7 @@
     <string name="scan_mode_debris_desc">Trova e classifica i rifiuti marini</string>
     <string name="scan_mode_species_title">Identificare specie</string>
     <string name="scan_mode_species_desc">Riconosci la vita marina e aggiungila al tuo BioDex</string>
+    <string name="biodex_download_pack">Scarica il pacchetto specie</string>
 
     <!-- ================================================================== -->
     <!-- Schermata Dettaglio Sessione                                         -->

@@ -75,6 +75,20 @@ class VlmModelManager(
             "$HF_BASE/asferrer/gemma-4-E2B-it-oceanguard-marine-debris/resolve/main/gemma-4-E2B-it-oceanguard-Q4_K_M.gguf"
         private const val MIN_OCEANGUARD_GGUF_BYTES = 3_000_000_000L // 3.0 GB minimum (actual 3.42 GB Q4_K_M, large 262k vocab)
 
+        // --- BioDex species pack (M4) ---
+        // TODO(M4 assets): create this HF repo and upload the exported encoder +
+        // built index/catalog/raster + sprites. Until then the app uses the demo
+        // SampleSpeciesData fallback (see OceanGuardApp.buildSpeciesIdentifier).
+        private const val SPECIES_REPO = "$HF_BASE/asferrer/oceanguard-biodex/resolve/main"
+        // filename -> minimum valid bytes (guards against HF HTML error pages).
+        private val SPECIES_ASSETS = listOf(
+            "clip_vitb32.onnx" to 40_000_000L,        // ~88 MB OpenCLIP ViT-B/32
+            "species_index_v1.bin" to 1_000L,          // small (prototypes + trailer)
+            "species_catalog_v1.json" to 100L,
+            "meow_raster_v1.bin" to 1_000_000L,        // ~2 MB
+            "ecoregion_hierarchy_v1.json" to 100L,
+        )
+
         // Minimum valid file sizes (small files = error HTML pages from HF)
         private val MIN_TEXT_BYTES = mapOf(
             TextModelTier.FAST          to   400_000_000L, //  400 MB — Qwen3.5-0.8B (~533 MB)
@@ -352,6 +366,44 @@ class VlmModelManager(
     /** Download Gemma 4 E2B .litertlm from HuggingFace (~2.58 GB). */
     suspend fun downloadLiteRTModel(variant: TextModelVariant = TextModelVariant.BASE) =
         downloadModel(TextModelTier.GEMMA4_E2B, variant)
+
+    // -----------------------------------------------------------------------
+    // BioDex species pack (M4)
+    // -----------------------------------------------------------------------
+
+    /** Directory holding the downloadable BioDex assets (`models/species/`). */
+    fun getSpeciesDirectory(): File = File(getModelDirectory(), "species").also { it.mkdirs() }
+
+    /** True once the encoder + index + catalog are present (raster is optional). */
+    fun isSpeciesPackAvailable(): Boolean {
+        val dir = getSpeciesDirectory()
+        return File(dir, "clip_vitb32.onnx").exists() &&
+            File(dir, "species_index_v1.bin").exists() &&
+            File(dir, "species_catalog_v1.json").exists()
+    }
+
+    /**
+     * Download the BioDex species pack (encoder + index + catalog + raster) from
+     * HuggingFace into [getSpeciesDirectory]. Reuses [downloadFile] + [downloadState].
+     * Skips files already present and large enough. Until the HF repo exists this
+     * surfaces a clear download error; the app keeps working via the demo fallback.
+     */
+    suspend fun downloadSpeciesPack() = withContext(Dispatchers.IO) {
+        cancelled = false
+        try {
+            val dir = getSpeciesDirectory()
+            for ((name, minBytes) in SPECIES_ASSETS) {
+                if (cancelled) break
+                val target = File(dir, name)
+                if (target.exists() && target.length() >= minBytes) continue
+                downloadFile(url = "$SPECIES_REPO/$name", target = target, minValidBytes = minBytes, filename = name)
+            }
+            _downloadState.value = VlmDownloadState.Complete
+        } catch (e: VlmDownloadException) {
+            _downloadState.value = VlmDownloadState.Error(e.message ?: "Species pack download failed")
+            throw e
+        }
+    }
 
     // -----------------------------------------------------------------------
     // Internal helpers

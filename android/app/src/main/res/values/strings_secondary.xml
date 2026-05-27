@@ -6,6 +6,7 @@
     <string name="scan_mode_debris_desc">Find and classify marine litter</string>
     <string name="scan_mode_species_title">Identify species</string>
     <string name="scan_mode_species_desc">Recognize marine life and add it to your BioDex</string>
+    <string name="biodex_download_pack">Download species pack</string>
 
     <!-- ================================================================== -->
     <!-- Session Detail Screen                                               -->

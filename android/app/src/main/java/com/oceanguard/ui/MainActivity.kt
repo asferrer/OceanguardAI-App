@@ -407,6 +407,7 @@ class MainActivity : AppCompatActivity() {
                                 catalog = app.speciesCatalog,
                                 onNavigateToDetail = { key -> navController.navigate("biodex/$key") },
                                 onNavigateBack = { navController.popBackStack() },
+                                onDownloadPack = { app.launchSpeciesPackDownload() },
                             )
                         }
                         composable("species_result") {
