@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,6 +66,7 @@ import com.oceanguard.ai.R
 import com.oceanguard.ai.data.species.SpeciesCatalog
 import com.oceanguard.ai.data.species.SpeciesCatalogEntry
 import com.oceanguard.ai.data.species.SpeciesCollectionRepository
+import com.oceanguard.ai.data.species.SpeciesNames
 import com.oceanguard.ai.data.species.enrichment.SpeciesEnrichment
 import com.oceanguard.ai.ui.components.dex.DexItem
 import com.oceanguard.ai.ui.components.GlassCard
@@ -77,7 +79,6 @@ import com.oceanguard.ai.ui.theme.GradientDeepStart
 import com.oceanguard.ai.ui.theme.OceanBlueLight
 import com.oceanguard.ai.ui.theme.OceanGreen
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * Detail screen for a single species in the BioDex.
@@ -124,12 +125,9 @@ fun SpeciesDexDetailScreen(
     val dexEntry = vm.dexItems.collectAsStateWithLifecycle().value
         .firstOrNull { it.key == speciesKey }
 
-    val lang = remember { Locale.getDefault().language }
+    val lang = remember { SpeciesNames.currentLanguage() }
     val displayName = remember(catalogEntry, lang) {
-        catalogEntry?.commonNames?.get(lang)
-            ?: catalogEntry?.commonNames?.get("en")
-            ?: catalogEntry?.scientificName
-            ?: speciesKey
+        SpeciesNames.commonName(catalogEntry, lang, fallback = speciesKey)
     }
 
     var contentVisible by remember { mutableStateOf(false) }
@@ -498,6 +496,7 @@ private fun SpeciesTitleSection(
             Text(
                 text = sci,
                 style = MaterialTheme.typography.titleSmall,
+                fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

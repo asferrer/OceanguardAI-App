@@ -19,6 +19,18 @@ data class OrganismCrop(
 )
 
 /**
+ * Integer pixel rectangle (top-left origin) within an image. Output of
+ * [OrganismLocator.boxToPixelRect]; kept Android-free so the crop math can be
+ * unit-tested on plain JVM.
+ */
+data class PixelRect(
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
+)
+
+/**
  * Locates marine organisms in an image and returns one or more [OrganismCrop]s.
  *
  * ## Strategy
@@ -145,37 +157,63 @@ class OrganismLocator(
         val box = obj.getAsJsonArray("box_2d") ?: return null
         if (box.size() < 4) return null
 
-        val w = bitmap.width.toFloat()
-        val h = bitmap.height.toFloat()
+        val rect = boxToPixelRect(
+            yMin1k = box[0].asFloat,
+            xMin1k = box[1].asFloat,
+            yMax1k = box[2].asFloat,
+            xMax1k = box[3].asFloat,
+            imgW   = bitmap.width,
+            imgH   = bitmap.height,
+        ) ?: return null
 
-        // Convert 0-1000 grid → pixel coordinates
-        val yMin = (clamp(box[0].asFloat) / 1000f * h).toInt()
-        val xMin = (clamp(box[1].asFloat) / 1000f * w).toInt()
-        val yMax = (clamp(box[2].asFloat) / 1000f * h).toInt()
-        val xMax = (clamp(box[3].asFloat) / 1000f * w).toInt()
+        val cropBitmap = Bitmap.createBitmap(bitmap, rect.x, rect.y, rect.width, rect.height)
+        val bbox = BoundingBox(
+            x      = rect.x.toFloat(),
+            y      = rect.y.toFloat(),
+            width  = rect.width.toFloat(),
+            height = rect.height.toFloat(),
+        )
+        return OrganismCrop(bbox = bbox, crop = cropBitmap, confidence = 0.85f)
+    }
+
+    /**
+     * Pure conversion of a `box_2d` (0-1000 grid, [y_min,x_min,y_max,x_max]) into
+     * a padded, clamped pixel rectangle within an [imgW]×[imgH] image.
+     *
+     * Returns null when the box is degenerate (zero/negative area) or below the
+     * [MIN_AREA_FRACTION] noise threshold. Extracted from [parseSingleBox] so the
+     * crop-from-bbox arithmetic is unit-testable without [Bitmap.createBitmap].
+     */
+    internal fun boxToPixelRect(
+        yMin1k: Float,
+        xMin1k: Float,
+        yMax1k: Float,
+        xMax1k: Float,
+        imgW: Int,
+        imgH: Int,
+    ): PixelRect? {
+        if (imgW <= 0 || imgH <= 0) return null
+        val w = imgW.toFloat()
+        val h = imgH.toFloat()
+
+        val yMin = (clamp(yMin1k) / 1000f * h).toInt()
+        val xMin = (clamp(xMin1k) / 1000f * w).toInt()
+        val yMax = (clamp(yMax1k) / 1000f * h).toInt()
+        val xMax = (clamp(xMax1k) / 1000f * w).toInt()
 
         if (yMax <= yMin || xMax <= xMin) return null
 
-        // Area noise filter
         val boxArea = (xMax - xMin).toFloat() * (yMax - yMin).toFloat()
         if (boxArea / (w * h) < MIN_AREA_FRACTION) return null
 
-        // Padding with clamp to image bounds
         val padX = (w * BOX_PADDING_FRACTION).toInt()
         val padY = (h * BOX_PADDING_FRACTION).toInt()
         val x0 = (xMin - padX).coerceAtLeast(0)
         val y0 = (yMin - padY).coerceAtLeast(0)
-        val x1 = (xMax + padX).coerceAtMost(bitmap.width)
-        val y1 = (yMax + padY).coerceAtMost(bitmap.height)
+        val x1 = (xMax + padX).coerceAtMost(imgW)
+        val y1 = (yMax + padY).coerceAtMost(imgH)
 
-        val cropBitmap = Bitmap.createBitmap(bitmap, x0, y0, x1 - x0, y1 - y0)
-        val bbox = BoundingBox(
-            x      = x0.toFloat(),
-            y      = y0.toFloat(),
-            width  = (x1 - x0).toFloat(),
-            height = (y1 - y0).toFloat(),
-        )
-        return OrganismCrop(bbox = bbox, crop = cropBitmap, confidence = 0.85f)
+        return PixelRect(x = x0, y = y0, width = x1 - x0, height = y1 - y0)
     }
 
     private fun clamp(v: Float): Float = v.coerceIn(0f, 1000f)

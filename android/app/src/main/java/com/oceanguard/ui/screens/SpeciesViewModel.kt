@@ -85,6 +85,16 @@ class SpeciesViewModel(
     private val locationProvider: LocationProvider,
 ) : ViewModel() {
 
+    companion object {
+        /**
+         * Target "long edge" passed to [ImagePreprocessor.loadAndPreprocess] for
+         * the species path. [Int.MAX_VALUE] disables down-scaling so the organism
+         * locator can crop the subject bbox from the original full-resolution
+         * frame (more detail on the subject, less background noise to embed).
+         */
+        private const val FULL_RES = Int.MAX_VALUE
+    }
+
     private val _uiState = MutableStateFlow<SpeciesUiState>(SpeciesUiState.Idle)
     val uiState: StateFlow<SpeciesUiState> = _uiState.asStateFlow()
 
@@ -105,7 +115,9 @@ class SpeciesViewModel(
         viewModelScope.launch {
             _uiState.value = SpeciesUiState.Identifying
             runCatching {
-                val bitmap = imagePreprocessor.loadAndPreprocess(uri, 512)
+                // Full-resolution load: the organism locator crops the subject
+                // bbox from this frame, so down-scaling here would lose detail.
+                val bitmap = imagePreprocessor.loadAndPreprocess(uri, FULL_RES)
                 val loc = locationProvider.getLastKnownLocation()
                 val lang = Locale.getDefault().language
                 val results = identifier.identify(bitmap, loc, language = lang)
@@ -151,7 +163,8 @@ class SpeciesViewModel(
                     startTimeMs = startTime,
                 )
                 runCatching {
-                    val bitmap = imagePreprocessor.loadAndPreprocess(uri, 512)
+                    // Full-resolution load: see [identifyFromImage] rationale.
+                    val bitmap = imagePreprocessor.loadAndPreprocess(uri, FULL_RES)
                     val loc = locationProvider.getLastKnownLocation()
                     val lang = Locale.getDefault().language
                     val results = identifier.identify(bitmap, loc, language = lang)

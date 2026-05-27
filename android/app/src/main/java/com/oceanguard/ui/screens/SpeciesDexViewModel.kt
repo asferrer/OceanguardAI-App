@@ -7,6 +7,7 @@ import com.oceanguard.ai.data.species.SpeciesCatalog
 import com.oceanguard.ai.data.species.SpeciesCatalogEntry
 import com.oceanguard.ai.data.species.SpeciesCollectionRepository
 import com.oceanguard.ai.data.species.SpeciesDexEntry
+import com.oceanguard.ai.data.species.SpeciesNames
 import com.oceanguard.ai.data.species.SpeciesObservation
 import com.oceanguard.ai.ui.components.dex.DexItem
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * ViewModel for the BioDex feature (SpeciesDexScreen + SpeciesDexDetailScreen).
@@ -25,9 +25,9 @@ import java.util.Locale
  * catalog by injection — the DI graph (OceanGuardApp) wires them at integration
  * time via the [Factory].
  *
- * Species names are resolved from [SpeciesCatalog] using the device locale at
- * collection time. Common names live in the catalog JSON (not strings.xml) as
- * specified in the architecture plan.
+ * Species names are resolved from [SpeciesCatalog] via [SpeciesNames], which
+ * honours the in-app UI language override. Common names live in the catalog
+ * JSON (not strings.xml) as specified in the architecture plan.
  */
 class SpeciesDexViewModel(
     private val repo: SpeciesCollectionRepository,
@@ -82,10 +82,7 @@ class SpeciesDexViewModel(
 
     private fun SpeciesDexEntry.toDexItem(): DexItem {
         val entry = catalog.byKey(speciesKey)
-        val lang = Locale.getDefault().language
-        val displayName = entry?.commonNames?.get(lang)
-            ?: entry?.commonNames?.get("en")
-            ?: scientificName
+        val displayName = SpeciesNames.commonName(entry, fallback = scientificName)
         return DexItem(
             key = speciesKey,
             displayName = displayName,

@@ -326,6 +326,15 @@ class OceanGuardApp : Application() {
         val raster = java.io.File(dir, "meow_raster_v1.bin")
         val hierarchy = java.io.File(dir, "ecoregion_hierarchy_v1.json")
 
+        // Shared Gemma 4 engine — same instance the debris flow loads. Wrapped
+        // behind the VlmImageEngine port so the organism locator localises the
+        // subject (box_2d) and the describer confirms/describes it. When the
+        // engine is not yet loaded, isReady is false and both degrade safely:
+        // the locator falls back to a center-square crop of the full frame.
+        val vlmEngine = com.oceanguard.ai.inference.species.LiteRTImageEngine(sharedLiteRTEngine)
+        val locator = com.oceanguard.ai.inference.species.OrganismLocator(vlmEngine)
+        val describer = com.oceanguard.ai.inference.species.SpeciesDescriber(vlmEngine)
+
         if (encoder.exists() && indexBin.exists() && catalogJson.exists()) {
             try {
                 speciesCatalog.load()
@@ -340,6 +349,8 @@ class OceanGuardApp : Application() {
                     embedder = com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder(encoder),
                     index = refIndex,
                     resolver = resolver,
+                    describer = describer,
+                    locator = locator,
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Real species assets present but failed to load; falling back to demo", e)
@@ -352,6 +363,8 @@ class OceanGuardApp : Application() {
             embedder = com.oceanguard.ai.data.species.SampleSpeciesData.embedder(),
             index = com.oceanguard.ai.data.species.SampleSpeciesData.buildIndex(),
             resolver = null,
+            describer = describer,
+            locator = locator,
         )
     }
 

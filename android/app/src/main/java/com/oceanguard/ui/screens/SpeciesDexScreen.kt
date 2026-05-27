@@ -46,10 +46,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.species.SpeciesCatalog
 import com.oceanguard.ai.data.species.SpeciesCollectionRepository
+import com.oceanguard.ai.data.species.SpeciesNames
 import com.oceanguard.ai.ui.components.dex.DexCard
 import com.oceanguard.ai.ui.components.dex.DexCollectionHeader
 import com.oceanguard.ai.ui.components.dex.DexItem
-import java.util.Locale
 
 /**
  * BioDex — Pokédex-style grid of discovered marine species.
@@ -168,18 +168,14 @@ private fun buildLockedItems(
     catalog: SpeciesCatalog,
     discoveredKeys: Set<String>,
 ): List<DexItem> {
-    val lang = Locale.getDefault().language
+    val lang = SpeciesNames.currentLanguage()
     return catalog.allKeys()
         .filter { key -> key !in discoveredKeys }
         .map { key ->
             val entry = catalog.byKey(key)
-            val displayName = entry?.commonNames?.get(lang)
-                ?: entry?.commonNames?.get("en")
-                ?: entry?.scientificName
-                ?: "???"
             DexItem(
                 key = key,
-                displayName = displayName,
+                displayName = SpeciesNames.commonName(entry, lang),
                 spritePath = entry?.spritePath,
                 discovered = false,
                 count = 0,
