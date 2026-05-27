@@ -93,9 +93,13 @@ class OpenCLIPEmbedder(ImageEmbedder):
     Args:
         device: 'cpu' | 'cuda'. Se auto-detecta si None.
         batch_size: Número de imágenes por forward pass.
+        ckpt_path: Si se indica, carga el state_dict del visual tower afinado
+            (ckpt de train_encoder.py, clave 'visual_state_dict') sobre los pesos
+            base. El resto del contrato (preprocess, dim 512, L2-norm) no cambia.
     """
 
-    def __init__(self, device: str | None = None, batch_size: int = 32) -> None:
+    def __init__(self, device: str | None = None, batch_size: int = 32,
+                 ckpt_path: str | Path | None = None) -> None:
         import torch
         import open_clip  # type: ignore[import]
 
@@ -106,9 +110,27 @@ class OpenCLIPEmbedder(ImageEmbedder):
         model, _, preprocess = open_clip.create_model_and_transforms(
             _CLIP_MODEL, pretrained=_CLIP_PRETRAINED
         )
+        if ckpt_path is not None:
+            self._load_finetuned(model.visual, Path(ckpt_path), torch)
         model.eval().to(self._device)
         self._model = model
         self._preprocess = preprocess
+
+    @staticmethod
+    def _load_finetuned(visual, ckpt_path: Path, torch) -> None:
+        """Carga 'visual_state_dict' del ckpt afinado sobre el visual tower base."""
+        ckpt = torch.load(str(ckpt_path), map_location="cpu", weights_only=False)
+        state = ckpt["visual_state_dict"] if "visual_state_dict" in ckpt else ckpt
+        # El ckpt guarda con prefijo 'visual.' (wrapper _VisualEncoder); lo quitamos.
+        cleaned = {
+            (k[len("visual."):] if k.startswith("visual.") else k): v
+            for k, v in state.items()
+        }
+        missing, unexpected = visual.load_state_dict(cleaned, strict=False)
+        if unexpected:
+            print(f"WARN ckpt: claves inesperadas ignoradas: {len(unexpected)}")
+        print(f"Fine-tuned visual cargado desde {ckpt_path} "
+              f"(missing={len(missing)}, unexpected={len(unexpected)})")
 
     def embed(self, image_paths: list[str]) -> np.ndarray:
         from PIL import Image  # type: ignore[import]
@@ -184,10 +206,10 @@ class OpenCLIPEmbedder(ImageEmbedder):
         return output_path
 
 
-def _build_embedder(fake: bool) -> ImageEmbedder:
+def _build_embedder(fake: bool, ckpt_path: str | None = None) -> ImageEmbedder:
     if fake:
         return FakeEmbedder()
-    return OpenCLIPEmbedder()
+    return OpenCLIPEmbedder(ckpt_path=ckpt_path)
 
 
 def main() -> None:
@@ -207,9 +229,14 @@ def main() -> None:
         action="store_true",
         help="Usar FakeEmbedder determinista (sin descargar pesos).",
     )
+    parser.add_argument(
+        "--load-ckpt",
+        metavar="PATH",
+        help="Cargar visual tower afinado (ckpt de train_encoder.py) antes de embed/export.",
+    )
     args = parser.parse_args()
 
-    embedder = _build_embedder(fake=args.mock)
+    embedder = _build_embedder(fake=args.mock, ckpt_path=args.load_ckpt)
     print(f"Embedder: {embedder.__class__.__name__}, dim={embedder.dim}")
 
     if args.export_onnx:

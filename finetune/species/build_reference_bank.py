@@ -300,6 +300,7 @@ def build_from_images(
     k: int,
     embedder_type: str,
     sci_name_map: dict[str, str] | None = None,
+    ckpt_path: str | None = None,
 ) -> Path:
     """
     Construye el banco real desde un directorio de imágenes.
@@ -307,6 +308,7 @@ def build_from_images(
     Args:
         sci_name_map: {species_key: scientific_name}. Si None, usa species_key como nombre.
         embedder_type: 'openclip' | 'fake'
+        ckpt_path: ckpt de fine-tune (train_encoder.py) para OpenCLIPEmbedder. None=base.
 
     Returns:
         Path al .bin generado.
@@ -315,7 +317,7 @@ def build_from_images(
     sys.path.insert(0, str(Path(__file__).parent))
     from embedder import FakeEmbedder, OpenCLIPEmbedder  # type: ignore[import]
 
-    emb = FakeEmbedder() if embedder_type == "fake" else OpenCLIPEmbedder()
+    emb = FakeEmbedder() if embedder_type == "fake" else OpenCLIPEmbedder(ckpt_path=ckpt_path)
     image_map = _discover_images(images_dir)
     if not image_map:
         raise FileNotFoundError(f"No se encontraron imágenes en {images_dir}")
@@ -423,6 +425,12 @@ def main() -> None:
         action="store_true",
         help="Modo mock: genera datos sintéticos para validar el formato.",
     )
+    parser.add_argument(
+        "--load-ckpt",
+        metavar="PATH",
+        default=None,
+        help="ckpt de fine-tune (train_encoder.py) para el embedder openclip.",
+    )
     args = parser.parse_args()
 
     if args.mock:
@@ -433,7 +441,8 @@ def main() -> None:
             parser.error("--images-dir es obligatorio cuando no se usa --mock.")
         print(f"Construyendo banco desde {args.images_dir}...")
         bin_p = build_from_images(
-            args.images_dir, args.output_dir, k=args.k, embedder_type=args.embedder
+            args.images_dir, args.output_dir, k=args.k, embedder_type=args.embedder,
+            ckpt_path=args.load_ckpt,
         )
 
     info = verify_bin(bin_p)

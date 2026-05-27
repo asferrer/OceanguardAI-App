@@ -604,6 +604,12 @@ def main() -> None:
         default=Path("output"),
         help="Directorio de artefactos en modo --mock (default: ./output).",
     )
+    parser.add_argument(
+        "--load-ckpt",
+        type=str,
+        default=None,
+        help="ckpt de fine-tune (train_encoder.py) para el embedder openclip.",
+    )
     args = parser.parse_args()
 
     if args.mock:
@@ -640,7 +646,7 @@ def main() -> None:
         embedder: Any = FakeEmbedder()
     else:
         from embedder import OpenCLIPEmbedder
-        embedder = OpenCLIPEmbedder()
+        embedder = OpenCLIPEmbedder(ckpt_path=args.load_ckpt)
 
     results = run_ablation(
         queries, index, metas, distribs,

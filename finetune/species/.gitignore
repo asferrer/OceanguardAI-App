@@ -4,6 +4,10 @@
 output/
 output_synth/
 output_eval/
+output_ft/
+_train*.log
+_train*.err
+_train_pid.txt
 images/
 images_train/
 held_out.jsonl

@@ -30,6 +30,94 @@ solo hard-filter a realm sin penalización fina. Nota: el modo "OFF" del script
 aplica el soft-prior en `_search` si la query trae coords; el baseline sin-geo
 puro es la fila de coseno puro (held-out sin coords).
 
+## Fine-tune marino del encoder + cuantización int8 (2026-05-27)
+
+### Deliverable 1 — Fine-tune del visual tower (`train_encoder.py`)
+
+**Enfoque.** Partial-unfreeze de los últimos 4 bloques del transformer +
+`ln_post` + `proj` del visual tower OpenCLIP ViT-B/32 (28.75M de 87.85M params
+entrenables), objetivo **Supervised Contrastive (SupCon)** sobre embeddings
+L2-norm con sampler P-K (P especies × K imágenes/batch → positivos garantizados).
+Se eligió partial-unfreeze sobre LoRA porque el attention de open_clip usa
+`nn.MultiheadAttention` con `in_proj_weight` empaquetado que PEFT no inyecta
+limpiamente; partial-unfreeze mantiene la arquitectura intacta y el ONNX se
+exporta sin merge ni cirugía de tensores (mismo contrato que el zero-shot).
+
+**Datos.** SOLO `images_train` (4161 imgs, mismo split determinista seed 42 que
+`make_holdout_split.py`). El held-out de 1734 queries NUNCA se toca en training;
+se usa solo en `eval_retrieval.py`. Validación interna: split 90/10 estratificado
+por especie dentro de train (≠ held-out).
+
+**Hiperparámetros (full run):** `--unfreeze-blocks 4 --epochs 12 --batch-p 16
+--batch-k 4 --lr 1e-5 --weight-decay 1e-4 --temp 0.07 --early-stop-patience 3`,
+AdamW, grad-clip 1.0, early-stop por val-top1 interno.
+
+**Comando full run:**
+```bash
+cd finetune/species
+python train_encoder.py --images-dir images_train \
+    --out-ckpt output/clip_vitb32_ft.pt --export-onnx output/clip_vitb32_ft.onnx \
+    --unfreeze-blocks 4 --epochs 12 --batch-p 16 --batch-k 4 \
+    --lr 1e-5 --temp 0.07 --early-stop-patience 3
+# Rebuild del índice con el encoder afinado + re-eval:
+python build_reference_bank.py --images-dir images_train --output-dir output_ft \
+    --k 6 --embedder openclip --load-ckpt output/clip_vitb32_ft.pt
+python eval_retrieval.py --index output_ft/species_index_v1.bin \
+    --catalog output/species_catalog_v1.json --raster output/meow_raster_v1.bin \
+    --hierarchy output/ecoregion_hierarchy_v1.json --held-out held_out.jsonl \
+    --embedder openclip --load-ckpt output/clip_vitb32_ft.pt
+```
+
+**Retrieval held-out (1734 queries, modo OFF = coseno puro), fine-tuned vs baseline:**
+
+| Encoder | Top-1 | Top-5 |
+|---------|-------|-------|
+| Zero-shot OpenCLIP ViT-B/32 (baseline) | 65.2 % | 82.9 % |
+| **Fine-tuned (SupCon, 4 bloques)** | **70.1 %** | **88.2 %** |
+| Δ | **+4.9 pts** | **+5.3 pts** |
+
+El fine-tune **supera el baseline** en el held-out de 1734 queries (imágenes que el
+encoder NUNCA vio: split determinista seed 42, `images_train` ⊥ held-out). Señal
+interna coherente: val 90/10 top-1 0.484 (pre) → **0.586** (época 2, pico). La
+curva de val peakea en la época 2 y decae después (época 3 = 0.564), por eso el
+early-stop selecciona el ckpt de la época 2. Pasada efectiva: ~2-4 épocas reales
+(cada época ~3 min en RTX 5090; el cuello de botella es el re-embedding del train
+en cada eval interno, no el forward/backward). El ckpt se guarda en cada mejora
+(`save-on-best`), así que el mejor sobrevive a interrupciones.
+
+**Honestidad sobre la escala del run.** Esta es una pasada **reducida pero real**
+(early-stop en época 2). El comando full run (12 épocas, early-stop patience 3)
+está arriba; a esta escala de datos (4161 imgs, ~20/especie) el riesgo es
+overfit más que underfit, y la val interna ya decae tras la época 2 → más épocas
+con estos hiperparámetros no ayudarían sin más datos o augmentación más fuerte.
+Para exprimir más: subir augmentación, bajar `lr`, o añadir un término ArcFace.
+
+### Deliverable 2 — Cuantización int8 dinámica (`quantize_int8.py`)
+
+Cuantización dinámica de pesos a int8 vía `onnxruntime.quantization.quantize_dynamic`
+(`QuantType.QInt8`, `per_channel=True`). Comando:
+```bash
+python quantize_int8.py --in output/clip_vitb32.onnx \
+    --out output/clip_vitb32_int8.onnx --images-dir images_train --n-images 64
+```
+
+| Métrica | Resultado |
+|---------|-----------|
+| Tamaño | 352 MB fp32 → **89.4 MB int8** (25 %, ~4×) |
+| Carga con `ORT_ENABLE_ALL` (= ORT Mobile) | **OK** (fp16 fallaba aquí) |
+| Coseno int8 vs fp32 (64 imgs reales) | media **0.981**, min **0.956**, p05 0.963 |
+| Latencia CPU batch=1 | 28.8 ms |
+
+**Lectura honesta.** A diferencia de fp16, el int8 **sí carga** bajo las
+optimizaciones por defecto de ORT (la fusión `SimplifiedLayerNormFusion` no se
+dispara porque el quant dinámico usa `MatMulInteger`/`DynamicQuantizeLinear` en
+vez de Cast alrededor de LayerNorm). PERO el coseno cae por debajo del gate de
+0.99 (min 0.956): un ViT de embeddings es sensible al ruido de cuantización de
+pesos. **Recomendación: desplegar fp32** mientras no se valide que esa caída de
+coseno no degrada el top-1/top-5 del retrieval en el held-out real (medición
+pendiente). El script y el artefacto quedan listos por si el parent decide medir
+ese impacto o aceptar el trade-off tamaño/precisión.
+
 ## ✅ Resultados REALES (OpenCLIP ViT-B/32, 2026-05-27) — set semilla 27 especies
 
 Eval con el **encoder OpenCLIP real exportado a ONNX** + banco de **547 imágenes
