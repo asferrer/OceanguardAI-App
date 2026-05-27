@@ -15,6 +15,11 @@
 
 taxa:
 
+  # ==========================================================================
+  # ESPECIES EXISTENTES (semilla original — 27 taxones, NO modificar)
+  # ==========================================================================
+
+
   # === MEDITERRÁNEO / ATLÁNTICO NORTE-ESTE ===
 
   - species_key: posidonia_oceanica
@@ -345,4 +350,1972 @@ taxa:
       de: Mittelmeerteufelrochen
       it: Manta mediterranea
       pt: Arraia-manta-mediterrânea
+    cosmopolitan: false
+
+  # ==========================================================================
+  # === EXPANSIÓN MEDITERRÁNEO (BioDex v2) — especies añadidas ===
+  # Resueltas vía WoRMS (AphiaID) + WoRMS/GBIF vernaculars; filtradas por
+  # disponibilidad de >=15 imágenes CC (GBIF+iNat, incl. CC-BY-NC).
+  # ==========================================================================
+
+  # === PECES ÓSEOS MEDITERRÁNEOS ===
+  - species_key: sparus_aurata
+    aphia_id: 151523
+    scientific_name: Sparus aurata
+    common_names:
+      en: gilthead
+      es: dorada
+      fr: daurade royale
+      de: Goldbrasse
+      it: orata
+      pt: dourada
+    cosmopolitan: false
+  - species_key: diplodus_sargus
+    aphia_id: 127053
+    scientific_name: Diplodus sargus
+    common_names:
+      en: white seabream
+      es: sargo
+      fr: sar commun du Maroc
+      de: geißbrasse
+      it: sarago
+      pt: sargo
+    cosmopolitan: false
+  - species_key: diplodus_vulgaris
+    aphia_id: 127054
+    scientific_name: Diplodus vulgaris
+    common_names:
+      en: two banded sea bream
+      es: mojarra
+      fr: sar à tête noire
+      de: Zweibindenbrasse
+      it: sarago fasciato
+      pt: choupa
+    cosmopolitan: false
+  - species_key: diplodus_puntazzo
+    aphia_id: 127052
+    scientific_name: Diplodus puntazzo
+    common_names:
+      en: sharp snout bream
+      es: sargo picudo
+      fr: moure pountchou
+      de: Spitzbrasse
+      it: moruta
+      pt: sharp snout bream
+    cosmopolitan: false
+  - species_key: diplodus_annularis
+    aphia_id: 127049
+    scientific_name: Diplodus annularis
+    common_names:
+      en: annular sea bream
+      es: raspallón
+      fr: sargue annulaire
+      de: Ringelbrasse
+      it: sparaglione
+      pt: sargo-alcorraz
+    cosmopolitan: false
+  - species_key: sarpa_salpa
+    aphia_id: 127064
+    scientific_name: Sarpa salpa
+    common_names:
+      en: salema
+      es: salema
+      fr: saupe
+      de: Goldstrieme
+      it: salpa
+      pt: salema
+    cosmopolitan: false
+  - species_key: oblada_melanura
+    aphia_id: 127056
+    scientific_name: Oblada melanura
+    common_names:
+      en: saddled sea bream
+      es: doblada
+      fr: oblade
+      de: Brandbrasse
+      it: occhiata
+      pt: dobradiça
+    cosmopolitan: false
+  - species_key: boops_boops
+    aphia_id: 127047
+    scientific_name: Boops boops
+    common_names:
+      en: bogue
+      es: boga
+      fr: bogue
+      de: Gelbstrieme
+      it: boga
+      pt: boga-do-mar
+    cosmopolitan: false
+  - species_key: spondyliosoma_cantharus
+    aphia_id: 127066
+    scientific_name: Spondyliosoma cantharus
+    common_names:
+      en: black seabream
+      es: chopa
+      fr: brème de mer
+      de: Seekarpfen
+      it: tanuta
+      pt: choupa
+    cosmopolitan: false
+  - species_key: lithognathus_mormyrus
+    aphia_id: 127055
+    scientific_name: Lithognathus mormyrus
+    common_names:
+      en: striped seabream
+      es: herrera
+      fr: marbre
+      de: marmorbrasse
+      it: marmora
+      pt: ferreira
+    cosmopolitan: false
+  - species_key: pagrus_pagrus
+    aphia_id: 127063
+    scientific_name: Pagrus pagrus
+    common_names:
+      en: common seabream
+      es: pargo
+      fr: pagre
+      de: gemeine Meerbrasse
+      it: dentice
+      pt: calunga
+    cosmopolitan: false
+  - species_key: pagellus_erythrinus
+    aphia_id: 127060
+    scientific_name: Pagellus erythrinus
+    common_names:
+      en: pandora
+      es: breca
+      fr: pagel
+      de: Rotbrasse
+      it: fragolino
+      pt: bica
+    cosmopolitan: false
+  - species_key: dentex_dentex
+    aphia_id: 273962
+    scientific_name: Dentex dentex
+    common_names:
+      en: common dentex
+      es: dentón
+      fr: dente
+      de: Zahnbrasse
+      it: dentice
+      pt: common dentex
+    cosmopolitan: false
+  - species_key: serranus_cabrilla
+    aphia_id: 127041
+    scientific_name: Serranus cabrilla
+    common_names:
+      en: comber
+      es: cabrilla
+      fr: saran
+      de: Sägebarsch
+      it: sciarrano
+      pt: alecrim
+    cosmopolitan: false
+  - species_key: serranus_scriba
+    aphia_id: 127043
+    scientific_name: Serranus scriba
+    common_names:
+      en: painted comber
+      es: serrano
+      fr: serran écriture
+      de: Schriftbarsch
+      it: perchia di mare
+      pt: painted comber
+    cosmopolitan: false
+  - species_key: symphodus_tinca
+    aphia_id: 273575
+    scientific_name: Symphodus tinca
+    common_names:
+      en: East Atlantic peacock wrasse
+      es: peto
+      fr: crènilabre paon
+      de: East Atlantic peacock wrasse
+      it: East Atlantic peacock wrasse
+      pt: bodião-pavão
+    cosmopolitan: false
+  - species_key: symphodus_mediterraneus
+    aphia_id: 273569
+    scientific_name: Symphodus mediterraneus
+    common_names:
+      en: axillary wrasse
+      es: tordo de roca
+      fr: crénilabre
+      de: axillary wrasse
+      it: axillary wrasse
+      pt: bodião-do-mediterrâneo
+    cosmopolitan: false
+  - species_key: labrus_merula
+    aphia_id: 126967
+    scientific_name: Labrus merula
+    common_names:
+      en: brown wrasse
+      es: merlo
+      fr: merle
+      de: brauner Lippfisch
+      it: tordo nero
+      pt: bodião-fusco
+    cosmopolitan: false
+  - species_key: labrus_viridis
+    aphia_id: 126968
+    scientific_name: Labrus viridis
+    common_names:
+      en: green wrasse
+      es: tordo
+      fr: labre vert
+      de: grüner Lippfisch
+      it: tordo
+      pt: green wrasse
+    cosmopolitan: false
+  - species_key: thalassoma_pavo
+    aphia_id: 126970
+    scientific_name: Thalassoma pavo
+    common_names:
+      en: ornate wrasse
+      es: fredi
+      fr: girelle paon
+      de: meerpfau
+      it: donzella pavonina
+      pt: bodião-ornato
+    cosmopolitan: false
+  - species_key: sparisoma_cretense
+    aphia_id: 231441
+    scientific_name: Sparisoma cretense
+    common_names:
+      en: European parrotfish
+      es: viela colorada
+      fr: perroquet
+      de: Europäischer Papageifisch
+      it: pesce pappagallo
+      pt: veja
+    cosmopolitan: false
+  - species_key: chromis_chromis
+    aphia_id: 127000
+    scientific_name: Chromis chromis
+    common_names:
+      en: damselfish
+      es: castañuela
+      fr: castagnole
+      de: Mönchsfisch
+      it: castagnola
+      pt: castanheta
+    cosmopolitan: false
+  - species_key: sciaena_umbra
+    aphia_id: 127010
+    scientific_name: Sciaena umbra
+    common_names:
+      en: brown meagre
+      es: brown meagre
+      fr: corb
+      de: brown meagre
+      it: "corvina  "
+      pt: brown meagre
+    cosmopolitan: false
+  - species_key: umbrina_cirrosa
+    aphia_id: 127012
+    scientific_name: Umbrina cirrosa
+    common_names:
+      en: shi drum
+      es: corvallo
+      fr: ombrine
+      de: shi drum
+      it: "ombrina  "
+      pt: calafate-de-riscas
+    cosmopolitan: false
+  - species_key: apogon_imberbis
+    aphia_id: 273021
+    scientific_name: Apogon imberbis
+    common_names:
+      en: cardinalfish
+      es: alfoncino
+      fr: apogon
+      de: kardinalfisch
+      it: cardinalfish
+      pt: alcarraz
+    cosmopolitan: false
+  - species_key: mullus_barbatus
+    aphia_id: 126985
+    scientific_name: Mullus barbatus
+    common_names:
+      en: red mullet
+      es: salmonete de fango
+      fr: rouget barbet
+      de: Rotbarbe
+      it: triglia di fango
+      pt: salmonete-da-vasa
+    cosmopolitan: false
+  - species_key: scorpaena_scrofa
+    aphia_id: 127248
+    scientific_name: Scorpaena scrofa
+    common_names:
+      en: largescaled scorpionfish
+      es: cabracho
+      fr: rascasse rouge
+      de: großer roter Drachenkopf
+      it: scorfano rosso
+      pt: rocaz
+    cosmopolitan: false
+  - species_key: scorpaena_porcus
+    aphia_id: 127247
+    scientific_name: Scorpaena porcus
+    common_names:
+      en: black scorpionfish
+      es: cabracho
+      fr: racasse noire
+      de: brauner Drachenkopf
+      it: black scorpionfish
+      pt: black scorpionfish
+    cosmopolitan: false
+  - species_key: trachinus_draco
+    aphia_id: 127082
+    scientific_name: Trachinus draco
+    common_names:
+      en: greater weever
+      es: araña blanca
+      fr: grande vive
+      de: gewöhnliches Petermännchen
+      it: trachino dragone
+      pt: aranha
+    cosmopolitan: false
+  - species_key: uranoscopus_scaber
+    aphia_id: 127093
+    scientific_name: Uranoscopus scaber
+    common_names:
+      en: star-gazer
+      es: rata
+      fr: boeuf
+      de: rauer himmelsgucker
+      it: pesce prete
+      pt: cabeçudo
+    cosmopolitan: false
+  - species_key: trachurus_trachurus
+    aphia_id: 126822
+    scientific_name: Trachurus trachurus
+    common_names:
+      en: Atlantic horse mackerel
+      es: chicharro
+      fr: carangue
+      de: Atlantische Bastardmakrele
+      it: sugarello
+      pt: carapau
+    cosmopolitan: false
+  - species_key: seriola_dumerili
+    aphia_id: 126816
+    scientific_name: Seriola dumerili
+    common_names:
+      en: amberjack
+      es: medregal coronado
+      fr: sériole
+      de: amberjack
+      it: leccia
+      pt: írio
+    cosmopolitan: false
+  - species_key: sphyraena_sphyraena
+    aphia_id: 127068
+    scientific_name: Sphyraena sphyraena
+    common_names:
+      en: barracuda
+      es: espeton
+      fr: bécune européenne
+      de: Europäischer Barrakuda
+      it: luccio marino
+      pt: barracuda-do-mediterrâneo
+    cosmopolitan: false
+  - species_key: belone_belone
+    aphia_id: 126375
+    scientific_name: Belone belone
+    common_names:
+      en: garfish
+      es: aguja
+      fr: aiguillette
+      de: gewöhnlicher Hornhecht
+      it: aguglia
+      pt: agulha
+    cosmopolitan: false
+  - species_key: atherina_hepsetus
+    aphia_id: 272028
+    scientific_name: Atherina hepsetus
+    common_names:
+      en: Mediterranean sand smelt
+      es: chucleto
+      fr: siouclet
+      de: Mittelmeer-Ährenfisch
+      it: Mediterranean sand smelt
+      pt: Mediterranean sand smelt
+    cosmopolitan: false
+  - species_key: sardina_pilchardus
+    aphia_id: 126421
+    scientific_name: Sardina pilchardus
+    common_names:
+      en: European pilchard
+      es: sardina
+      fr: sardine
+      de: Sardine
+      it: sardina
+      pt: sardina
+    cosmopolitan: false
+  - species_key: engraulis_encrasicolus
+    aphia_id: 126426
+    scientific_name: Engraulis encrasicolus
+    common_names:
+      en: anchovy
+      es: anchoa
+      fr: anchois
+      de: Anchovis
+      it: acciuga
+      pt: anchova
+    cosmopolitan: false
+  - species_key: mugil_cephalus
+    aphia_id: 126983
+    scientific_name: Mugil cephalus
+    common_names:
+      en: flathead grey mullet
+      es: lisa rayada
+      fr: meuille
+      de: großkopf Meeräsche
+      it: cefalo
+      pt: curimã
+    cosmopolitan: false
+  - species_key: chelon_labrosus
+    aphia_id: 126977
+    scientific_name: Chelon labrosus
+    common_names:
+      en: thicklip grey mullet
+      es: lisa
+      fr: muge lippu
+      de: dicklippige Meeräsche
+      it: cefalo bosega
+      pt: tainha
+    cosmopolitan: false
+  - species_key: conger_conger
+    aphia_id: 126285
+    scientific_name: Conger conger
+    common_names:
+      en: conger
+      es: congrio
+      fr: congre
+      de: Congeraal
+      it: congro
+      pt: congro
+    cosmopolitan: false
+  - species_key: muraena_helena
+    aphia_id: 126303
+    scientific_name: Muraena helena
+    common_names:
+      en: Mediterranean moray
+      es: morena
+      fr: murène
+      de: Mittelmeermurane
+      it: murena
+      pt: moreia
+    cosmopolitan: false
+  - species_key: anguilla_anguilla
+    aphia_id: 126281
+    scientific_name: Anguilla anguilla
+    common_names:
+      en: eel
+      es: anguila
+      fr: anguille
+      de: Aal
+      it: anguilla
+      pt: eiró
+    cosmopolitan: false
+  - species_key: gobius_niger
+    aphia_id: 126892
+    scientific_name: Gobius niger
+    common_names:
+      en: black goby
+      es: caboso negro
+      fr: gobie noire
+      de: black goby
+      it: ghiozzo nero
+      pt: caboz-negro
+    cosmopolitan: false
+  - species_key: tripterygion_delaisi
+    aphia_id: 127090
+    scientific_name: Tripterygion delaisi
+    common_names:
+      en: black-face blenny
+      es: moma
+      fr: tripterygion
+      de: gelber spitzkopf-schleimfisch
+      it: peperoncino giallo
+      pt: caboz-de-três-dorsais
+    cosmopolitan: false
+  - species_key: parablennius_gattorugine
+    aphia_id: 126770
+    scientific_name: Parablennius gattorugine
+    common_names:
+      en: tompot blenny
+      es: blenio del mediterráneo
+      fr: blennie gattorugine
+      de: gestreifte Schleimfisch
+      it: babuatto
+      pt: tompot blenny
+    cosmopolitan: false
+  - species_key: lophius_piscatorius
+    aphia_id: 126555
+    scientific_name: Lophius piscatorius
+    common_names:
+      en: angler
+      es: pejesapo
+      fr: baudroie
+      de: Anglerfisch
+      it: coda di rospo
+      pt: peixe sapo
+    cosmopolitan: false
+  - species_key: zeus_faber
+    aphia_id: 127427
+    scientific_name: Zeus faber
+    common_names:
+      en: dory
+      es: pez de San Pedro
+      fr: dorée
+      de: Heringskönig
+      it: pesce gallo
+      pt: peixe São Pedro
+    cosmopolitan: false
+  - species_key: phycis_phycis
+    aphia_id: 126502
+    scientific_name: Phycis phycis
+    common_names:
+      en: forkbeard
+      es: brotóla de roca
+      fr: phycis de roche
+      de: brauner Gabeldorsch
+      it: mustia
+      pt: abrótea
+    cosmopolitan: false
+  - species_key: merluccius_merluccius
+    aphia_id: 126484
+    scientific_name: Merluccius merluccius
+    common_names:
+      en: European hake
+      es: carioca
+      fr: brochet de mer
+      de: Europäischer Seehecht
+      it: nasello
+      pt: marmota
+    cosmopolitan: false
+  - species_key: solea_solea
+    aphia_id: 127160
+    scientific_name: Solea solea
+    common_names:
+      en: common sole
+      es: lenguado
+      fr: sole
+      de: Seezunge
+      it: sogliola comune
+      pt: linguado
+    cosmopolitan: false
+  - species_key: bothus_podas
+    aphia_id: 127129
+    scientific_name: Bothus podas
+    common_names:
+      en: Wide-eyed flounder
+      es: Podas
+      fr: Rombou podas
+      de: Lethrini-Butt
+      it: Rombo di rena
+      pt: Carta podas
+    cosmopolitan: false
+  - species_key: dactylopterus_volitans
+    aphia_id: 127232
+    scientific_name: Dactylopterus volitans
+    common_names:
+      en: flying gurnard
+      es: alón volador
+      fr: dactyloptère
+      de: flying gurnard
+      it: flying gurnard
+      pt: cabrinha-de-leque
+    cosmopolitan: false
+  - species_key: syngnathus_acus
+    aphia_id: 127387
+    scientific_name: Syngnathus acus
+    common_names:
+      en: greater pipefish
+      es: aguja de mar
+      fr: grand tuyau de pipe
+      de: grosse Seenadel
+      it: pesce ago
+      pt: greater pipefish
+    cosmopolitan: false
+  - species_key: hippocampus_hippocampus
+    aphia_id: 127380
+    scientific_name: Hippocampus hippocampus
+    common_names:
+      en: seahorse
+      es: caballito de mar común
+      fr: cheval marin
+      de: Seepferdchen
+      it: "cavalluccio marino  "
+      pt: cavalo-marinho
+    cosmopolitan: false
+  - species_key: aphanius_fasciatus
+    aphia_id: 126428
+    scientific_name: Aphanius fasciatus
+    common_names:
+      en: mediterranean killifish
+      es: fartet sudeuropeo
+      fr: aphanius de corse
+      de: mittelmeer-kärpfling
+      it: nono
+      pt: mediterranean killifish
+    cosmopolitan: false
+  - species_key: coryphaena_hippurus
+    aphia_id: 126846
+    scientific_name: Coryphaena hippurus
+    common_names:
+      en: common dolphinfish
+      es: dorado
+      fr: corphène commune
+      de: gemeine Goldmakrele
+      it: corifena
+      pt: dourado
+    cosmopolitan: true
+  - species_key: thunnus_thynnus
+    aphia_id: 127029
+    scientific_name: Thunnus thynnus
+    common_names:
+      en: Atlantic bluefin tuna
+      es: atún
+      fr: thon rouge
+      de: Atlantischer blauflossen Thun
+      it: tonno
+      pt: atum
+    cosmopolitan: true
+  - species_key: thunnus_alalunga
+    aphia_id: 127026
+    scientific_name: Thunnus alalunga
+    common_names:
+      en: albacore tuna
+      es: atun blanco
+      fr: albacore tuna
+      de: langflossenthun
+      it: alalunga brauner
+      pt: albacora-branca
+    cosmopolitan: true
+  - species_key: euthynnus_alletteratus
+    aphia_id: 127017
+    scientific_name: Euthynnus alletteratus
+    common_names:
+      en: little tunny
+      es: bacoreta
+      fr: thonine
+      de: Thonine
+      it: alletterato
+      pt: merma
+    cosmopolitan: true
+  - species_key: sarda_sarda
+    aphia_id: 127021
+    scientific_name: Sarda sarda
+    common_names:
+      en: Atlantic bonito
+      es: bonito
+      fr: bonite à  dos rayé
+      de: Atlantischer Pelamide
+      it: palamita
+      pt: bonito
+    cosmopolitan: true
+  - species_key: scomber_scombrus
+    aphia_id: 127023
+    scientific_name: Scomber scombrus
+    common_names:
+      en: Atlantic mackerel
+      es: caballa
+      fr: maquereau
+      de: Atlantische Makrele
+      it: lacerto
+      pt: cavala
+    cosmopolitan: true
+  - species_key: xiphias_gladius
+    aphia_id: 127094
+    scientific_name: Xiphias gladius
+    common_names:
+      en: swordfish
+      es: pez espada
+      fr: espadon
+      de: Schwertfisch
+      it: "pesce spada  "
+      pt: agulha
+    cosmopolitan: true
+
+  # === TIBURONES Y RAYAS ===
+  - species_key: scyliorhinus_canicula
+    aphia_id: 105814
+    scientific_name: Scyliorhinus canicula
+    common_names:
+      en: dogfish
+      es: gato
+      fr: petite rousette
+      de: kleiner Katzenhai
+      it: gattucio
+      pt: pataroxa
+    cosmopolitan: false
+  - species_key: mustelus_mustelus
+    aphia_id: 105822
+    scientific_name: Mustelus mustelus
+    common_names:
+      en: smooth hound
+      es: cazón
+      fr: emissole
+      de: Glatthai
+      it: palombo liscio
+      pt: cação
+    cosmopolitan: false
+  - species_key: galeus_melastomus
+    aphia_id: 105812
+    scientific_name: Galeus melastomus
+    common_names:
+      en: blackmouth catshark
+      es: bocanegra
+      fr: chien à gueule noire
+      de: Fleckhai
+      it: boccanegra
+      pt: blackmouth catshark
+    cosmopolitan: false
+  - species_key: squalus_acanthias
+    aphia_id: 105923
+    scientific_name: Squalus acanthias
+    common_names:
+      en: picked dogfish
+      es: agulat
+      fr: aiguillat commun
+      de: Dornhai
+      it: spinarolo
+      pt: galhudo
+    cosmopolitan: true
+  - species_key: squatina_squatina
+    aphia_id: 105928
+    scientific_name: Squatina squatina
+    common_names:
+      en: angelshark
+      es: angelote
+      fr: ange de mer commun
+      de: Engelhai
+      it: pesce angelo
+      pt: anjo
+    cosmopolitan: false
+  - species_key: carcharodon_carcharias
+    aphia_id: 105838
+    scientific_name: Carcharodon carcharias
+    common_names:
+      en: anchovy-eater
+      es: ca mari
+      fr: grand requin blanc
+      de: Menschenhai
+      it: cagnesca grande
+      pt: tabarao
+    cosmopolitan: true
+  - species_key: isurus_oxyrinchus
+    aphia_id: 105839
+    scientific_name: Isurus oxyrinchus
+    common_names:
+      en: Atlantic mako shark
+      es: alecrín
+      fr: mako à nageoires courtes
+      de: Kurzflossen-Mako
+      it: cagnia
+      pt: anequin
+    cosmopolitan: true
+  - species_key: prionace_glauca
+    aphia_id: 105801
+    scientific_name: Prionace glauca
+    common_names:
+      en: blue shark
+      es: tiburón azul
+      fr: peau bleue
+      de: blauer Hai
+      it: squalo azzuro
+      pt: tintureira
+    cosmopolitan: true
+  - species_key: cetorhinus_maximus
+    aphia_id: 105837
+    scientific_name: Cetorhinus maximus
+    common_names:
+      en: basking shark
+      es: elefante
+      fr: elephant de mer
+      de: Mandelhai
+      it: cagnia
+      pt: carago
+    cosmopolitan: true
+  - species_key: alopias_vulpinus
+    aphia_id: 105836
+    scientific_name: Alopias vulpinus
+    common_names:
+      en: common thresher
+      es: peix espasa
+      fr: la faux
+      de: Fuchshai
+      it: allopia coda lunga
+      pt: arequim
+    cosmopolitan: true
+  - species_key: raja_clavata
+    aphia_id: 105883
+    scientific_name: Raja clavata
+    common_names:
+      en: roker
+      es: raya común
+      fr: raie bouclée
+      de: Dornrochen
+      it: raza
+      pt: lenga
+    cosmopolitan: false
+  - species_key: raja_asterias
+    aphia_id: 105881
+    scientific_name: Raja asterias
+    common_names:
+      en: Mediterranean starry ray
+      es: raya estrellada
+      fr: raie étoilée
+      de: Mittelmeer-Sternrochen
+      it: Mediterranean starry ray
+      pt: raia-pintada
+    cosmopolitan: false
+  - species_key: dasyatis_pastinaca
+    aphia_id: 105851
+    scientific_name: Dasyatis pastinaca
+    common_names:
+      en: common stingray
+      es: chuchos
+      fr: pastenague
+      de: brauner Stechrochen
+      it: pastinaca
+      pt: common stingray
+    cosmopolitan: false
+  - species_key: pteroplatytrygon_violacea
+    aphia_id: 158540
+    scientific_name: Pteroplatytrygon violacea
+    common_names:
+      en: pelagic stingray
+      es: raya látigo obispo
+      fr: pastenague violette
+      de: freiwasser-stechrochen
+      it: pastinaca
+      pt: pelagic stingray
+    cosmopolitan: true
+  - species_key: myliobatis_aquila
+    aphia_id: 105860
+    scientific_name: Myliobatis aquila
+    common_names:
+      en: common eagle ray
+      es: águila marina
+      fr: aigle de mer
+      de: gewöhnlicher Adlerrochen
+      it: aquila di mare
+      pt: common eagle ray
+    cosmopolitan: false
+  - species_key: torpedo_marmorata
+    aphia_id: 271684
+    scientific_name: Torpedo marmorata
+    common_names:
+      en: marbled electric ray
+      es: tembladera
+      fr: raie électrique
+      de: Marmor-Zitterrochen
+      it: marbled electric ray
+      pt: marbled electric ray
+    cosmopolitan: false
+  - species_key: aetomylaeus_bovinus
+    aphia_id: 871951
+    scientific_name: Aetomylaeus bovinus
+    common_names:
+      en: bull ray
+      es: raya águila toro
+      fr: aigle vachette
+      de: afrikanischer adlerrochen
+      it: colombo di mare
+      pt: ratão-bispo
+    cosmopolitan: false
+
+  # === TORTUGAS MARINAS (cosmopolitas) ===
+  - species_key: eretmochelys_imbricata
+    aphia_id: 137207
+    scientific_name: Eretmochelys imbricata
+    common_names:
+      en: hawksbill turtle
+      es: tortuga carey
+      fr: caret
+      de: echte Karettschildkröte
+      it: tartaruga  embricata
+      pt: hawksbill turtle
+    cosmopolitan: true
+  - species_key: lepidochelys_kempii
+    aphia_id: 137208
+    scientific_name: Lepidochelys kempii
+    common_names:
+      en: Atlantic ridley
+      es: tortuga golfina
+      fr: tortue de Kemp
+      de: Kemps Schildkröte
+      it: "tartaruga bastarda  "
+      pt: Atlantic ridley
+    cosmopolitan: true
+
+  # === MAMÍFEROS MARINOS ===
+  - species_key: stenella_coeruleoalba
+    aphia_id: 137107
+    scientific_name: Stenella coeruleoalba
+    common_names:
+      en: blue dolphin
+      es: delfin a rayas
+      fr: dauphin bleu et blanc
+      de: blauweißer Delfin
+      it: delfino dalle briglie
+      pt: golfinho-listrado
+    cosmopolitan: true
+  - species_key: delphinus_delphis
+    aphia_id: 137094
+    scientific_name: Delphinus delphis
+    common_names:
+      en: common dolphin
+      es: delfín común
+      fr: bec d'oie
+      de: Delfin
+      it: delfino
+      pt: golfinho
+    cosmopolitan: true
+  - species_key: grampus_griseus
+    aphia_id: 137098
+    scientific_name: Grampus griseus
+    common_names:
+      en: gray grampus
+      es: calderón gris
+      fr: dauphin de Cuvier
+      de: gestreifter Delfin
+      it: delfino de Risso
+      pt: golfinho cinzento
+    cosmopolitan: true
+  - species_key: globicephala_melas
+    aphia_id: 137097
+    scientific_name: Globicephala melas
+    common_names:
+      en: American black-fish
+      es: ballena piloto
+      fr: cachelot svineval
+      de: Grindwal
+      it: delfino pilota
+      pt: baleia piloto de peitoral longa
+    cosmopolitan: true
+  - species_key: physeter_macrocephalus
+    aphia_id: 137119
+    scientific_name: Physeter macrocephalus
+    common_names:
+      en: chocolate whale
+      es: ballena esperma
+      fr: cachalot
+      de: Pottwal
+      it: capodoglio
+      pt: cachalote
+    cosmopolitan: true
+  - species_key: ziphius_cavirostris
+    aphia_id: 137127
+    scientific_name: Ziphius cavirostris
+    common_names:
+      en: Cuvier's beaked whale
+      es: ballena de Cuvier
+      fr: baleine à bec de Cuvier
+      de: Cuvier-Schnabelwal
+      it: zifio
+      pt: baleia bicuda de Cuvier
+    cosmopolitan: true
+  - species_key: balaenoptera_physalus
+    aphia_id: 137091
+    scientific_name: Balaenoptera physalus
+    common_names:
+      en: big finner
+      es: ballena boba
+      fr: baleine américaine
+      de: Finnfisch
+      it: balenottera comune
+      pt: baleia-comum
+    cosmopolitan: true
+  - species_key: monachus_monachus
+    aphia_id: 137081
+    scientific_name: Monachus monachus
+    common_names:
+      en: Mediterranean monk seal
+      es: foca monje
+      fr: phoque moine
+      de: Mittelmeer-Mönchsrobbe
+      it: foca monaca
+      pt: foca-monge
+    cosmopolitan: false
+
+  # === CEFALÓPODOS ===
+  - species_key: sepia_elegans
+    aphia_id: 141443
+    scientific_name: Sepia elegans
+    common_names:
+      en: elegant cuttlefish
+      es: castaño
+      fr: seiche élégante
+      de: Kleine Sepie
+      it: castagnola
+      pt: elegant cuttlefish
+    cosmopolitan: false
+  - species_key: loligo_vulgaris
+    aphia_id: 140271
+    scientific_name: Loligo vulgaris
+    common_names:
+      en: Cape Hope squid
+      es: calamar
+      fr: calmar
+      de: gemeiner Kalmar
+      it: calamaro
+      pt: lula-comum
+    cosmopolitan: false
+  - species_key: eledone_moschata
+    aphia_id: 140601
+    scientific_name: Eledone moschata
+    common_names:
+      en: musky octopus
+      es: pulpo almizclado
+      fr: élédone musquée
+      de: Moschuskrake
+      it: moscardino
+      pt: musky octopus
+    cosmopolitan: false
+  - species_key: eledone_cirrhosa
+    aphia_id: 140600
+    scientific_name: Eledone cirrhosa
+    common_names:
+      en: curled octopus
+      es: pulpo blanco
+      fr: elédone
+      de: Nördlicher Krake
+      it: moscardino bianco
+      pt: curled octopus
+    cosmopolitan: false
+  - species_key: argonauta_argo
+    aphia_id: 138803
+    scientific_name: Argonauta argo
+    common_names:
+      en: common paper nautilus
+      es: argonauta
+      fr: argonaute voilier
+      de: Großes Papierboot
+      it: argonauta
+      pt: argonauta-comum
+    cosmopolitan: true
+
+  # === OTROS MOLUSCOS ===
+  - species_key: charonia_lampas
+    aphia_id: 141101
+    scientific_name: Charonia lampas
+    common_names:
+      en: knobbed triton
+      es: caracola
+      fr: knobbed triton
+      de: Kinkhorn
+      it: tritone rosso
+      pt: buzina
+    cosmopolitan: false
+  - species_key: hexaplex_trunculus
+    aphia_id: 140396
+    scientific_name: Hexaplex trunculus
+    common_names:
+      en: banded dye-murex
+      es: búsano
+      fr: rocher fascié
+      de: Abgestumpfte Stachelschnecke
+      it: banded dye-murex
+      pt: banded dye-murex
+    cosmopolitan: false
+  - species_key: bolinus_brandaris
+    aphia_id: 140389
+    scientific_name: Bolinus brandaris
+    common_names:
+      en: dye murex
+      es: canadilla
+      fr: murex-droite épine
+      de: Brandhorn
+      it: dye murex
+      pt: buzio
+    cosmopolitan: false
+  - species_key: cerithium_vulgatum
+    aphia_id: 139066
+    scientific_name: Cerithium vulgatum
+    common_names:
+      en: common cerith
+      es: common cerith
+      fr: common cerith
+      de: Gemeine Hornschnecke
+      it: common cerith
+      pt: common cerith
+    cosmopolitan: false
+  - species_key: patella_ferruginea
+    aphia_id: 1316418
+    scientific_name: Patella ferruginea
+    common_names:
+      en: ribbed mediterranean limpet
+      es: lapa ferruginosa
+      fr: patelle ferrugineuse
+      de: fleckige napfschnecke
+      it: patella ferruginosa
+      pt: ribbed mediterranean limpet
+    cosmopolitan: false
+  - species_key: cypraea_spurca
+    aphia_id: 738691
+    scientific_name: Cypraea spurca
+    common_names:
+      en: European yellow cowrie
+      es: European yellow cowrie
+      fr: European yellow cowrie
+      de: Variable Kauri
+      it: European yellow cowrie
+      pt: European yellow cowrie
+    cosmopolitan: false
+  - species_key: mytilus_galloprovincialis
+    aphia_id: 140481
+    scientific_name: Mytilus galloprovincialis
+    common_names:
+      en: Galician mussel
+      es: mejillón mediterráneo
+      fr: moulé de Méditerranée
+      de: Blaubartmuschel
+      it: cozza
+      pt: Galician mussel
+    cosmopolitan: false
+  - species_key: ostrea_edulis
+    aphia_id: 140658
+    scientific_name: Ostrea edulis
+    common_names:
+      en: common oyster
+      es: ostra común
+      fr: belon
+      de: essbare Auster
+      it: ostrica comune
+      pt: common oyster
+    cosmopolitan: false
+  - species_key: spondylus_gaederopus
+    aphia_id: 141549
+    scientific_name: Spondylus gaederopus
+    common_names:
+      en: European thorny oyster
+      es: ostra roja
+      fr: pied d'ane
+      de: Eselshuf
+      it: ostrica spinosa mediterranea
+      pt: European thorny oyster
+    cosmopolitan: false
+  - species_key: flabellina_affinis
+    aphia_id: 139988
+    scientific_name: Flabellina affinis
+    common_names:
+      en: Mediterranean violet aeolid
+      es: flabellina violeta
+      fr: flabelline mauve
+      de: violette Fadenschnecke
+      it: flabellina rosa
+      pt: Mediterranean violet aeolid
+    cosmopolitan: false
+  - species_key: cratena_peregrina
+    aphia_id: 146862
+    scientific_name: Cratena peregrina
+    common_names:
+      en: cratena slug
+      es: cratena slug
+      fr: hervia pèlerine
+      de: wander-fadenschnecke
+      it: cratena mediterranea
+      pt: cratena slug
+    cosmopolitan: false
+  - species_key: hypselodoris_picta
+    aphia_id: 139154
+    scientific_name: Hypselodoris picta
+    common_names:
+      en: giant doris
+      es: giant doris
+      fr: doris géant
+      de: Sternschnecke
+      it: doride dipinto
+      pt: giant doris
+    cosmopolitan: false
+  - species_key: felimare_picta
+    aphia_id: 597522
+    scientific_name: Felimare picta
+    common_names:
+      en: giant doris
+      es: nudibranquio pinto gigante
+      fr: doris géant
+      de: Variable Sternschnecke
+      it: doride dipinto
+      pt: nudibrânquio-sardão
+    cosmopolitan: false
+  - species_key: peltodoris_atromaculata
+    aphia_id: 509315
+    scientific_name: Peltodoris atromaculata
+    common_names:
+      en: cow snail
+      es: vaquita suiza
+      fr: Doris dalmatien
+      de: Fleck-Sternschnecke
+      it: lumaca maculata
+      pt: vaquinha-suíça
+    cosmopolitan: false
+  - species_key: aplysia_punctata
+    aphia_id: 138758
+    scientific_name: Aplysia punctata
+    common_names:
+      en: common sea hare
+      es: liebre de mar manchada
+      fr: aplysie ponctuée
+      de: gemeiner Seehase
+      it: lepre di mare macchiata
+      pt: lebre-do-mar-comum
+    cosmopolitan: false
+
+  # === EQUINODERMOS ===
+  - species_key: arbacia_lixula
+    aphia_id: 124249
+    scientific_name: Arbacia lixula
+    common_names:
+      en: Black Sea urchin
+      es: erizo negro
+      fr: oursin mâle
+      de: schwarzer Seeigel
+      it: riccio di mare
+      pt: ouriço preto
+    cosmopolitan: false
+  - species_key: sphaerechinus_granularis
+    aphia_id: 124427
+    scientific_name: Sphaerechinus granularis
+    common_names:
+      en: violet sea urchin
+      es: erizo violáceo
+      fr: oursin violet
+      de: dunkelvioletter Seeigel
+      it: riccio di prateira
+      pt: ouriços de pontas redondas
+    cosmopolitan: false
+  - species_key: echinaster_sepositus
+    aphia_id: 241001
+    scientific_name: Echinaster sepositus
+    common_names:
+      en: red starfish
+      es: estrella espinosa
+      fr: red starfish
+      de: roter seestern
+      it: stella rossa
+      pt: red starfish
+    cosmopolitan: false
+  - species_key: marthasterias_glacialis
+    aphia_id: 123803
+    scientific_name: Marthasterias glacialis
+    common_names:
+      en: spiny starfish
+      es: estrella espinosa común
+      fr: astérie
+      de: Eisseestern
+      it: martasteria
+      pt: estrela-do-mar-espinhosa-comum
+    cosmopolitan: false
+  - species_key: coscinasterias_tenuispina
+    aphia_id: 123795
+    scientific_name: Coscinasterias tenuispina
+    common_names:
+      en: blue spiny starfish
+      es: estrella de espinas finas
+      fr: étoile de mer épineuse
+      de: Dornenstern Blauwestekelster
+      it: stella marina spinosa minore
+      pt: blue spiny starfish
+    cosmopolitan: false
+  - species_key: astropecten_aranciacus
+    aphia_id: 123856
+    scientific_name: Astropecten aranciacus
+    common_names:
+      en: red comb star
+      es: estrella de mar anaranjada
+      fr: grande étoile-peigne
+      de: roter kammseestern
+      it: stella pettine arancione
+      pt: estrela-escavadora
+    cosmopolitan: false
+  - species_key: ophioderma_longicauda
+    aphia_id: 124821
+    scientific_name: Ophioderma longicauda
+    common_names:
+      en: smooth brittle-star
+      es: ofiura lisa
+      fr: ophiuire brune
+      de: smooth brittle-star
+      it: stella serpentina liscia
+      pt: smooth brittle-star
+    cosmopolitan: false
+  - species_key: holothuria_tubulosa
+    aphia_id: 732401
+    scientific_name: Holothuria tubulosa
+    common_names:
+      en: cotton-spinner
+      es: carajo de mar
+      fr: cotton-spinner
+      de: cotton-spinner
+      it: cotton-spinner
+      pt: cotton-spinner
+    cosmopolitan: false
+  - species_key: holothuria_forskali
+    aphia_id: 1670329
+    scientific_name: Holothuria forskali
+    common_names:
+      en: cotton spinner
+      es: cohombro de mar negro
+      fr: boudin de mer noir
+      de: braune seewalze
+      it: cetriolo di mare a punte bianche
+      pt: cotton spinner
+    cosmopolitan: false
+  - species_key: antedon_mediterranea
+    aphia_id: 124208
+    scientific_name: Antedon mediterranea
+    common_names:
+      en: feather star
+      es: comátula mediterránea
+      fr: comatule de méditerranée
+      de: Mittelmeer-Haarstern
+      it: giglio di mare
+      pt: feather star
+    cosmopolitan: false
+
+  # === CNIDARIOS (corales, anémonas, medusas, gorgonias) ===
+  - species_key: corallium_rubrum
+    aphia_id: 125416
+    scientific_name: Corallium rubrum
+    common_names:
+      en: precious coral
+      es: coral rojo
+      fr: corail rouge
+      de: Edelkoralle
+      it: "corallo rosso  "
+      pt: coral-vermelho
+    cosmopolitan: false
+  - species_key: paramuricea_clavata
+    aphia_id: 125387
+    scientific_name: Paramuricea clavata
+    common_names:
+      en: chameleon sea fan
+      es: gorgonia roja
+      fr: gorgone multicolore
+      de: farbwechselnde Gorgonie
+      it: gorgonia rossa
+      pt: chameleon sea fan
+    cosmopolitan: false
+  - species_key: eunicella_singularis
+    aphia_id: 125365
+    scientific_name: Eunicella singularis
+    common_names:
+      en: white horny coral
+      es: gorgonia blanca
+      fr: gorgone blanche
+      de: Gestreckte Hornkoralle
+      it: gorgonia bianca
+      pt: white horny coral
+    cosmopolitan: false
+  - species_key: eunicella_cavolini
+    aphia_id: 125361
+    scientific_name: Eunicella cavolini
+    common_names:
+      en: yellow gorgonian
+      es: gorgonia amarilla
+      fr: gorgone jaune
+      de: Gelbe Gorgonie
+      it: gorgonia gialla
+      pt: yellow gorgonian
+    cosmopolitan: false
+  - species_key: cladocora_caespitosa
+    aphia_id: 135146
+    scientific_name: Cladocora caespitosa
+    common_names:
+      en: Caespitose tube coral
+      es: madrépora mediterránea
+      fr: cladocore
+      de: Rasenkoralle
+      it: cespuglio di mare
+      pt: Caespitose tube coral
+    cosmopolitan: false
+  - species_key: astroides_calycularis
+    aphia_id: 135178
+    scientific_name: Astroides calycularis
+    common_names:
+      en: chalice coral
+      es: coral estrellado
+      fr: corail étoilé
+      de: Kelchkoralle
+      it: corallo stellato
+      pt: coral-sol-do-mediterrâneo
+    cosmopolitan: false
+  - species_key: balanophyllia_europaea
+    aphia_id: 1451203
+    scientific_name: Balanophyllia europaea
+    common_names:
+      en: tooth coral, scarlet coral
+      es: madrépora solitaria
+      fr: dent de cochon
+      de: europäische
+      it: medrepora solitaria
+      pt: tooth coral, scarlet coral
+    cosmopolitan: false
+  - species_key: parazoanthus_axinellae
+    aphia_id: 101055
+    scientific_name: Parazoanthus axinellae
+    common_names:
+      en: yellow cluster anemone
+      es: anémona incrustante amarilla
+      fr: anémone encroûtante jaune
+      de: Gelbe Krustenanemone
+      it: margherita di mare
+      pt: anémonas-incrustantes
+    cosmopolitan: false
+  - species_key: anemonia_viridis
+    aphia_id: 100808
+    scientific_name: Anemonia viridis
+    common_names:
+      en: opelet anemone
+      es: anémona común
+      fr: anémone de mer verte
+      de: Wachsrose
+      it: capelli di Venere
+      pt: anémona-comum
+    cosmopolitan: false
+  - species_key: actinia_equina
+    aphia_id: 100803
+    scientific_name: Actinia equina
+    common_names:
+      en: beadlet anemone
+      es: tomate de mar
+      fr: actinie rouge
+      de: Pferdeaktinie
+      it: pomodoro di mare
+      pt: Morango-do-mar
+    cosmopolitan: false
+  - species_key: condylactis_aurantiaca
+    aphia_id: 100822
+    scientific_name: Condylactis aurantiaca
+    common_names:
+      en: golden anemone
+      es: anémona dorada
+      fr: golden anemone
+      de: goldfarbige Seerose
+      it: anemone dorato
+      pt: golden anemone
+    cosmopolitan: false
+  - species_key: cerianthus_membranaceus
+    aphia_id: 101011
+    scientific_name: Cerianthus membranaceus
+    common_names:
+      en: cylinder anemone
+      es: anémona tubo
+      fr: cérianthe de Méditerranée
+      de: Mittel-meer Zylinderrose
+      it: ardichella
+      pt: cylinder anemone
+    cosmopolitan: false
+  - species_key: pelagia_noctiluca
+    aphia_id: 135305
+    scientific_name: Pelagia noctiluca
+    common_names:
+      en: mauve stinger
+      es: acalefo luminiscente
+      fr: méduse pélagique
+      de: Feuerqualle
+      it: medusa luminosa
+      pt: mauve stinger
+    cosmopolitan: true
+  - species_key: cotylorhiza_tuberculata
+    aphia_id: 135297
+    scientific_name: Cotylorhiza tuberculata
+    common_names:
+      en: fried egg jellyfish
+      es: aguacuajada
+      fr: méduse œuf au pla
+      de: Knollenqualle
+      it: Cassiopea mediterranea
+      pt: fried egg jellyfish
+    cosmopolitan: false
+  - species_key: rhizostoma_pulmo
+    aphia_id: 135299
+    scientific_name: Rhizostoma pulmo
+    common_names:
+      en: barrel jellyfish
+      es: acalefo azul
+      fr: méduse chou-fleur
+      de: Gelbe Lungenqualle
+      it: barrel jellyfish
+      pt: barrel jellyfish
+    cosmopolitan: false
+  - species_key: velella_velella
+    aphia_id: 117832
+    scientific_name: Velella velella
+    common_names:
+      en: by-the-wind sailor
+      es: velero
+      fr: barque de Saint Pierre
+      de: Segelqualle
+      it: barchetta di San Pietro
+      pt: veleiro
+    cosmopolitan: true
+  - species_key: chrysaora_hysoscella
+    aphia_id: 135304
+    scientific_name: Chrysaora hysoscella
+    common_names:
+      en: compass jellyfish
+      es: compass jellyfish
+      fr: acalèphe rayonnée
+      de: Kompassqualle
+      it: compass jellyfish
+      pt: compass jellyfish
+    cosmopolitan: true
+
+  # === CRUSTÁCEOS ===
+  - species_key: palinurus_elephas
+    aphia_id: 107703
+    scientific_name: Palinurus elephas
+    common_names:
+      en: common crawfish
+      es: langosta
+      fr: langouste
+      de: Europaische Languste
+      it: aligusta
+      pt: lagosta
+    cosmopolitan: false
+  - species_key: homarus_gammarus
+    aphia_id: 107253
+    scientific_name: Homarus gammarus
+    common_names:
+      en: common lobster
+      es: abacanto
+      fr: homard
+      de: Europäischer hummer
+      it: astice
+      pt: labugante
+    cosmopolitan: false
+  - species_key: scyllarides_latus
+    aphia_id: 107708
+    scientific_name: Scyllarides latus
+    common_names:
+      en: Mediterranean slipper lobster
+      es: cigala gran
+      fr: cigale
+      de: grosser Bärenkrebs
+      it: cicala di mare
+      pt: carrasco
+    cosmopolitan: false
+  - species_key: maja_squinado
+    aphia_id: 107350
+    scientific_name: Maja squinado
+    common_names:
+      en: common spider crab
+      es: centollo
+      fr: araignée de Méditerranée
+      de: Große Seespinne
+      it: "granceola  "
+      pt: common spider crab
+    cosmopolitan: false
+  - species_key: carcinus_aestuarii
+    aphia_id: 107380
+    scientific_name: Carcinus aestuarii
+    common_names:
+      en: Mediterranean green crab
+      es: Mediterranean green crab
+      fr: crabe vert de méditerranée
+      de: Mittelmeer-Strandkrabbe
+      it: granchio carcino mediterraneo
+      pt: Mediterranean green crab
+    cosmopolitan: false
+  - species_key: pachygrapsus_marmoratus
+    aphia_id: 107455
+    scientific_name: Pachygrapsus marmoratus
+    common_names:
+      en: marbled rock crab
+      es: cangrejo corredor
+      fr: anglais
+      de: Felsenkrabbe
+      it: marbled rock crab
+      pt: caranguejo-mármore
+    cosmopolitan: false
+  - species_key: eriphia_verrucosa
+    aphia_id: 107409
+    scientific_name: Eriphia verrucosa
+    common_names:
+      en: Italian box crab
+      es: Italian box crab
+      fr: crabe de roche
+      de: Gelbe Krabbe
+      it: faollo
+      pt: caranguejo-murraceiro
+    cosmopolitan: false
+  - species_key: dardanus_arrosor
+    aphia_id: 107197
+    scientific_name: Dardanus arrosor
+    common_names:
+      en: striated hermit crab
+      es: striated hermit crab
+      fr: bernard-l'hermite (le), bernardo (le), gaste (le), grand bernard l'ermite (le), pagure strié (le)
+      de: Großer Einsiedlerkrebs
+      it: striated hermit crab
+      pt: striated hermit crab
+    cosmopolitan: false
+  - species_key: pagurus_prideaux
+    aphia_id: 107239
+    scientific_name: Pagurus prideaux
+    common_names:
+      en: deep hermit crab
+      es: ermitaño de hondura
+      fr: ermite de prideaux (l'), pagure de prideaux (le), gonfaron (le)
+      de: Anemonen-Einsiedler
+      it: deep hermit crab
+      pt: deep hermit crab
+    cosmopolitan: false
+  - species_key: palaemon_elegans
+    aphia_id: 107614
+    scientific_name: Palaemon elegans
+    common_names:
+      en: grass prawm
+      es: quisquilla
+      fr: bouquet
+      de: kleine Felsengarnele
+      it: gamberetto delle pozze rocciose
+      pt: camarão-da-costa
+    cosmopolitan: false
+  - species_key: stenopus_spinosus
+    aphia_id: 107721
+    scientific_name: Stenopus spinosus
+    common_names:
+      en: golden coral shrimp
+      es: quisquilla de antenas largas
+      fr: crevette jaune cavernicole
+      de: Mittelmeer Scherengarnele
+      it: alifantozza rossa
+      pt: camarão-limpador
+    cosmopolitan: false
+  - species_key: lysmata_seticaudata
+    aphia_id: 107528
+    scientific_name: Lysmata seticaudata
+    common_names:
+      en: Mediterranean cleaner shrimp
+      es: camarón de cola de seda
+      fr: crevette monégasque (la), crevette nettoyeuse rouge (la), crevette cavernicole (la), bouc monégasse (le), crevette cavernicole rouge (la)
+      de: Mittelmeer-Putzergarnele
+      it: Mediterranean cleaner shrimp
+      pt: Mediterranean cleaner shrimp
+    cosmopolitan: false
+  - species_key: nephrops_norvegicus
+    aphia_id: 107254
+    scientific_name: Nephrops norvegicus
+    common_names:
+      en: Dublin Bay lobster
+      es: cigala
+      fr: cacahouete
+      de: Buchstabenkrebs
+      it: scampo
+      pt: lagostim
+    cosmopolitan: false
+  - species_key: squilla_mantis
+    aphia_id: 136137
+    scientific_name: Squilla mantis
+    common_names:
+      en: spottail mantis squillid
+      es: camarón mantis de cola manchada
+      fr: squille ocellée
+      de: gemeiner Heuschreckenkrebs
+      it: cannocchia
+      pt: spottail mantis squillid
+    cosmopolitan: false
+  - species_key: balanus_perforatus
+    aphia_id: 106219
+    scientific_name: Balanus perforatus
+    common_names:
+      en: perforated barnacle
+      es: perforated barnacle
+      fr: balane commune
+      de: Kerb-Seepocke
+      it: perforated barnacle
+      pt: perforated barnacle
+    cosmopolitan: false
+
+  # === ESPONJAS ===
+  - species_key: spongia_officinalis
+    aphia_id: 132407
+    scientific_name: Spongia officinalis
+    common_names:
+      en: bath sponge
+      es: bath sponge
+      fr: éponge de toilette
+      de: Badeschwamm
+      it: "spugna da bagno  "
+      pt: bath sponge
+    cosmopolitan: false
+  - species_key: aplysina_aerophoba
+    aphia_id: 133911
+    scientific_name: Aplysina aerophoba
+    common_names:
+      en: aureate sponge
+      es: esponja de tubo amarilla
+      fr: vérongia
+      de: Farbwechselnder Zylinderschwamm
+      it: verongia
+      pt: esponja amarela
+    cosmopolitan: false
+  - species_key: axinella_polypoides
+    aphia_id: 132487
+    scientific_name: Axinella polypoides
+    common_names:
+      en: common antler sponge
+      es: esponja cornuda
+      fr: axinelle commune
+      de: löchriger Geweihschwamm
+      it: spugna alberello
+      pt: common antler sponge
+    cosmopolitan: false
+  - species_key: petrosia_ficiformis
+    aphia_id: 132920
+    scientific_name: Petrosia ficiformis
+    common_names:
+      en: stony sponge
+      es: petrosia dura
+      fr: eponge pierre
+      de: Feigenhornschwamm
+      it: spugna petrosia
+      pt: stony sponge
+    cosmopolitan: false
+  - species_key: clathrina_clathrus
+    aphia_id: 132275
+    scientific_name: Clathrina clathrus
+    common_names:
+      en: yellow Clathrina
+      es: clathrina amarilla
+      fr: clathrine jaune
+      de: Gelber Gitterkalkschwamm
+      it: clatrina gialla
+      pt: esponja-calcárea
+    cosmopolitan: false
+  - species_key: chondrosia_reniformis
+    aphia_id: 134112
+    scientific_name: Chondrosia reniformis
+    common_names:
+      en: chicken liver sponge
+      es: esponja de cuero
+      fr: éponge-cuir
+      de: Lederschwamm
+      it: spugna patata
+      pt: esponja de vidro
+    cosmopolitan: false
+  - species_key: crambe_crambe
+    aphia_id: 133445
+    scientific_name: Crambe crambe
+    common_names:
+      en: bumping encrusting sponge
+      es: esponja incrustante anaranjada-roja
+      fr: éponge encroûtante orange-rouge
+      de: Höckeriger Krustenschwamm
+      it: spugna dello spondillo
+      pt: esponja-laranja-incrustante
+    cosmopolitan: false
+
+  # === FANERÓGAMAS Y MACROALGAS ===
+  - species_key: cymodocea_nodosa
+    aphia_id: 145793
+    scientific_name: Cymodocea nodosa
+    common_names:
+      en: little Neptune seagrass
+      es: seba
+      fr: cymodocée
+      de: tanggras
+      it: cimodocea mediterranea
+      pt: limo-de-fita-nodoso
+    cosmopolitan: false
+  - species_key: zostera_marina
+    aphia_id: 495077
+    scientific_name: Zostera marina
+    common_names:
+      en: common eel-grass
+      es: common eel-grass
+      fr: common eel-grass
+      de: echtes seegras
+      it: common eel-grass
+      pt: fita
+    cosmopolitan: false
+  - species_key: caulerpa_prolifera
+    aphia_id: 144471
+    scientific_name: Caulerpa prolifera
+    common_names:
+      en: oval-blade algae
+      es: oval-blade algae
+      fr: caulerpe
+      de: oval-blade algae
+      it: caulerpa fogliosa
+      pt: oval-blade algae
+    cosmopolitan: false
+  - species_key: codium_bursa
+    aphia_id: 145079
+    scientific_name: Codium bursa
+    common_names:
+      en: green sponge ball
+      es: bola de mar
+      fr: codium en boule
+      de: meerball
+      it: palla marina
+      pt: green sponge ball
+    cosmopolitan: false
+  - species_key: acetabularia_acetabulum
+    aphia_id: 494795
+    scientific_name: Acetabularia acetabulum
+    common_names:
+      en: mermaid's wine-glass
+      es: seta de mar
+      fr: acétabulaire
+      de: schirmchenalge
+      it: ombrellino di mare
+      pt: mermaid's wine-glass
+    cosmopolitan: false
+  - species_key: halimeda_tuna
+    aphia_id: 144483
+    scientific_name: Halimeda tuna
+    common_names:
+      en: calcareous green alga
+      es: calcareous green alga
+      fr: monnaie de Poséidon
+      de: Meerkette
+      it: ficodindia di mare
+      pt: calcareous green alga
+    cosmopolitan: false
+  - species_key: padina_pavonica
+    aphia_id: 145385
+    scientific_name: Padina pavonica
+    common_names:
+      en: peacock’s tail
+      es: cola de pavo
+      fr: padine queue-de-paon
+      de: trichteralge
+      it: coda di pavone
+      pt: alga-pavão
+    cosmopolitan: false
+  - species_key: cystoseira_amentacea
+    aphia_id: 145506
+    scientific_name: Cystoseira amentacea
+    common_names:
+      en: Cystoseira brown alga
+      es: Alga parda Cystoseira
+      fr: Cystoseire
+      de: Cystoseira-Braunalge
+      it: Cistoseira
+      pt: Cystoseira
+    cosmopolitan: false
+  - species_key: sargassum_vulgare
+    aphia_id: 494801
+    scientific_name: Sargassum vulgare
+    common_names:
+      en: Common sargassum
+      es: Sargazo común
+      fr: Sargasse commune
+      de: Gewöhnlicher Sargassotang
+      it: Sargasso comune
+      pt: Sargaço comum
+    cosmopolitan: false
+  - species_key: corallina_officinalis
+    aphia_id: 145108
+    scientific_name: Corallina officinalis
+    common_names:
+      en: coral meed
+      es: coral meed
+      fr: coralline
+      de: Korallermoos
+      it: corallina officinale
+      pt: coral meed
+    cosmopolitan: false
+  - species_key: asparagopsis_armata
+    aphia_id: 144438
+    scientific_name: Asparagopsis armata
+    common_names:
+      en: harpoon weed
+      es: harpoon weed
+      fr: algue à crochets
+      de: harpoon weed
+      it: asparago marino armato
+      pt: harpoon weed
+    cosmopolitan: false
+  - species_key: lithophyllum_byssoides
+    aphia_id: 145140
+    scientific_name: Lithophyllum byssoides
+    common_names:
+      en: Lithophyllum coralline alga
+      es: Alga calcárea Lithophyllum
+      fr: Trottoir à Lithophyllum
+      de: Lithophyllum-Kalkrotalge
+      it: Lithophyllum
+      pt: Lithophyllum
+    cosmopolitan: false
+
+  # === TUNICADOS ===
+  - species_key: halocynthia_papillosa
+    aphia_id: 103827
+    scientific_name: Halocynthia papillosa
+    common_names:
+      en: red sea-squirt
+      es: red sea-squirt
+      fr: ascidie rouge
+      de: rote Seescheide
+      it: patata di mare
+      pt: red sea-squirt
+    cosmopolitan: false
+  - species_key: clavelina_lepadiformis
+    aphia_id: 103552
+    scientific_name: Clavelina lepadiformis
+    common_names:
+      en: light bulb sesquirt
+      es: ascidia bombilla
+      fr: claveline
+      de: Keulen-Seescheide
+      it: ascidia cristallo
+      pt: light bulb sesquirt
+    cosmopolitan: false
+  - species_key: microcosmus_sabatieri
+    aphia_id: 103844
+    scientific_name: Microcosmus sabatieri
+    common_names:
+      en: grooved sea squirt
+      es: grooved sea squirt
+      fr: violet
+      de: Seefeige
+      it: grooved sea squirt
+      pt: grooved sea squirt
+    cosmopolitan: false
+
+  # === ANÉLIDOS / EQUIÚRIDOS ===
+  - species_key: sabella_spallanzanii
+    aphia_id: 130969
+    scientific_name: Sabella spallanzanii
+    common_names:
+      en: European fan worm
+      es: plumero de mar
+      fr: spirographe
+      de: Großer Fächerwurm
+      it: ombrella di mare
+      pt: European fan worm
+    cosmopolitan: false
+  - species_key: protula_tubularia
+    aphia_id: 131035
+    scientific_name: Protula tubularia
+    common_names:
+      en: red-spotted horseshoe
+      es: prótula tubularia
+      fr: protule lisse
+      de: Glatter Kalkröhrenwurm
+      it: verme ciuffo bianco
+      pt: red-spotted horseshoe
+    cosmopolitan: false
+  - species_key: bonellia_viridis
+    aphia_id: 110363
+    scientific_name: Bonellia viridis
+    common_names:
+      en: green spoon worm
+      es: green spoon worm
+      fr: bonellie verte
+      de: grüne Bonelli
+      it: bonellia
+      pt: bonélia
     cosmopolitan: false

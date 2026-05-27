@@ -47,16 +47,18 @@ on-device de especies marinas (track **BioDex**), vía RAG visual.
 | Fichero | Descripción |
 |---------|-------------|
 | `clip_vitb32.onnx` | Encoder visual OpenCLIP ViT-B/32 (LAION-2B), exportado a ONNX (fp32). Input `pixel_values`[b,3,224,224] (normalización CLIP), output `image_features`[b,512] L2-norm. |
-| `species_index_v1.bin` | Índice de prototipos (162 vectores, 27 especies, k=6 por especie) sobre 547 imágenes reales. Formato autocontenido (header SPEX + float16 + trailer JSONL). |
+| `species_index_v1.bin` | Índice de prototipos (1218 vectores, 203 especies, k=6 por especie) sobre 5788 imágenes reales. Expansión Mediterráneo (BioDex v2): 27 especies semilla + 176 especies mediterráneas (peces óseos, tiburones/rayas, tortugas, mamíferos, cefalópodos, otros moluscos, equinodermos, cnidarios, crustáceos, esponjas, fanerógamas/macroalgas, tunicados, anélidos). Formato autocontenido (header SPEX + float16 + trailer JSONL). |
 | `species_catalog_v1.json` | Catálogo: nombres científicos + comunes (6 idiomas), AphiaID, ecorregiones MEOW, IUCN. |
-| `meow_raster_v1.bin` | Ráster MEOW 0.25° (lat/lon → ecorregión). **Provisional (mock)** — pendiente del shapefile MEOW real. |
+| `meow_raster_v1.bin` | Ráster MEOW 0.25° (lat/lon → ecorregión). Construido del **shapefile MEOW real** (TNC, Spalding et al. 2007): 232 ecorregiones, 62 provincias, 12 realms. |
 | `ecoregion_hierarchy_v1.json` | Jerarquía ecorregión → provincia → realm MEOW. |
 
 ## Calidad (retrieval, held-out)
 
-OpenCLIP ViT-B/32 **zero-shot** (sin fine-tuning), split 70/30 (383 train / 164
-held-out): **top-1 = 84.1 %, top-5 = 98.2 %** sobre 27 especies. Supera el gate
-inicial del proyecto (top-1 ≥ 65 %, top-5 ≥ 85 %).
+OpenCLIP ViT-B/32 **zero-shot** (sin fine-tuning), medido sobre el set semilla de
+27 especies, split 70/30 (383 train / 164 held-out): **top-1 = 84.1 %, top-5 =
+98.2 %**. Supera el gate inicial del proyecto (top-1 ≥ 65 %, top-5 ≥ 85 %). La
+expansión a 203 especies (BioDex v2) amplía la cobertura mediterránea; re-evaluar
+el retrieval sobre el nuevo conjunto está pendiente.
 
 ## Procedencia y licencias
 
@@ -68,9 +70,10 @@ inicial del proyecto (top-1 ≥ 65 %, top-5 ≥ 85 %).
 
 ## Notas
 
-- El ráster/distribución son **provisionales (mock)** hasta integrar el shapefile
-  MEOW real + ocurrencias OBIS/GBIF con lat/lon. El filtro geográfico degrada con
-  elegancia (cosmopolitas y sin-datos nunca se excluyen).
+- Ráster MEOW + distribuciones por especie son **reales** (shapefile TNC +
+  ocurrencias OBIS/GBIF; 168 especies con ecorregiones reales, 35 cosmopolitas
+  exentas). El filtro geográfico degrada con elegancia (cosmopolitas y sin-datos
+  nunca se excluyen).
 - Encoder en **fp32 (352 MB)**; fp16 pendiente por incompatibilidad de fusión
   LayerNorm en ONNX Runtime.
 
