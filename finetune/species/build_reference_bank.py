@@ -137,14 +137,54 @@ def _compute_prototypes(
         norms = np.where(norms < 1e-8, 1.0, norms)
         return (embeddings / norms).astype(np.float32)
 
-    from sklearn.cluster import KMeans  # type: ignore[import]
-
-    km = KMeans(n_clusters=k, random_state=seed, n_init="auto")
-    km.fit(embeddings)
-    centers = km.cluster_centers_.astype(np.float32)
+    centers = _kmeans_numpy(embeddings.astype(np.float32), k=k, seed=seed)
     norms = np.linalg.norm(centers, axis=1, keepdims=True)
     norms = np.where(norms < 1e-8, 1.0, norms)
-    return centers / norms
+    return (centers / norms).astype(np.float32)
+
+
+def _kmeans_numpy(
+    x: np.ndarray, k: int, seed: int = 42, n_init: int = 4, max_iter: int = 50
+) -> np.ndarray:
+    """
+    K-means en numpy puro (k-means++ init + Lloyd), determinista por `seed`.
+
+    Sustituye a sklearn.cluster.KMeans para evitar arrastrar scipy/sklearn al
+    camino caliente (import muy lento bajo Windows Defender). Para el k pequeño
+    de los prototipos (k≈4-8) es equivalente y mucho más ligero.
+
+    Returns:
+        centroides float32 shape (k, dim), del mejor restart (menor inercia).
+    """
+    best_centers: np.ndarray | None = None
+    best_inertia = np.inf
+    for run in range(n_init):
+        rng = np.random.default_rng(seed + run)
+        # k-means++ init
+        centers = [x[rng.integers(len(x))]]
+        for _ in range(1, k):
+            d2 = np.min(
+                ((x[:, None, :] - np.stack(centers)[None, :, :]) ** 2).sum(-1), axis=1
+            )
+            probs = d2 / d2.sum() if d2.sum() > 0 else None
+            centers.append(x[rng.choice(len(x), p=probs)])
+        c = np.stack(centers)
+        for _ in range(max_iter):
+            dists = ((x[:, None, :] - c[None, :, :]) ** 2).sum(-1)
+            labels = dists.argmin(axis=1)
+            new_c = np.stack([
+                x[labels == j].mean(axis=0) if np.any(labels == j) else c[j]
+                for j in range(k)
+            ])
+            if np.allclose(new_c, c):
+                c = new_c
+                break
+            c = new_c
+        inertia = float(((x - c[labels]) ** 2).sum())
+        if inertia < best_inertia:
+            best_inertia, best_centers = inertia, c
+    assert best_centers is not None
+    return best_centers.astype(np.float32)
 
 
 def _write_bin(output_path: Path, matrix: np.ndarray, entries: list[ProtoEntry]) -> None:

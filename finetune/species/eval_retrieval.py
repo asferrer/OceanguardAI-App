@@ -530,27 +530,31 @@ def _mock_eval(output_dir: Path) -> None:
     eco_lookup  = _build_eco_lookup(hierarchy)
     _enrich_distribs(distribs, eco_lookup)
 
-    available_species = list({m.species_key for m in metas})[:5]
+    available_species = sorted({m.species_key for m in metas})
 
-    coords = [
-        (38.5, 15.0),    # Mediterraneo
-        (2.0, 124.0),    # Coral Triangle
-        (18.0, -70.0),   # Caribe
-        (None, None),    # sin GPS
-        (38.5, 15.0),    # Mediterraneo
-        (2.0, 124.0),
-    ]
+    # Coordenada representativa por especie: cae en una ecorregión donde la
+    # especie está documentada (in-region) → BALANCED nunca debe descartarla
+    # (FDR=0, propiedad de seguridad del plan §2b). Las cosmopolitas/sin-datos
+    # están exentas del filtro en cualquier coordenada. Una de cada 6 queries
+    # va sin GPS (region=None ≡ ruta OFF) para ejercer la degradación elegante.
+    in_region_coord: dict[str, tuple[float, float]] = {
+        "amphiprion_ocellaris": (2.0, 124.0),   # Coral Triangle (eco 84)
+        "octopus_vulgaris":     (38.5, 15.0),    # Mediterraneo (eco 25)
+        "caretta_caretta":      (18.0, -70.0),   # cosmopolita → Caribe
+        "aurelia_aurita":       (38.5, 15.0),    # cosmopolita → Mediterraneo
+        "rhincodon_typus":      (2.0, 124.0),    # cosmopolita → Coral Triangle
+    }
 
     queries: list[dict] = []
-    for i, sp_key in enumerate(available_species):
+    for sp_key in available_species:
+        coord = in_region_coord.get(sp_key)
         for j in range(6):
-            lat, lon = coords[(i + j) % len(coords)]
             q: dict = {
                 "image_path": f"mock/{sp_key}/img_{j:03d}.jpg",
                 "species_key": sp_key,
             }
-            if lat is not None:
-                q["lat"], q["lon"] = lat, lon
+            if coord is not None and j != 5:  # j==5 → sin GPS (ruta region=None)
+                q["lat"], q["lon"] = coord
             queries.append(q)
 
     embedder = FakeEmbedder()
