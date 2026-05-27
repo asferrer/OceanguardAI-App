@@ -71,15 +71,8 @@ fun SpeciesDexScreen(
     catalog: SpeciesCatalog,
     onNavigateToDetail: (speciesKey: String) -> Unit,
     onNavigateBack: () -> Unit,
-    onIdentifyImage: (Uri) -> Unit = {},
 ) {
     val vm: SpeciesDexViewModel = viewModel(factory = SpeciesDexViewModel.Factory(repo, catalog))
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? ->
-        if (uri != null) onIdentifyImage(uri)
-    }
 
     val dexItems by vm.dexItems.collectAsStateWithLifecycle()
     val discoveredCount by vm.discoveredCount.collectAsStateWithLifecycle()
@@ -116,26 +109,6 @@ fun SpeciesDexScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    photoPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_fish),
-                        contentDescription = null,
-                    )
-                },
-                text = {
-                    Text(text = stringResource(R.string.biodex_identify_cta))
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
             )
         },
         containerColor = MaterialTheme.colorScheme.background,

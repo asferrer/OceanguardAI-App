@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Selección de modo de escaneo (Home) -->
+    <string name="scan_mode_title">¿Qué quieres analizar?</string>
+    <string name="scan_mode_debris_title">Detectar residuos</string>
+    <string name="scan_mode_debris_desc">Encuentra y clasifica basura marina</string>
+    <string name="scan_mode_species_title">Identificar especies</string>
+    <string name="scan_mode_species_desc">Reconoce fauna marina y añádela a tu BioDex</string>
 
     <!-- ================================================================== -->
     <!-- Pantalla de detalle de sesión                                        -->

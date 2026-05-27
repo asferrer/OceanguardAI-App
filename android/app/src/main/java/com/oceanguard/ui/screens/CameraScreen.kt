@@ -96,6 +96,8 @@ private const val TAG = "CameraScreen"
 fun CameraScreen(
     navController: NavController,
     viewModel: MainViewModel,
+    speciesMode: Boolean = false,
+    onSpeciesCapture: ((Uri) -> Unit)? = null,
 ) {
     val cameraPermissionState = rememberPermissionState(
         android.Manifest.permission.CAMERA
@@ -155,14 +157,20 @@ fun CameraScreen(
                     }
                 },
                 onImageCaptured = { uri ->
-                    viewModel.analyzeImage(uri)
-                    // Camera flow lands on the dedicated immersive result screen
-                    // (image full-screen + bounding boxes painted on top, with
-                    // a live inference animation while the model runs). Gallery
-                    // and batch flows continue to use "results"/"batch".
-                    navController.navigate("camera_result") {
-                        // Pop the viewfinder so back from the result goes home.
-                        popUpTo("camera") { inclusive = true }
+                    if (speciesMode && onSpeciesCapture != null) {
+                        // Biology mode: hand the captured image to the species
+                        // identification pipeline instead of the debris detector.
+                        onSpeciesCapture(uri)
+                    } else {
+                        viewModel.analyzeImage(uri)
+                        // Camera flow lands on the dedicated immersive result screen
+                        // (image full-screen + bounding boxes painted on top, with
+                        // a live inference animation while the model runs). Gallery
+                        // and batch flows continue to use "results"/"batch".
+                        navController.navigate("camera_result") {
+                            // Pop the viewfinder so back from the result goes home.
+                            popUpTo("camera") { inclusive = true }
+                        }
                     }
                 },
                 onBack = { navController.popBackStack() },

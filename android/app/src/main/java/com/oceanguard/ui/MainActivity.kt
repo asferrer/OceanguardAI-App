@@ -265,10 +265,29 @@ class MainActivity : AppCompatActivity() {
                                 dexEntries = dexEntries,
                                 discoveredCount = discoveredCount,
                                 latestAchievement = latestUnlocked,
+                                onSpeciesImagePicked = { uri ->
+                                    speciesViewModel.identifyFromImage(uri)
+                                    navController.navigate("species_result")
+                                },
                             )
                         }
-                        composable("camera") {
-                            CameraScreen(navController = navController, viewModel = viewModel)
+                        composable(
+                            route = "camera?mode={mode}",
+                            arguments = listOf(navArgument("mode") {
+                                type = NavType.StringType
+                                defaultValue = "debris"
+                            }),
+                        ) { backStackEntry ->
+                            val speciesMode = backStackEntry.arguments?.getString("mode") == "species"
+                            CameraScreen(
+                                navController = navController,
+                                viewModel = viewModel,
+                                speciesMode = speciesMode,
+                                onSpeciesCapture = { uri ->
+                                    speciesViewModel.identifyFromImage(uri)
+                                    navController.navigate("species_result")
+                                },
+                            )
                         }
                         composable("live_detection") {
                             LiveDetectionScreen(navController = navController, viewModel = viewModel)
@@ -388,10 +407,6 @@ class MainActivity : AppCompatActivity() {
                                 catalog = app.speciesCatalog,
                                 onNavigateToDetail = { key -> navController.navigate("biodex/$key") },
                                 onNavigateBack = { navController.popBackStack() },
-                                onIdentifyImage = { uri ->
-                                    speciesViewModel.identifyFromImage(uri)
-                                    navController.navigate("species_result")
-                                },
                             )
                         }
                         composable("species_result") {

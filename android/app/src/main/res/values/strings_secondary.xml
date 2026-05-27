@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Scan mode selection (Home) -->
+    <string name="scan_mode_title">What do you want to scan?</string>
+    <string name="scan_mode_debris_title">Detect debris</string>
+    <string name="scan_mode_debris_desc">Find and classify marine litter</string>
+    <string name="scan_mode_species_title">Identify species</string>
+    <string name="scan_mode_species_desc">Recognize marine life and add it to your BioDex</string>
 
     <!-- ================================================================== -->
     <!-- Session Detail Screen                                               -->

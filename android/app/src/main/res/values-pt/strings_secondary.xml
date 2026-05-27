@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Seleção do modo de análise (Início) -->
+    <string name="scan_mode_title">O que queres analisar?</string>
+    <string name="scan_mode_debris_title">Detetar resíduos</string>
+    <string name="scan_mode_debris_desc">Encontra e classifica o lixo marinho</string>
+    <string name="scan_mode_species_title">Identificar espécies</string>
+    <string name="scan_mode_species_desc">Reconhece a vida marinha e adiciona-a ao teu BioDex</string>
 
     <!-- ================================================================== -->
     <!-- Tela de Detalhes da Sessão                                          -->

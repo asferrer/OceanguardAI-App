@@ -65,6 +65,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.runtime.rememberCoroutineScope
 import com.oceanguard.ai.data.DebrisType
 import com.oceanguard.ai.data.EnvironmentalImpact
@@ -108,6 +109,7 @@ fun HomeScreen(
     dexEntries: List<MarineDexEntry> = emptyList(),
     discoveredCount: Int = 0,
     latestAchievement: Achievement? = null,
+    onSpeciesImagePicked: (Uri) -> Unit = {},
 ) {
     // Request location permission once on first composition so GPS data
     // is available when saving sessions from gallery picks.
@@ -169,6 +171,13 @@ fun HomeScreen(
             viewModel.analyzeImage(uri)
             navController.navigate("results")
         }
+    }
+
+    // Species gallery picker — single image routed to the biology ID flow (M5).
+    val speciesGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? ->
+        if (uri != null) onSpeciesImagePicked(uri)
     }
 
     // Multi-media picker — gallery, accepts images and videos (batch).
@@ -233,6 +242,8 @@ fun HomeScreen(
 
     // Dropdown state for the scan source picker
     var showScanMenu by remember { mutableStateOf(false) }
+    var showModeSheet by remember { mutableStateOf(false) }
+    var pendingSource by remember { mutableStateOf<ScanSource?>(null) }
 
     val scrollState = rememberScrollState()
 
@@ -347,10 +358,8 @@ fun HomeScreen(
                                 // that is not yet ready.
                                 enabled = scanEnabled,
                                 onClick = {
-                                    when {
-                                        needsGemma4Download -> showGemma4DownloadDialog = true
-                                        else                 -> navController.navigate("camera")
-                                    }
+                                    pendingSource = ScanSource.CAMERA
+                                    showModeSheet = true
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 useGradient = true,
@@ -368,10 +377,8 @@ fun HomeScreen(
                                     contentColor = GradientCTAStart,
                                     enabled = scanEnabled,
                                     onClick = {
-                                        when {
-                                            needsGemma4Download -> showGemma4DownloadDialog = true
-                                            else                 -> showScanMenu = true
-                                        }
+                                        pendingSource = ScanSource.GALLERY
+                                        showModeSheet = true
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -588,6 +595,33 @@ fun HomeScreen(
         // intentionally do NOT navigate to the scan screen yet: scanning is
         // blocked until the model file is fully on disk, and the Home progress
         // bar shows the user how far the download has come.
+        if (showModeSheet) {
+            ScanModeDialog(
+                onDismiss = { showModeSheet = false; pendingSource = null },
+                onDebris = {
+                    showModeSheet = false
+                    val src = pendingSource; pendingSource = null
+                    when {
+                        needsGemma4Download -> showGemma4DownloadDialog = true
+                        src == ScanSource.CAMERA -> navController.navigate("camera")
+                        src == ScanSource.GALLERY -> showScanMenu = true
+                        else -> {}
+                    }
+                },
+                onSpecies = {
+                    showModeSheet = false
+                    val src = pendingSource; pendingSource = null
+                    when (src) {
+                        ScanSource.CAMERA -> navController.navigate("camera?mode=species")
+                        ScanSource.GALLERY -> speciesGalleryLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                        null -> {}
+                    }
+                },
+            )
+        }
+
         if (showGemma4DownloadDialog) {
             AlertDialog(
                 onDismissRequest = { showGemma4DownloadDialog = false },
@@ -1442,6 +1476,91 @@ private fun MarineDexPreviewCard(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = stringResource(R.string.cd_view_marinedex),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Scan mode selection — choose Debris vs Species before camera/gallery
+// ---------------------------------------------------------------------------
+
+private enum class ScanSource { CAMERA, GALLERY }
+
+@Composable
+private fun ScanModeDialog(
+    onDismiss: () -> Unit,
+    onDebris: () -> Unit,
+    onSpecies: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.scan_mode_title),
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ScanModeOption(
+                    title = stringResource(R.string.scan_mode_debris_title),
+                    desc = stringResource(R.string.scan_mode_debris_desc),
+                    onClick = onDebris,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DeleteOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+                ScanModeOption(
+                    title = stringResource(R.string.scan_mode_species_title),
+                    desc = stringResource(R.string.scan_mode_species_desc),
+                    onClick = onSpecies,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_fish),
+                        contentDescription = null,
+                        tint = OceanGreen,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ScanModeOption(
+    title: String,
+    desc: String,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(12.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon()
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

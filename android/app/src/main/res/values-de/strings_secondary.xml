@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Scan-Modus-Auswahl (Start) -->
+    <string name="scan_mode_title">Was möchtest du analysieren?</string>
+    <string name="scan_mode_debris_title">Müll erkennen</string>
+    <string name="scan_mode_debris_desc">Meeresmüll finden und klassifizieren</string>
+    <string name="scan_mode_species_title">Arten bestimmen</string>
+    <string name="scan_mode_species_desc">Meereslebewesen erkennen und zum BioDex hinzufügen</string>
 
     <!-- ================================================================== -->
     <!-- Sitzungsdetailbildschirm                                             -->
