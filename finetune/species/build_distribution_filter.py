@@ -167,38 +167,62 @@ def _fetch_gbif_occurrences(scientific_name: str, limit: int = 300) -> list[dict
     return data.get("results", [])
 
 
-def _occurrences_to_ecoregions(
-    occurrences: list[dict], meow_shp: Path
-) -> list[int]:
-    """
-    Cruza ocurrencias (lat/lon) con el shapefile MEOW usando geopandas.
-    Requiere: geopandas, shapely.
-    Devuelve lista de ecoregionId únicos (int).
-    """
+# Columna del shapefile MEOW con el ID canónico 1..232 (NO ECOREGION, que es
+# el nombre; NI ECO_CODE, que es el código global de 5 dígitos 20001..25230).
+_ECO_ID_COL = "ECO_CODE_X"
+
+
+def _load_meow(meow_shp: Path):
+    """Carga el shapefile MEOW una sola vez. Requiere geopandas."""
     try:
         import geopandas as gpd  # type: ignore[import]
-        from shapely.geometry import Point  # type: ignore[import]
     except ImportError:
         raise ImportError(
             "geopandas y shapely son necesarios para --online. "
             "Instala con: pip install geopandas shapely"
         )
-
     meow = gpd.read_file(meow_shp)
-    # MEOW shapefile tiene columna ECOREGION con ID entero
-    eco_col = "ECOREGION" if "ECOREGION" in meow.columns else meow.columns[0]
+    if _ECO_ID_COL not in meow.columns:
+        raise ValueError(
+            f"Columna {_ECO_ID_COL} no encontrada en {meow_shp.name}. "
+            f"Columnas: {list(meow.columns)}"
+        )
+    return meow
 
-    eco_ids: set[int] = set()
+
+def _occurrence_points(occurrences: list[dict]) -> list[tuple[float, float]]:
+    """Extrae pares (lon, lat) válidos de las ocurrencias OBIS/GBIF."""
+    pts: list[tuple[float, float]] = []
     for occ in occurrences:
         lat = occ.get("decimalLatitude") or occ.get("decimallatitude")
         lon = occ.get("decimalLongitude") or occ.get("decimallongitude")
         if lat is None or lon is None:
             continue
-        pt = Point(float(lon), float(lat))
-        matches = meow[meow.geometry.contains(pt)]
-        for _, row in matches.iterrows():
-            eco_ids.add(int(row[eco_col]))
-    return sorted(eco_ids)
+        try:
+            pts.append((float(lon), float(lat)))
+        except (TypeError, ValueError):
+            continue
+    return pts
+
+
+def _occurrences_to_ecoregions(occurrences: list[dict], meow) -> list[int]:
+    """
+    Cruza ocurrencias (lat/lon) con MEOW mediante spatial-join vectorizado.
+
+    `meow` es el GeoDataFrame ya cargado (ver `_load_meow`). Devuelve la lista
+    de ecoregionId únicos (ECO_CODE_X, 1..232) donde caen las ocurrencias.
+    """
+    import geopandas as gpd  # type: ignore[import]
+    from shapely.geometry import Point  # type: ignore[import]
+
+    pts = _occurrence_points(occurrences)
+    if not pts:
+        return []
+    geoms = [Point(lon, lat) for lon, lat in pts]
+    occ_gdf = gpd.GeoDataFrame(geometry=geoms, crs=meow.crs)
+    joined = gpd.sjoin(occ_gdf, meow[[_ECO_ID_COL, "geometry"]], predicate="within")
+    ids = joined[_ECO_ID_COL].dropna().astype(int).unique().tolist()
+    return sorted(ids)
 
 
 def _build_species_entry(
@@ -243,6 +267,38 @@ def build_catalog_mock(taxon_list: list[dict], output_path: Path) -> None:
     print(f"  Catálogo mock escrito: {output_path} ({len(species_entries)} taxones)")
 
 
+def _resolve_taxon_ecoregions(taxon: dict, meow) -> list[int]:
+    """Ecoregiones MEOW reales para un taxón vía OBIS+GBIF.
+
+    Las especies cosmopolitas se marcan con lista vacía (exentas del filtro).
+    Si la red falla o no hay ocurrencias, cae al mock plausible.
+    """
+    key = taxon["species_key"]
+    if bool(taxon.get("cosmopolitan", False)):
+        print(f"    INFO: {key} cosmopolita -> sin ecoregiones (exento)")
+        return []
+
+    sci = taxon["scientific_name"]
+    print(f"  Consultando OBIS+GBIF: {sci}...")
+    try:
+        obis_occs = _fetch_obis_occurrences(sci)
+        time.sleep(_ONLINE_DELAY_S)
+        gbif_occs = _fetch_gbif_occurrences(sci)
+        time.sleep(_ONLINE_DELAY_S)
+    except Exception as exc:
+        print(f"    WARN: error de red para {sci}: {exc}. Usando mock.")
+        obis_occs, gbif_occs = [], []
+
+    all_occs = obis_occs + gbif_occs
+    if all_occs:
+        ecoregions = _occurrences_to_ecoregions(all_occs, meow)
+        if ecoregions:
+            print(f"    OK: {key} -> {len(ecoregions)} ecoregiones ({len(all_occs)} occs)")
+            return ecoregions
+    print(f"    INFO: sin ocurrencias mapeadas -> usando mock para {key}")
+    return _MOCK_ECOREGIONS.get(key, [])
+
+
 def build_catalog_online(
     taxon_list: list[dict], meow_shp: Path, output_path: Path
 ) -> None:
@@ -250,28 +306,11 @@ def build_catalog_online(
     Descarga ocurrencias de OBIS+GBIF y cruza con MEOW shapefile.
     Solo se ejecuta bajo --online.
     """
-    species_entries = []
-    for taxon in taxon_list:
-        sci = taxon["scientific_name"]
-        print(f"  Consultando OBIS+GBIF: {sci}...")
-        try:
-            obis_occs = _fetch_obis_occurrences(sci)
-            time.sleep(_ONLINE_DELAY_S)
-            gbif_occs = _fetch_gbif_occurrences(sci)
-            time.sleep(_ONLINE_DELAY_S)
-        except Exception as exc:
-            print(f"    WARN: error de red para {sci}: {exc}. Usando mock.")
-            obis_occs, gbif_occs = [], []
-
-        all_occs = obis_occs + gbif_occs
-        if all_occs and meow_shp.exists():
-            ecoregions = _occurrences_to_ecoregions(all_occs, meow_shp)
-        else:
-            key = taxon["species_key"]
-            ecoregions = _MOCK_ECOREGIONS.get(key, [])
-            if not all_occs:
-                print(f"    INFO: sin ocurrencias → usando mock para {key}")
-        species_entries.append(_build_species_entry(taxon, ecoregions))
+    meow = _load_meow(meow_shp)
+    species_entries = [
+        _build_species_entry(taxon, _resolve_taxon_ecoregions(taxon, meow))
+        for taxon in taxon_list
+    ]
 
     catalog = {
         "version": 1,
