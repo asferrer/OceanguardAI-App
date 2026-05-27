@@ -2,4 +2,7 @@
 # These are produced by the build_*.py scripts and downloaded to the app
 # from HuggingFace; they are not source and must not be committed.
 output/
+output_synth/
 *.bin
+*.onnx
+*.png

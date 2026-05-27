@@ -20,10 +20,20 @@ import java.io.File
 class SpeciesCatalog(private val catalogFile: File) {
 
     private val gson = Gson()
-    private val entryListType = object : TypeToken<List<SpeciesCatalogEntry>>() {}.type
+    private val catalogFileType = object : TypeToken<CatalogFile>() {}.type
 
     @Volatile
     private var entries: Map<String, SpeciesCatalogEntry>? = null
+
+    /**
+     * Top-level wrapper of `species_catalog_vN.json`. The Python asset-builder
+     * (`build_distribution_filter.py`) emits an object carrying provenance
+     * metadata (`version`, `sources`, `license_note`) plus the `species` array,
+     * not a bare array — so the catalog is parsed through this wrapper.
+     */
+    private data class CatalogFile(
+        val species: List<SpeciesCatalogEntry> = emptyList(),
+    )
 
     /**
      * Parses the catalog JSON and caches it. Safe to call multiple times;
@@ -36,11 +46,11 @@ class SpeciesCatalog(private val catalogFile: File) {
         check(catalogFile.exists()) {
             "Species catalog not found at ${catalogFile.absolutePath}. Download it first."
         }
-        val list: List<SpeciesCatalogEntry> = gson.fromJson(
+        val parsed: CatalogFile = gson.fromJson(
             catalogFile.readText(Charsets.UTF_8),
-            entryListType,
+            catalogFileType,
         )
-        entries = list.associateBy { it.speciesKey }
+        entries = parsed.species.associateBy { it.speciesKey }
     }
 
     /**
