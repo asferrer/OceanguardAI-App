@@ -60,6 +60,8 @@ class ImageRef:
     url: str
     license: str
     creator: str
+    lat: float | None = None  # coords de la ocurrencia (para ablación geográfica)
+    lon: float | None = None
 
 
 def _license_ok(license_str: str, allow_nc: bool) -> bool:
@@ -70,6 +72,17 @@ def _license_ok(license_str: str, allow_nc: bool) -> bool:
     if is_nc and not allow_nc:
         return False
     return any(p in s for p in PERMISSIVE) or is_nc
+
+
+def _parse_latlon(loc: str | None) -> tuple[float | None, float | None]:
+    """iNat 'location' = 'lat,lng' → (lat, lon) floats, o (None, None)."""
+    if not loc:
+        return None, None
+    try:
+        lat, lon = loc.split(",")
+        return float(lat), float(lon)
+    except (ValueError, AttributeError):
+        return None, None
 
 
 def _session() -> requests.Session:
@@ -115,6 +128,7 @@ def from_inaturalist(sess: requests.Session, key: str, sci: str, limit: int, all
             return []
         out: list[ImageRef] = []
         for obs in r.json().get("results", []):
+            lat, lon = _parse_latlon(obs.get("location"))
             for photo in obs.get("photos", []):
                 lic = photo.get("license_code") or ""
                 if not _license_ok(lic, allow_nc):
@@ -122,7 +136,8 @@ def from_inaturalist(sess: requests.Session, key: str, sci: str, limit: int, all
                 url = (photo.get("url") or "").replace("square", "large")
                 if not url:
                     continue
-                out.append(ImageRef(key, "inat", url, lic, photo.get("attribution", "iNaturalist")))
+                out.append(ImageRef(key, "inat", url, lic,
+                                    photo.get("attribution", "iNaturalist"), lat, lon))
                 if len(out) >= limit:
                     return out
         return out
@@ -142,6 +157,7 @@ def from_gbif(sess: requests.Session, key: str, sci: str, limit: int, allow_nc: 
             return []
         out: list[ImageRef] = []
         for occ in r.json().get("results", []):
+            lat, lon = occ.get("decimalLatitude"), occ.get("decimalLongitude")
             for media in occ.get("media", []):
                 if media.get("type") != "StillImage":
                     continue
@@ -151,7 +167,7 @@ def from_gbif(sess: requests.Session, key: str, sci: str, limit: int, allow_nc: 
                 url = media.get("identifier")
                 if not url:
                     continue
-                out.append(ImageRef(key, "gbif", url, lic, media.get("creator", "GBIF")))
+                out.append(ImageRef(key, "gbif", url, lic, media.get("creator", "GBIF"), lat, lon))
                 if len(out) >= limit:
                     return out
         return out
@@ -232,6 +248,7 @@ def main() -> None:
                 prov.write(json.dumps({
                     "species_key": key, "source": ref.source, "url": ref.url,
                     "license": ref.license, "creator": ref.creator, "file": dest.name,
+                    "lat": ref.lat, "lon": ref.lon,
                 }, ensure_ascii=False) + "\n")
                 saved += 1
         print(f"{key:<26} guardadas={saved}/{len(refs)}")
