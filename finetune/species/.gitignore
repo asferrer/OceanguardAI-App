@@ -3,6 +3,9 @@
 # from HuggingFace; they are not source and must not be committed.
 output/
 output_synth/
+images/
 *.bin
 *.onnx
 *.png
+*.jpg
+*.jpeg

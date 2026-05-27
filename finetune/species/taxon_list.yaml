@@ -238,7 +238,7 @@ taxa:
     cosmopolitan: false
 
   - species_key: thalassoma_hardwicke
-    aphia_id: null  # TODO: verify on https://www.marinespecies.org
+    aphia_id: 212217
     scientific_name: Thalassoma hardwicke
     common_names:
       en: Sixbar wrasse
@@ -250,7 +250,7 @@ taxa:
     cosmopolitan: false
 
   - species_key: chaetodon_lunula
-    aphia_id: null  # TODO: verify on https://www.marinespecies.org
+    aphia_id: 218733
     scientific_name: Chaetodon lunula
     common_names:
       en: Raccoon butterflyfish

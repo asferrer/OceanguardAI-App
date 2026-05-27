@@ -133,8 +133,12 @@ class OpenCLIPEmbedder(ImageEmbedder):
         """
         Exporta el visual encoder a ONNX para uso en Android (ONNX Runtime Mobile).
 
-        Input:  pixel_values  shape (batch, 3, 224, 224) float32  rango [0,1] normalizado CLIP
-        Output: image_embeds  shape (batch, 512)          float32  L2-normalizado
+        Input:  pixel_values   shape (batch, 3, 224, 224) float32  rango [0,1] normalizado CLIP
+        Output: image_features shape (batch, 512)          float32  L2-normalizado
+
+        NOTA: los nombres de tensores DEBEN coincidir con OnnxSpeciesEmbedder.kt
+        (INPUT_NAME="pixel_values", OUTPUT_NAME="image_features"). Verificado E2E
+        en device con el encoder sintético; un mismatch rompe la inferencia ORT.
 
         El tensor de entrada sigue la normalización CLIP estándar:
           mean = [0.48145466, 0.4578275, 0.40821073]
@@ -172,8 +176,8 @@ class OpenCLIPEmbedder(ImageEmbedder):
             dummy,
             str(output_path),
             input_names=["pixel_values"],
-            output_names=["image_embeds"],
-            dynamic_axes={"pixel_values": {0: "batch"}, "image_embeds": {0: "batch"}},
+            output_names=["image_features"],
+            dynamic_axes={"pixel_values": {0: "batch"}, "image_features": {0: "batch"}},
             opset_version=opset,
         )
         print(f"ONNX exportado: {output_path}")
