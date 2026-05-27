@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,8 +53,10 @@ import com.oceanguard.ai.ui.screens.MarineDexDetailScreen
 import com.oceanguard.ai.ui.screens.MarineDexScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexDetailScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexScreen
+import com.oceanguard.ai.ui.screens.SpeciesObservationDetailScreen
 import com.oceanguard.ai.ui.screens.SpeciesResultScreen
 import com.oceanguard.ai.ui.screens.SpeciesViewModel
+import com.oceanguard.ai.data.species.SpeciesObservation
 import com.oceanguard.ai.ui.screens.SplashScreen
 import com.oceanguard.ai.ui.screens.VideoDetailScreen
 import com.oceanguard.ai.ui.screens.VideoResultsScreen
@@ -416,8 +419,25 @@ class MainActivity : AppCompatActivity() {
                                 repo = app.speciesCollectionRepository,
                                 catalog = app.speciesCatalog,
                                 onNavigateBack = { navController.popBackStack() },
+                                onObservationClick = { id -> navController.navigate("species_observation/$id") },
                                 initialTab = initialTab,
                             )
+                        }
+                        composable(
+                            route = "species_observation/{observationId}",
+                            arguments = listOf(navArgument("observationId") { type = NavType.LongType }),
+                        ) { backStackEntry ->
+                            val obsId = backStackEntry.arguments?.getLong("observationId") ?: return@composable
+                            val observation by produceState<SpeciesObservation?>(initialValue = null, obsId) {
+                                value = app.speciesCollectionRepository.getObservationById(obsId)
+                            }
+                            observation?.let { obs ->
+                                SpeciesObservationDetailScreen(
+                                    observation = obs,
+                                    catalog = app.speciesCatalog,
+                                    onNavigateBack = { navController.popBackStack() },
+                                )
+                            }
                         }
                         composable("achievements") {
                             AchievementsScreen(

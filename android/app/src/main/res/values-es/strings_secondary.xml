@@ -700,6 +700,22 @@
     <!-- Marcador de posición del mapa de BioDex                             -->
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Mapa próximamente.\nLas ubicaciones de las observaciones aparecerán aquí cuando se integre la capa del mapa.</string>
+    <string name="biodex_map_empty_no_location">Ninguna de tus observaciones de esta especie incluye datos de ubicación. Concede permiso de localización antes de capturar para ver marcadores GPS aquí.</string>
+    <string name="biodex_map_empty_no_obs">Aún no hay observaciones registradas. Captura una imagen de esta especie para poblar el mapa.</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Detalle de observación (M6)                                  -->
+    <!-- ================================================================== -->
+    <string name="biodex_obs_detail_title">Observación</string>
+    <string name="biodex_obs_detail_label_confidence">Confianza</string>
+    <string name="biodex_obs_detail_label_source">Fuente</string>
+    <string name="biodex_obs_detail_label_date">Fecha</string>
+    <string name="biodex_obs_detail_label_location">Ubicación</string>
+    <string name="biodex_obs_detail_label_description">Descripción VLM</string>
+    <string name="biodex_obs_detail_badge_uncatalogued">Sin catalogar</string>
+    <string name="biodex_obs_detail_badge_out_of_range">Fuera de rango</string>
+    <string name="biodex_obs_detail_cd_image">Imagen de observación</string>
+    <string name="biodex_obs_detail_cd_go_back">Volver</string>
 
     <!-- ================================================================== -->
     <!-- BioDex Identificación de Especies (M5)                              -->

@@ -42,6 +42,10 @@ class SpeciesCollectionRepository(
         return speciesObservationDao.getByAphiaId(speciesKey)
     }
 
+    /** Single observation by id, for the observation detail screen (M6). */
+    suspend fun getObservationById(id: Long): SpeciesObservation? =
+        speciesObservationDao.getById(id)
+
     /**
      * Completion percentage as a fraction in [0, 1].
      * Denominator is the number of taxons in the loaded catalog.

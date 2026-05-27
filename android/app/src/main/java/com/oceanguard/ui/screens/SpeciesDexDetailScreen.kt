@@ -81,13 +81,16 @@ import java.util.Locale
  * Structure mirrors [MarineDexDetailScreen]: hero header with floating sprite +
  * favourite toggle, then a 3-tab layout (Info / Gallery / Map).
  *
- * Tab 2 (Map) reuses [MarineDexTypeMap] as a placeholder with empty sessions
- * until a species-specific map implementation is added in a later phase.
+ * Tab 1 (Gallery): [SpeciesDexGallery] — tapping a thumbnail calls [onObservationClick].
+ * Tab 2 (Map): [SpeciesObservationMap] — real MapLibre map, same tile style as the
+ *              main MapScreen; tapping a pin calls [onObservationClick].
  *
  * TODO(integration): Add route "biodex/{speciesKey}?tab={tab}" in MainActivity.
- * TODO(integration): Implement SpeciesObservation → location map overlay
- *                    (can reuse MarineDexTypeMap pattern with SpeciesObservation
- *                    lat/lon once the data layer is wired).
+ * TODO(integration — M6): Handle [onObservationClick] in MainActivity by navigating
+ *   to route "species_observation/{observationId}". The handler should resolve the
+ *   observation via SpeciesCollectionRepository.getObservationById(id) and call
+ *   SpeciesObservationDetailScreen(observation, catalog, onNavigateBack =
+ *   { navController.popBackStack() }).
  */
 @Composable
 fun SpeciesDexDetailScreen(
@@ -95,6 +98,7 @@ fun SpeciesDexDetailScreen(
     repo: SpeciesCollectionRepository,
     catalog: SpeciesCatalog,
     onNavigateBack: () -> Unit,
+    onObservationClick: (observationId: Long) -> Unit = {},
     initialTab: Int = 0,
 ) {
     val vm: SpeciesDexViewModel = viewModel(factory = SpeciesDexViewModel.Factory(repo, catalog))
@@ -151,9 +155,12 @@ fun SpeciesDexDetailScreen(
                     1 -> SpeciesDexGallery(
                         observations = observations,
                         speciesDisplayName = displayName,
-                        onObservationClick = { /* TODO(integration): navigate to observation detail */ },
+                        onObservationClick = onObservationClick,
                     )
-                    2 -> SpeciesMapPlaceholder()
+                    2 -> SpeciesObservationMap(
+                        observations = observations,
+                        onObservationClick = onObservationClick,
+                    )
                 }
             }
         }
@@ -410,30 +417,6 @@ private fun SpeciesStatCard(label: String, value: String, modifier: Modifier = M
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Map tab placeholder
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun SpeciesMapPlaceholder() {
-    // TODO(integration): Replace with a MapLibre map showing SpeciesObservation
-    // locations, mirroring MarineDexTypeMap.  Pass observations filtered to
-    // those with non-null location data.
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.biodex_map_placeholder),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 

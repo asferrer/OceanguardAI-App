@@ -698,6 +698,22 @@
     <!-- BioDex-Karten-Platzhalter                                            -->
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Karte demnächst verfügbar.\nBeobachtungsstandorte erscheinen hier, sobald die Kartenebene eingebunden ist.</string>
+    <string name="biodex_map_empty_no_location">Keine Ihrer Beobachtungen dieser Art enthält Standortdaten. Erteilen Sie die Standortberechtigung vor der Aufnahme, um GPS-Marker hier zu sehen.</string>
+    <string name="biodex_map_empty_no_obs">Noch keine Beobachtungen erfasst. Nehmen Sie ein Bild dieser Art auf, um die Karte zu befüllen.</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Beobachtungsdetail (M6)                                      -->
+    <!-- ================================================================== -->
+    <string name="biodex_obs_detail_title">Beobachtung</string>
+    <string name="biodex_obs_detail_label_confidence">Konfidenz</string>
+    <string name="biodex_obs_detail_label_source">Quelle</string>
+    <string name="biodex_obs_detail_label_date">Datum</string>
+    <string name="biodex_obs_detail_label_location">Standort</string>
+    <string name="biodex_obs_detail_label_description">VLM-Beschreibung</string>
+    <string name="biodex_obs_detail_badge_uncatalogued">Nicht katalogisiert</string>
+    <string name="biodex_obs_detail_badge_out_of_range">Außerhalb des Verbreitungsgebiets</string>
+    <string name="biodex_obs_detail_cd_image">Beobachtungsbild</string>
+    <string name="biodex_obs_detail_cd_go_back">Zurück</string>
 
     <!-- ================================================================== -->
     <!-- BioDex Artenbestimmung (M5)                                         -->

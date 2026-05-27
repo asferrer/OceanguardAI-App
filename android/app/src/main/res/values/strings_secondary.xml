@@ -707,6 +707,25 @@
     <!-- BioDex Map Placeholder                                               -->
     <!-- ================================================================== -->
     <string name="biodex_map_placeholder">Map coming soon.\nObservation locations will appear here once the map layer is wired.</string>
+    <!-- Shown when none of the observations carry GPS coordinates -->
+    <string name="biodex_map_empty_no_location">None of your observations for this species include location data. Grant location permission before capturing to see GPS markers here.</string>
+    <!-- Shown in Map tab when there are zero observations at all -->
+    <string name="biodex_map_empty_no_obs">No observations recorded yet. Capture an image of this species to populate the map.</string>
+
+    <!-- ================================================================== -->
+    <!-- BioDex Observation Detail (M6)                                      -->
+    <!-- ================================================================== -->
+    <string name="biodex_obs_detail_title">Observation</string>
+    <string name="biodex_obs_detail_label_confidence">Confidence</string>
+    <string name="biodex_obs_detail_label_source">Source</string>
+    <string name="biodex_obs_detail_label_date">Date</string>
+    <string name="biodex_obs_detail_label_location">Location</string>
+    <string name="biodex_obs_detail_label_description">VLM description</string>
+    <string name="biodex_obs_detail_badge_uncatalogued">Uncatalogued</string>
+    <string name="biodex_obs_detail_badge_out_of_range">Out of range</string>
+    <string name="biodex_obs_detail_cd_image">Observation image</string>
+    <string name="biodex_obs_detail_cd_go_back">Go back</string>
+    <!-- lat / lon formatted label: "12.3456, -7.8901" built in code -->
 
     <!-- ================================================================== -->
     <!-- BioDex Species Identification (M5)                                  -->
