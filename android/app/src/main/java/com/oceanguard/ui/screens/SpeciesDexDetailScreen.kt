@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -52,16 +53,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.species.SpeciesCatalog
 import com.oceanguard.ai.data.species.SpeciesCatalogEntry
 import com.oceanguard.ai.data.species.SpeciesCollectionRepository
+import com.oceanguard.ai.data.species.enrichment.SpeciesEnrichment
 import com.oceanguard.ai.ui.components.dex.DexItem
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.SpeciesSpriteImage
@@ -92,6 +96,14 @@ import java.util.Locale
  *   SpeciesObservationDetailScreen(observation, catalog, onNavigateBack =
  *   { navController.popBackStack() }).
  */
+// TODO(M7-integration): Wire enrichmentProvider from MainActivity / OceanGuardApp:
+//   1. Construct SpeciesEnrichmentRepository(context, app.settingsRepository) in OceanGuardApp.
+//   2. When navigating to "biodex/{speciesKey}", pass:
+//        enrichmentProvider = { aphiaId, name ->
+//            app.speciesEnrichmentRepository.enrich(aphiaId, name)
+//        }
+//      The provider already checks speciesOnlineEnrichmentEnabled internally and
+//      returns null when the flag is off, so the UI degrades gracefully.
 @Composable
 fun SpeciesDexDetailScreen(
     speciesKey: String,
@@ -100,6 +112,7 @@ fun SpeciesDexDetailScreen(
     onNavigateBack: () -> Unit,
     onObservationClick: (observationId: Long) -> Unit = {},
     initialTab: Int = 0,
+    enrichmentProvider: (suspend (aphiaId: Long?, scientificName: String) -> SpeciesEnrichment?)? = null,
 ) {
     val vm: SpeciesDexViewModel = viewModel(factory = SpeciesDexViewModel.Factory(repo, catalog))
     val scope = rememberCoroutineScope()
@@ -151,6 +164,7 @@ fun SpeciesDexDetailScreen(
                         catalogEntry = catalogEntry,
                         dexEntry = dexEntry,
                         lang = lang,
+                        enrichmentProvider = enrichmentProvider,
                     )
                     1 -> SpeciesDexGallery(
                         observations = observations,
@@ -297,9 +311,24 @@ private fun SpeciesInfoTabContent(
     catalogEntry: SpeciesCatalogEntry?,
     dexEntry: DexItem?,
     lang: String,
+    enrichmentProvider: (suspend (aphiaId: Long?, scientificName: String) -> SpeciesEnrichment?)? = null,
 ) {
     val description = catalogEntry?.descriptions?.get(lang)
         ?: catalogEntry?.descriptions?.get("en")
+
+    val scientificName = catalogEntry?.scientificName ?: speciesKey
+
+    // null  = not yet fetched (loading) | SpeciesEnrichment = data | Unit = fetched but no data
+    val enrichmentResult by produceState<Any?>(
+        initialValue = null,
+        key1 = speciesKey,
+        key2 = enrichmentProvider,
+    ) {
+        if (enrichmentProvider == null) { value = Unit; return@produceState }
+        value = enrichmentProvider.invoke(null, scientificName) ?: Unit
+    }
+    val enrichment = enrichmentResult as? SpeciesEnrichment
+    val enrichmentLoaded = enrichmentProvider == null || enrichmentResult != null
 
     Column(
         modifier = Modifier
@@ -329,7 +358,126 @@ private fun SpeciesInfoTabContent(
         if (dexEntry != null) {
             SpeciesStatsRow(dexItem = dexEntry)
         }
+
+        OnlineInfoSection(
+            enrichment = enrichment,
+            enrichmentLoaded = enrichmentLoaded,
+        )
     }
+}
+
+// ---------------------------------------------------------------------------
+// Online enrichment section (M7)
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun OnlineInfoSection(
+    enrichment: SpeciesEnrichment?,
+    enrichmentLoaded: Boolean,
+) {
+    when {
+        !enrichmentLoaded -> Unit // still fetching — show nothing, avoids hint flash
+        enrichment != null -> OnlineInfoCard(enrichment = enrichment)
+        else -> OnlineInfoDisabledHint()
+    }
+}
+
+@Composable
+private fun OnlineInfoCard(enrichment: SpeciesEnrichment) {
+    GlassCard(animate = false) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.biodex_enrichment_section_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = OceanBlueLight,
+            )
+            enrichment.acceptedName?.let { name ->
+                val label = buildString {
+                    append(name)
+                    enrichment.authority?.let { append(" $it") }
+                }
+                Text(text = label, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface)
+            }
+            enrichment.rank?.let { rank ->
+                EnrichmentRow(label = stringResource(R.string.biodex_enrichment_label_status), value = rank)
+            }
+            enrichment.iucnStatus?.let { status ->
+                EnrichmentRow(label = stringResource(R.string.biodex_enrichment_label_status), value = status)
+            }
+            enrichment.distributionSummary?.let { dist ->
+                EnrichmentDistribution(summary = dist)
+            }
+            enrichment.representativePhotoUrl?.let { url ->
+                EnrichmentPhoto(url = url, contentDescription = enrichment.acceptedName)
+            }
+            if (enrichment.sources.isNotEmpty()) {
+                EnrichmentSources(sources = enrichment.sources)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnrichmentDistribution(summary: String) {
+    Text(
+        text = stringResource(R.string.biodex_enrichment_label_distribution),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+        text = summary,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+}
+
+@Composable
+private fun EnrichmentPhoto(url: String, contentDescription: String?) {
+    AsyncImage(
+        model = url,
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxWidth().height(160.dp),
+    )
+}
+
+@Composable
+private fun EnrichmentSources(sources: List<String>) {
+    Text(
+        text = stringResource(R.string.biodex_enrichment_source_prefix, sources.joinToString(", ")),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun EnrichmentRow(label: String, value: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun OnlineInfoDisabledHint() {
+    Text(
+        text = stringResource(R.string.biodex_enrichment_disabled_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(vertical = 4.dp),
+    )
 }
 
 @Composable

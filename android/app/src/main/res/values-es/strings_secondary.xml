@@ -718,6 +718,17 @@
     <string name="biodex_obs_detail_cd_go_back">Volver</string>
 
     <!-- ================================================================== -->
+    <!-- BioDex Enriquecimiento online (M7)                                  -->
+    <!-- ================================================================== -->
+    <string name="settings_species_enrichment_title">Información online de especies</string>
+    <string name="settings_species_enrichment_subtitle">La identificación es 100%% en el dispositivo. Esto solo descarga fichas externas (WoRMS / GBIF / iNaturalist); tu imagen nunca se envía.</string>
+    <string name="biodex_enrichment_section_title">Información online</string>
+    <string name="biodex_enrichment_label_status">Estado</string>
+    <string name="biodex_enrichment_label_distribution">Distribución</string>
+    <string name="biodex_enrichment_source_prefix">Fuentes: %1$s</string>
+    <string name="biodex_enrichment_disabled_hint">Activa «Información online de especies» en Ajustes para cargar fichas externas de WoRMS, GBIF e iNaturalist.</string>
+
+    <!-- ================================================================== -->
     <!-- BioDex Identificación de Especies (M5)                              -->
     <!-- ================================================================== -->
     <string name="biodex_identify_cta">Identificar especie</string>

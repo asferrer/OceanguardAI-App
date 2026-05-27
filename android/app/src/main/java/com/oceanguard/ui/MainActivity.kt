@@ -421,6 +421,9 @@ class MainActivity : AppCompatActivity() {
                                 onNavigateBack = { navController.popBackStack() },
                                 onObservationClick = { id -> navController.navigate("species_observation/$id") },
                                 initialTab = initialTab,
+                                enrichmentProvider = { aphiaId, name ->
+                                    app.speciesEnrichmentRepository.enrich(aphiaId, name)
+                                },
                             )
                         }
                         composable(

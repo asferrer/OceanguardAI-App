@@ -728,6 +728,17 @@
     <!-- lat / lon formatted label: "12.3456, -7.8901" built in code -->
 
     <!-- ================================================================== -->
+    <!-- BioDex Online Enrichment (M7)                                       -->
+    <!-- ================================================================== -->
+    <string name="settings_species_enrichment_title">Online species info</string>
+    <string name="settings_species_enrichment_subtitle">Identification is 100%% on-device. This only downloads external species records (WoRMS / GBIF / iNaturalist); your image is never sent.</string>
+    <string name="biodex_enrichment_section_title">Online information</string>
+    <string name="biodex_enrichment_label_status">Status</string>
+    <string name="biodex_enrichment_label_distribution">Distribution</string>
+    <string name="biodex_enrichment_source_prefix">Sources: %1$s</string>
+    <string name="biodex_enrichment_disabled_hint">Enable "Online species info" in Settings to load external species records from WoRMS, GBIF and iNaturalist.</string>
+
+    <!-- ================================================================== -->
     <!-- BioDex Species Identification (M5)                                  -->
     <!-- ================================================================== -->
     <!-- FAB label in SpeciesDexScreen — opens PhotoPicker to identify a species -->

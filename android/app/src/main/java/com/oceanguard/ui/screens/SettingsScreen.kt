@@ -45,6 +45,7 @@ import com.oceanguard.ai.ui.components.spotlight.rememberSpotlightController
 import com.oceanguard.ai.ui.components.spotlight.spotlightTarget
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.compose.material.icons.filled.Public
 import com.oceanguard.ai.inference.DetectorType
 import com.oceanguard.ai.inference.TextModelTier
 import com.oceanguard.ai.inference.TextModelVariant
@@ -91,6 +92,10 @@ fun SettingsScreen(
     val confidenceThreshold by settings.confidenceThreshold.collectAsStateWithLifecycle(
         initialValue = SettingsRepository.DEFAULT_CONFIDENCE_THRESHOLD
     )
+
+    // BioDex online enrichment
+    val speciesOnlineEnrichmentEnabled by settings.speciesOnlineEnrichmentEnabled
+        .collectAsStateWithLifecycle(initialValue = false)
 
     // Research contribution settings
     val contributeConsentGiven by settings.contributeConsentGiven.collectAsStateWithLifecycle(
@@ -386,6 +391,23 @@ fun SettingsScreen(
                         TextButton(onClick = { showContributeConsentDialog = false }) {
                             Text(stringResource(R.string.contribute_consent_dismiss))
                         }
+                    },
+                )
+            }
+
+            // ---------------------------------------------------------------
+            // BioDex: Online species enrichment (privacy opt-in)
+            // ---------------------------------------------------------------
+            SettingsSection(
+                title = stringResource(R.string.biodex_title),
+                icon = Icons.Filled.Public,
+            ) {
+                SettingsToggleRow(
+                    title = stringResource(R.string.settings_species_enrichment_title),
+                    description = stringResource(R.string.settings_species_enrichment_subtitle),
+                    checked = speciesOnlineEnrichmentEnabled,
+                    onCheckedChange = {
+                        scope.launch { settings.setSpeciesOnlineEnrichmentEnabled(it) }
                     },
                 )
             }

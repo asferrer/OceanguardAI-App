@@ -317,6 +317,12 @@ class OceanGuardApp : Application() {
             locator = com.oceanguard.ai.inference.species.OrganismLocator(),
         )
     }
+
+    /** Opt-in online enrichment (WoRMS/GBIF/iNat). Returns null when the flag is
+     *  off; never sends the user's image. Off by default. */
+    val speciesEnrichmentRepository: com.oceanguard.ai.data.species.enrichment.SpeciesEnrichmentRepository by lazy {
+        com.oceanguard.ai.data.species.enrichment.SpeciesEnrichmentRepository(this, settingsRepository)
+    }
     val achievementChecker: AchievementChecker by lazy {
         AchievementChecker(
             collectionRepo = collectionRepository,
