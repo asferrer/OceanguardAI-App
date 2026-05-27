@@ -5,6 +5,45 @@ evaluación de calidad del retrieval visual + la ablación del pre-filtro
 biogeográfico, los umbrales de confianza calibrables, y el plan de medición
 de latencia on-device.
 
+## ✅ Resultados REALES (OpenCLIP ViT-B/32, 2026-05-27)
+
+Eval con el **encoder OpenCLIP real exportado a ONNX** + banco de **547 imágenes
+reales** (iNaturalist + GBIF, CC-BY/CC0) descargadas con
+`download_reference_images.py`. Split held-out 70/30 determinista
+(`make_holdout_split.py`): **383 train / 164 held-out**, índice k=6 prototipos.
+
+| Modo | Top-1 | Top-5 | Cand. | FDR | N |
+|------|-------|-------|-------|-----|---|
+| OFF / BALANCED / STRICT | **84.1 %** | **98.2 %** | 27.0 | 0.0 % | 164 |
+
+- **Supera el gate Fase 0 del plan** (objetivo top-1 ≥ 65 %, top-5 ≥ 85 %) →
+  **GO** para el RAG visual, con OpenCLIP **zero-shot** (sin fine-tuning).
+- Los 3 modos coinciden porque el held-out **no lleva lat/lon** (el scraper aún
+  no captura coords) → `region=None` → todos caen a OFF. La ablación geográfica
+  real (BALANCED/STRICT distintos) requiere coords en el held-out + ráster MEOW
+  real (ver TODO). La mecánica del filtro ya está validada en mock (abajo).
+
+Reproducir:
+```bash
+cd finetune/species
+python download_reference_images.py --out images --per-species 30
+python make_holdout_split.py --images images --train-out images_train \
+    --holdout-jsonl held_out.jsonl --frac 0.3
+python build_reference_bank.py --images-dir images_train --output-dir output_eval \
+    --k 6 --embedder openclip
+python eval_retrieval.py --index output_eval/species_index_v1.bin \
+    --catalog output/species_catalog_v1.json --raster output/meow_raster_v1.bin \
+    --hierarchy output/ecoregion_hierarchy_v1.json --held-out held_out.jsonl \
+    --embedder openclip
+```
+
+---
+
+> **Validación mock (mecánica del pre-filtro geográfico).** La sección de abajo
+> corre en **modo mock** (`FakeEmbedder` hash). Sus números de accuracy NO son
+> representativos (los reales son los de arriba); sirve para validar **el pipeline
+> y la mecánica del pre-filtro geográfico end-to-end**.
+
 > **Estado de los datos.** Esta evaluación corre en **modo mock** (datos 100 %
 > sintéticos, `FakeEmbedder` basado en hash). Sirve para validar **el pipeline
 > y la mecánica del pre-filtro geográfico end-to-end** sin assets reales. Los

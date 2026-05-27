@@ -3,7 +3,10 @@
 # from HuggingFace; they are not source and must not be committed.
 output/
 output_synth/
+output_eval/
 images/
+images_train/
+held_out.jsonl
 *.bin
 *.onnx
 *.png
