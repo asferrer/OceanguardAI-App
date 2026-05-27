@@ -763,4 +763,23 @@
     <!-- Label shown while SpeciesIdentifier is running -->
     <string name="species_identifying">Identifying species…</string>
 
+    <!-- SpeciesResultScreen — camera single-capture result (mirrors CameraResultScreen) -->
+    <!-- Countdown text after result, e.g. "Scanning again in 5 s…" -->
+    <string name="species_result_auto_return">Scanning again in %1$d s…</string>
+    <!-- Button that navigates back to species camera viewfinder -->
+    <string name="species_result_btn_new_scan">New Scan</string>
+    <!-- Button that navigates to the BioDex gallery -->
+    <string name="species_result_btn_view_biodex">BioDex</string>
+    <!-- Short label when no species found — shown in thumbnail cell bottom strip -->
+    <string name="biodex_result_none_short">No species</string>
+
+    <!-- SpeciesBatchResultScreen — gallery multi-select batch flow -->
+    <string name="species_batch_title">Species Batch</string>
+    <!-- Summary stat labels -->
+    <string name="species_batch_summary_species">Species found</string>
+    <string name="species_batch_summary_images">Images</string>
+    <!-- Action buttons -->
+    <string name="species_batch_btn_new_batch">New Batch</string>
+    <string name="species_batch_btn_view_biodex">View BioDex</string>
+
 </resources>

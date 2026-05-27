@@ -110,6 +110,7 @@ fun HomeScreen(
     discoveredCount: Int = 0,
     latestAchievement: Achievement? = null,
     onSpeciesImagePicked: (Uri) -> Unit = {},
+    onSpeciesBatchPicked: (List<Uri>) -> Unit = {},
 ) {
     // Request location permission once on first composition so GPS data
     // is available when saving sessions from gallery picks.
@@ -173,11 +174,16 @@ fun HomeScreen(
         }
     }
 
-    // Species gallery picker — single image routed to the biology ID flow (M5).
+    // Species gallery picker — supports single or multi-select.
+    // One image → single-capture result screen (auto-return, immersive backdrop).
+    // Multiple images → batch result screen (thumbnail grid, summary card).
     val speciesGalleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? ->
-        if (uri != null) onSpeciesImagePicked(uri)
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+    ) { uris: List<Uri> ->
+        when {
+            uris.size == 1 -> onSpeciesImagePicked(uris[0])
+            uris.size > 1  -> onSpeciesBatchPicked(uris)
+        }
     }
 
     // Multi-media picker — gallery, accepts images and videos (batch).

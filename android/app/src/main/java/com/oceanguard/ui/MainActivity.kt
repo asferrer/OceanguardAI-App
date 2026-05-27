@@ -54,6 +54,7 @@ import com.oceanguard.ai.ui.screens.MarineDexScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexDetailScreen
 import com.oceanguard.ai.ui.screens.SpeciesDexScreen
 import com.oceanguard.ai.ui.screens.SpeciesObservationDetailScreen
+import com.oceanguard.ai.ui.screens.SpeciesBatchResultScreen
 import com.oceanguard.ai.ui.screens.SpeciesResultScreen
 import com.oceanguard.ai.ui.screens.SpeciesViewModel
 import com.oceanguard.ai.data.species.SpeciesObservation
@@ -269,6 +270,10 @@ class MainActivity : AppCompatActivity() {
                                     speciesViewModel.identifyFromImage(uri)
                                     navController.navigate("species_result")
                                 },
+                                onSpeciesBatchPicked = { uris ->
+                                    speciesViewModel.identifyBatch(uris)
+                                    navController.navigate("species_batch_result")
+                                },
                             )
                         }
                         composable(
@@ -415,6 +420,20 @@ class MainActivity : AppCompatActivity() {
                                 navController = navController,
                                 viewModel = speciesViewModel,
                                 catalog = app.speciesCatalog,
+                            )
+                        }
+                        composable("species_batch_result") {
+                            val batchState by speciesViewModel.batchUiState.collectAsStateWithLifecycle()
+                            val uriList = when (val s = batchState) {
+                                is com.oceanguard.ai.ui.screens.SpeciesBatchUiState.Running  -> s.items.map { it.uri }
+                                is com.oceanguard.ai.ui.screens.SpeciesBatchUiState.Complete -> s.items.map { it.uri }
+                                else -> emptyList()
+                            }
+                            SpeciesBatchResultScreen(
+                                navController = navController,
+                                viewModel = speciesViewModel,
+                                catalog = app.speciesCatalog,
+                                uriList = uriList,
                             )
                         }
                         composable(

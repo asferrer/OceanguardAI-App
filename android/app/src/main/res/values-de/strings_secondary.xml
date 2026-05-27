@@ -744,4 +744,14 @@
     <string name="biodex_result_done">Fertig</string>
     <string name="species_identifying">Art wird bestimmt…</string>
 
+    <string name="species_result_auto_return">Neuer Scan in %1$d s…</string>
+    <string name="species_result_btn_new_scan">Neuer Scan</string>
+    <string name="species_result_btn_view_biodex">BioDex</string>
+    <string name="biodex_result_none_short">Keine Arten</string>
+    <string name="species_batch_title">Arten-Batch</string>
+    <string name="species_batch_summary_species">Arten gefunden</string>
+    <string name="species_batch_summary_images">Bilder</string>
+    <string name="species_batch_btn_new_batch">Neuer Batch</string>
+    <string name="species_batch_btn_view_biodex">BioDex anzeigen</string>
+
 </resources>

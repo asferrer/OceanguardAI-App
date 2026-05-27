@@ -746,4 +746,14 @@
     <string name="biodex_result_done">Listo</string>
     <string name="species_identifying">Identificando especie…</string>
 
+    <string name="species_result_auto_return">Escaneando de nuevo en %1$d s…</string>
+    <string name="species_result_btn_new_scan">Nuevo escaneo</string>
+    <string name="species_result_btn_view_biodex">BioDex</string>
+    <string name="biodex_result_none_short">Sin especies</string>
+    <string name="species_batch_title">Lote de especies</string>
+    <string name="species_batch_summary_species">Especies encontradas</string>
+    <string name="species_batch_summary_images">Imágenes</string>
+    <string name="species_batch_btn_new_batch">Nuevo lote</string>
+    <string name="species_batch_btn_view_biodex">Ver BioDex</string>
+
 </resources>
