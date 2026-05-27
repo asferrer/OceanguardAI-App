@@ -65,9 +65,13 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.species.SpeciesCatalog
+import com.oceanguard.ai.data.species.SpeciesNames
 import com.oceanguard.ai.inference.species.IdentificationResult
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.LottieEmptyState
+import com.oceanguard.ai.ui.components.NormBox
+import com.oceanguard.ai.ui.components.SpeciesBoundingBoxOverlay
+import com.oceanguard.ai.ui.components.bboxToNormBox
 import com.oceanguard.ai.ui.theme.OceanGreen
 import java.util.Locale
 
@@ -468,6 +472,35 @@ private fun SpeciesSummaryStat(
 // Thumbnail grid cell
 // ---------------------------------------------------------------------------
 
+/**
+ * Build normalised organism boxes for a completed batch item.
+ *
+ * Skips results without a bbox (centre-crop fallback) or with unknown image
+ * dimensions, resolving the localised species name for each kept box. Mirrors
+ * [speciesNormBoxes] in [SpeciesResultScreen]; kept separate because the batch
+ * state carries its own per-item image dimensions.
+ */
+private fun speciesBatchNormBoxes(
+    done: SpeciesBatchItemState.Done,
+    catalog: SpeciesCatalog,
+): List<NormBox> {
+    if (done.imageWidth <= 0 || done.imageHeight <= 0) return emptyList()
+    val lang = SpeciesNames.currentLanguage()
+    return done.results.mapNotNull { result ->
+        val bbox = result.bbox ?: return@mapNotNull null
+        val label = SpeciesNames.commonName(
+            entry = catalog.byKey(result.speciesKey),
+            language = lang,
+            fallback = result.scientificName,
+        )
+        bboxToNormBox(
+            x = bbox.x, y = bbox.y, width = bbox.width, height = bbox.height,
+            imgWidth = done.imageWidth, imgHeight = done.imageHeight,
+            label = label, confidence = result.confidence,
+        )
+    }
+}
+
 @Composable
 private fun SpeciesBatchThumbnailCard(item: SpeciesBatchItem, catalog: SpeciesCatalog) {
     val state = item.state
@@ -478,6 +511,12 @@ private fun SpeciesBatchThumbnailCard(item: SpeciesBatchItem, catalog: SpeciesCa
     }
     val borderWidth = if (state is SpeciesBatchItemState.Done ||
         state is SpeciesBatchItemState.Failed) 2.dp else 1.dp
+
+    // Detected organism boxes, normalised against the analysed image dimensions.
+    // Empty when no bbox (whole-frame fallback) or the size is unknown — the cell
+    // then shows the plain cropped thumbnail.
+    val boxes = (state as? SpeciesBatchItemState.Done)?.let { speciesBatchNormBoxes(it, catalog) }
+        ?: emptyList()
 
     Card(
         modifier = Modifier
@@ -491,14 +530,26 @@ private fun SpeciesBatchThumbnailCard(item: SpeciesBatchItem, catalog: SpeciesCa
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = item.uri,
-                contentDescription = stringResource(R.string.cd_batch_image_thumbnail),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(14.dp)),
-                contentScale = ContentScale.Crop,
-            )
+            if (boxes.isNotEmpty()) {
+                // Fit scale so the normalised boxes map linearly onto the image.
+                SpeciesBoundingBoxOverlay(
+                    imageUri = item.uri.toString(),
+                    boxes = boxes,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(14.dp)),
+                    contentScale = ContentScale.Fit,
+                )
+            } else {
+                AsyncImage(
+                    model = item.uri,
+                    contentDescription = stringResource(R.string.cd_batch_image_thumbnail),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(14.dp)),
+                    contentScale = ContentScale.Crop,
+                )
+            }
 
             if (state is SpeciesBatchItemState.Pending) {
                 Box(

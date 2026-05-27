@@ -61,18 +61,18 @@ import com.oceanguard.ai.ui.theme.MaterialRubber
 // Canvas rendering is always on the main thread, so no synchronisation needed.
 // ---------------------------------------------------------------------------
 
-private val cachedTextPaint = android.graphics.Paint().apply {
+internal val cachedTextPaint = android.graphics.Paint().apply {
     color       = android.graphics.Color.WHITE
     isAntiAlias = true
     typeface    = android.graphics.Typeface.DEFAULT_BOLD
 }
 
-private val cachedBgPaint = android.graphics.Paint().apply {
+internal val cachedBgPaint = android.graphics.Paint().apply {
     style       = android.graphics.Paint.Style.FILL
     isAntiAlias = true
 }
 
-private val cachedBorderPaint = android.graphics.Paint().apply {
+internal val cachedBorderPaint = android.graphics.Paint().apply {
     color       = android.graphics.Color.argb(51, 255, 255, 255)
     style       = android.graphics.Paint.Style.STROKE
     strokeWidth = 1f
@@ -167,7 +167,7 @@ internal fun colorForClass(className: String): Color =
  * Line length is proportional to the box dimensions, clamped to avoid
  * overshoot on tiny boxes or excessive length on large ones.
  */
-private fun DrawScope.drawCornerBrackets(
+internal fun DrawScope.drawCornerBrackets(
     left: Float,
     top: Float,
     right: Float,
@@ -205,7 +205,7 @@ private fun DrawScope.drawCornerBrackets(
  * alpha produce a subtle neon-like glow behind the main brackets.
  * Must be called BEFORE drawCornerBrackets so glow renders underneath.
  */
-private fun DrawScope.drawGlow(
+internal fun DrawScope.drawGlow(
     left: Float,
     top: Float,
     right: Float,

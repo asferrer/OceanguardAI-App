@@ -23,7 +23,18 @@ import java.util.Locale
 sealed interface SpeciesUiState {
     data object Idle : SpeciesUiState
     data object Identifying : SpeciesUiState
-    data class Complete(val results: List<IdentificationResult>) : SpeciesUiState
+    /**
+     * @param results        One result per detected organism (each may carry a bbox).
+     * @param imageWidth     Intrinsic width (px) of the analysed full-res frame.
+     * @param imageHeight    Intrinsic height (px) of the analysed full-res frame.
+     *                       Needed to normalise each result's pixel bbox for the
+     *                       overlay; 0 when unknown (renders box-less).
+     */
+    data class Complete(
+        val results: List<IdentificationResult>,
+        val imageWidth: Int = 0,
+        val imageHeight: Int = 0,
+    ) : SpeciesUiState
     data class Error(val message: String) : SpeciesUiState
 }
 
@@ -35,7 +46,16 @@ sealed interface SpeciesUiState {
 sealed interface SpeciesBatchItemState {
     data object Pending : SpeciesBatchItemState
     data object Analyzing : SpeciesBatchItemState
-    data class Done(val results: List<IdentificationResult>) : SpeciesBatchItemState
+    /**
+     * @param results     One result per detected organism in this image.
+     * @param imageWidth  Intrinsic width (px) of the analysed frame (0 = unknown).
+     * @param imageHeight Intrinsic height (px) of the analysed frame (0 = unknown).
+     */
+    data class Done(
+        val results: List<IdentificationResult>,
+        val imageWidth: Int = 0,
+        val imageHeight: Int = 0,
+    ) : SpeciesBatchItemState
     data class Failed(val message: String) : SpeciesBatchItemState
 }
 
@@ -120,6 +140,8 @@ class SpeciesViewModel(
                 val bitmap = imagePreprocessor.loadAndPreprocess(uri, FULL_RES)
                 val loc = locationProvider.getLastKnownLocation()
                 val lang = Locale.getDefault().language
+                val imageWidth = bitmap.width
+                val imageHeight = bitmap.height
                 val results = identifier.identify(bitmap, loc, language = lang)
                 results.forEach { result ->
                     repo.saveObservation(
@@ -129,7 +151,11 @@ class SpeciesViewModel(
                         location = loc,
                     )
                 }
-                _uiState.value = SpeciesUiState.Complete(results)
+                _uiState.value = SpeciesUiState.Complete(
+                    results = results,
+                    imageWidth = imageWidth,
+                    imageHeight = imageHeight,
+                )
             }.onFailure { e ->
                 _uiState.value = SpeciesUiState.Error(
                     e.message ?: "Identification failed"
@@ -165,6 +191,8 @@ class SpeciesViewModel(
                 runCatching {
                     // Full-resolution load: see [identifyFromImage] rationale.
                     val bitmap = imagePreprocessor.loadAndPreprocess(uri, FULL_RES)
+                    val imageWidth = bitmap.width
+                    val imageHeight = bitmap.height
                     val loc = locationProvider.getLastKnownLocation()
                     val lang = Locale.getDefault().language
                     val results = identifier.identify(bitmap, loc, language = lang)
@@ -176,7 +204,13 @@ class SpeciesViewModel(
                             location = loc,
                         )
                     }
-                    items[index] = items[index].copy(state = SpeciesBatchItemState.Done(results))
+                    items[index] = items[index].copy(
+                        state = SpeciesBatchItemState.Done(
+                            results = results,
+                            imageWidth = imageWidth,
+                            imageHeight = imageHeight,
+                        ),
+                    )
                 }.onFailure { e ->
                     items[index] = items[index].copy(
                         state = SpeciesBatchItemState.Failed(e.message ?: "Failed"),

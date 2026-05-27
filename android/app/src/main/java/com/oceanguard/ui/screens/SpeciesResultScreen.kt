@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -63,11 +64,15 @@ import kotlinx.coroutines.delay
 import com.oceanguard.ai.R
 import com.oceanguard.ai.data.species.SpeciesCatalog
 import com.oceanguard.ai.data.species.SpeciesIdSource
+import com.oceanguard.ai.data.species.SpeciesNames
 import com.oceanguard.ai.inference.species.IdentificationResult
 import com.oceanguard.ai.ui.components.GlassCard
 import com.oceanguard.ai.ui.components.InferenceAnimationOverlay
+import com.oceanguard.ai.ui.components.NormBox
 import com.oceanguard.ai.ui.components.OceanGradientButton
 import com.oceanguard.ai.ui.components.OnGradientColor
+import com.oceanguard.ai.ui.components.SpeciesFitWidthBoxOverlay
+import com.oceanguard.ai.ui.components.bboxToNormBox
 import com.oceanguard.ai.ui.components.pressableScale
 import com.oceanguard.ai.ui.theme.OceanGreen
 import java.util.Locale
@@ -125,8 +130,22 @@ fun SpeciesResultScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        // Full-screen image backdrop
-        if (capturedUri != null) {
+        // Full-screen image backdrop. Once identification completes we swap the
+        // plain photo for the same photo with the detected organism box(es)
+        // overlaid; while identifying/error we keep the uncropped backdrop.
+        val completeState = uiState as? SpeciesUiState.Complete
+        if (completeState != null && capturedUri != null) {
+            val boxes = remember(completeState, catalog) {
+                speciesNormBoxes(completeState, catalog)
+            }
+            SpeciesFitWidthBoxOverlay(
+                imageUri = capturedUri.toString(),
+                boxes = boxes,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentHeight(Alignment.CenterVertically),
+            )
+        } else if (capturedUri != null) {
             AsyncImage(
                 model = capturedUri,
                 contentDescription = stringResource(R.string.session_detail_cd_annotated_image),
@@ -211,6 +230,40 @@ fun SpeciesResultScreen(
                     .padding(24.dp),
             )
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Result → overlay box mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the list of normalised organism boxes for the overlay.
+ *
+ * For every result that carries a pixel bbox, resolves the localised species
+ * name (common name → English → scientific) and normalises the bbox against the
+ * analysed image's intrinsic dimensions via [bboxToNormBox]. Results with a
+ * null bbox (whole-frame / centre-crop fallback) or unknown image size (0)
+ * are skipped, so the photo simply renders without a box — never a crash.
+ */
+internal fun speciesNormBoxes(
+    state: SpeciesUiState.Complete,
+    catalog: SpeciesCatalog,
+): List<NormBox> {
+    if (state.imageWidth <= 0 || state.imageHeight <= 0) return emptyList()
+    val lang = SpeciesNames.currentLanguage()
+    return state.results.mapNotNull { result ->
+        val bbox = result.bbox ?: return@mapNotNull null
+        val label = SpeciesNames.commonName(
+            entry = catalog.byKey(result.speciesKey),
+            language = lang,
+            fallback = result.scientificName,
+        )
+        bboxToNormBox(
+            x = bbox.x, y = bbox.y, width = bbox.width, height = bbox.height,
+            imgWidth = state.imageWidth, imgHeight = state.imageHeight,
+            label = label, confidence = result.confidence,
+        )
     }
 }
 
