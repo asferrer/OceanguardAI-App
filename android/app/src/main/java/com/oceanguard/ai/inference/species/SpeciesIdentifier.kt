@@ -74,6 +74,14 @@ class SpeciesIdentifier(
     }
 
     /**
+     * Lightweight per-stage latency tracker. Logs the last timing of each stage
+     * (locate / encode / search / describe / total) plus a running p50 so the
+     * BioDex latency is measurable straight from logcat without a profiler.
+     * Thread-confined to the identify coroutine; sample lists are tiny.
+     */
+    private val latency = StageLatency(TAG)
+
+    /**
      * Identify all marine organisms found in [bitmap].
      *
      * @param bitmap      Full-resolution input frame.
@@ -94,17 +102,23 @@ class SpeciesIdentifier(
             return emptyList()
         }
 
+        val totalStart = System.currentTimeMillis()
         val region = resolveRegion(location)
+        val locateStart = System.currentTimeMillis()
         val crops  = locator.locate(bitmap)
+        latency.record("locate", System.currentTimeMillis() - locateStart)
         Log.d(TAG, "Identifying ${crops.size} crop(s), region=${region?.ecoregionName}")
 
-        return crops.mapNotNull { crop ->
+        val results = crops.mapNotNull { crop ->
             runCatching {
                 identifyCrop(crop, region, sensitivity, language)
             }.onFailure { e ->
                 Log.w(TAG, "Crop identification failed: ${e.message}")
             }.getOrNull()
         }
+        latency.record("total", System.currentTimeMillis() - totalStart)
+        latency.logSummary()
+        return results
     }
 
     // -----------------------------------------------------------------------
@@ -117,7 +131,10 @@ class SpeciesIdentifier(
         sensitivity: GeoFilterSensitivity,
         language: String,
     ): IdentificationResult {
+        val encodeStart = System.currentTimeMillis()
         val emb     = embedder.embed(crop.crop)
+        latency.record("encode", System.currentTimeMillis() - encodeStart)
+        val searchStart = System.currentTimeMillis()
         val matches = index.search(
             emb         = emb,
             region      = region,
@@ -125,6 +142,7 @@ class SpeciesIdentifier(
             sensitivity = sensitivity,
             hierarchy   = hierarchyFn(),
         )
+        latency.record("search", System.currentTimeMillis() - searchStart)
 
         if (matches.isEmpty()) return openVocabResult(crop, region, language)
 
@@ -167,6 +185,7 @@ class SpeciesIdentifier(
         language: String,
         outOfRange: Boolean,
     ): IdentificationResult {
+        val describeStart = System.currentTimeMillis()
         val vlm = describer.confirmOrDescribe(
             crop                     = crop.crop,
             hypothesisKey            = top1.speciesKey,
@@ -174,6 +193,7 @@ class SpeciesIdentifier(
             region                   = region,
             language                 = language,
         )
+        latency.record("describe", System.currentTimeMillis() - describeStart)
         return IdentificationResult(
             speciesKey     = top1.speciesKey,
             scientificName = top1.scientificName,
@@ -192,7 +212,9 @@ class SpeciesIdentifier(
         region: MarineRegion?,
         language: String,
     ): IdentificationResult {
+        val describeStart = System.currentTimeMillis()
         val vlm     = describer.describeOpenVocab(crop.crop, region, language)
+        latency.record("describe", System.currentTimeMillis() - describeStart)
         val slug    = vlm.freeLabel?.replace(" ", "_")?.lowercase() ?: "unknown"
         val key     = "uncat:$slug"
         val sciName = vlm.freeLabel ?: "Unknown organism"

@@ -407,6 +407,9 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                         composable("biodex") {
+                            // Pre-warm the ONNX species encoder while the user
+                            // browses BioDex, so the first identify is fast.
+                            LaunchedEffect(Unit) { app.prewarmSpeciesEncoder() }
                             SpeciesDexScreen(
                                 repo = app.speciesCollectionRepository,
                                 catalog = app.speciesCatalog,

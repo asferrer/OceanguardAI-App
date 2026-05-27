@@ -23,5 +23,7 @@ class NoOpVlmImageEngine(
         systemMessage: String?,
         maxTokens: Int,
         temperature: Double,
+        topK: Int,
+        stopWhen: ((String) -> Boolean)?,
     ): String = response
 }

@@ -61,15 +61,16 @@ class OrganismLocator(
 
         /**
          * System prompt for organism-mode detection. Inverts the debris
-         * detector rules: organisms are targets, debris is excluded.
+         * detector rules: organisms are targets, debris is excluded. Kept short
+         * on purpose — long closed-class lists inflate prefill latency and
+         * degrade Gemma 4 E2B box_2d output (memory: feedback_detector_prompt.md).
+         * The full taxon enumeration that used to live here did not improve
+         * recall but added ~70 prompt tokens to every locate() call.
          */
         internal const val ORGANISM_SYSTEM_MESSAGE =
-            "Marine organism detector for underwater photos. Detect ONLY living organisms: " +
-            "fish, sharks, rays, marine mammals, sea turtles, octopuses, squids, crabs, " +
-            "shrimps, sea urchins, starfish, corals, jellyfish, eels, seagrass, and all " +
-            "other marine fauna and flora. NEVER label man-made objects, debris, trash, " +
-            "fishing gear, plastic, metal, or any artificial item. " +
-            "Output ONLY valid JSON arrays, no markdown or prose."
+            "Marine organism detector for underwater photos. Detect ONLY living organisms " +
+            "(fish, invertebrates, marine mammals, corals, plants). NEVER label man-made " +
+            "objects or debris. Output ONLY valid JSON arrays, no markdown or prose."
 
         /**
          * Detection prompt requesting `box_2d` JSON (1000-grid, same schema
@@ -77,16 +78,63 @@ class OrganismLocator(
          * not used in the OrganismCrop — only the box coordinates matter here.
          */
         internal const val ORGANISM_PROMPT =
-            "Detect every marine organism visible (fish, coral, invertebrates, marine mammals, " +
-            "sea plants, etc.). Output ONLY a JSON array of:\n" +
-            "{\"box_2d\":[y_min,x_min,y_max,x_max],\"label\":\"<common_name>\"}\n" +
-            "Coords are integers 0-1000. If no organism is visible: []."
+            "Detect every marine organism. Output ONLY a JSON array of:\n" +
+            "{\"box_2d\":[y_min,x_min,y_max,x_max],\"label\":\"<name>\"}\n" +
+            "Coords are integers 0-1000. If none: []."
+
+        /**
+         * Advisory output cap for the box_2d JSON. ~25 tokens per box object, so
+         * 192 comfortably fits ~6 organisms — more than any single underwater
+         * frame realistically contains. The real bound is [jsonArrayClosed]
+         * early-stop; this cap is the fallback when the JSON never closes.
+         */
+        private const val LOCATOR_MAX_TOKENS = 192
+
+        /**
+         * Greedy decoding for the structured box_2d output: temperature 0 + topK 1
+         * is fully deterministic and the fastest sampler path on Exynos 2200. The
+         * boxes are coordinates, not prose — no entropy is wanted.
+         */
+        private const val LOCATOR_TEMPERATURE = 0.0
+        private const val LOCATOR_TOP_K = 1
+
+        /**
+         * Long-edge the frame is downscaled to before the VLM call. 448 keeps
+         * LiteRT-LM Gemma 4 on the vision_140 path (4 tiles) instead of vision_280
+         * (16 tiles), which drops the encoder pass from ~12 s to ~3 s on Exynos
+         * 2200 with no recall loss for whole-organism localisation. The crop is
+         * still taken from the ORIGINAL full-resolution bitmap (box_2d coords are
+         * a resolution-independent 0-1000 grid), so subject detail is preserved
+         * for the downstream ONNX embedder.
+         */
+        internal const val VLM_INPUT_LONG_EDGE = 448
 
         /** Minimum box area fraction of total image to keep a crop (noise filter). */
         private const val MIN_AREA_FRACTION = 0.01f
 
         /** Padding applied around each detected box, as a fraction of image dimension. */
         private const val BOX_PADDING_FRACTION = 0.05f
+
+        /**
+         * Early-stop predicate: true once the accumulated output contains a
+         * balanced, closed JSON array (every '[' matched by a ']' and at least
+         * one top-level array closed). Lets [locate] abort the decode the moment
+         * the box list is complete instead of waiting for the model's EOS.
+         */
+        internal fun jsonArrayClosed(text: String): Boolean {
+            var depth = 0
+            var sawOpen = false
+            for (c in text) {
+                when (c) {
+                    '[' -> { depth++; sawOpen = true }
+                    ']' -> {
+                        depth--
+                        if (sawOpen && depth <= 0) return true
+                    }
+                }
+            }
+            return false
+        }
     }
 
     /**
@@ -103,17 +151,25 @@ class OrganismLocator(
             return listOf(centerSquareCrop(bitmap))
         }
 
+        // Downscale ONLY the frame fed to the VLM (vision_140 path). box_2d
+        // coordinates are a resolution-independent 0-1000 grid, so the crop is
+        // still taken from the original full-res `bitmap` below — no detail lost.
+        val vlmFrame = downscaleForVlm(bitmap)
         val raw = try {
             vlm.generateWithImage(
-                bitmap        = bitmap,
+                bitmap        = vlmFrame,
                 prompt        = ORGANISM_PROMPT,
                 systemMessage = ORGANISM_SYSTEM_MESSAGE,
-                maxTokens     = 256,
-                temperature   = 0.2,
+                maxTokens     = LOCATOR_MAX_TOKENS,
+                temperature   = LOCATOR_TEMPERATURE,
+                topK          = LOCATOR_TOP_K,
+                stopWhen      = ::jsonArrayClosed,
             )
         } catch (e: Exception) {
             Log.w(TAG, "VLM organism detection failed: ${e.message}")
             return listOf(centerSquareCrop(bitmap))
+        } finally {
+            if (vlmFrame !== bitmap) vlmFrame.recycle()
         }
 
         val crops = parseOrganismBoxes(raw, bitmap)
@@ -123,6 +179,20 @@ class OrganismLocator(
         }
         Log.d(TAG, "Organism-mode: found ${crops.size} crop(s)")
         return crops
+    }
+
+    /**
+     * Returns a copy of [bitmap] scaled so its long edge is [VLM_INPUT_LONG_EDGE],
+     * preserving aspect ratio. Returns the input unchanged when it is already at
+     * or below that size (no upscaling). Pure presentation for the vision encoder.
+     */
+    internal fun downscaleForVlm(bitmap: Bitmap): Bitmap {
+        val longEdge = maxOf(bitmap.width, bitmap.height)
+        if (longEdge <= VLM_INPUT_LONG_EDGE) return bitmap
+        val scale = VLM_INPUT_LONG_EDGE.toFloat() / longEdge
+        val w = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val h = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, w, h, true)
     }
 
     // -----------------------------------------------------------------------

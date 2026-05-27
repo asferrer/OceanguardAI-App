@@ -310,6 +310,41 @@ class OceanGuardApp : Application() {
     val speciesIdentifier: com.oceanguard.ai.inference.species.SpeciesIdentifier by lazy { buildSpeciesIdentifier() }
 
     /**
+     * Holds the real ONNX encoder when the on-device species pack is present, so
+     * it can be pre-warmed ([prewarmSpeciesEncoder]) without re-resolving the
+     * identifier graph. Null in the DEMO fallback (deterministic embedder needs
+     * no warm-up). Set inside [buildSpeciesIdentifier].
+     */
+    @Volatile private var speciesOnnxEmbedder: com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder? = null
+    @Volatile private var speciesEncoderPrewarmed = false
+
+    /**
+     * Pre-warm the ONNX species encoder off the UI thread when BioDex opens or
+     * the species camera is framed, so the first identify does not pay the
+     * ~multi-second OrtSession load + NNAPI graph compile lazily. Idempotent:
+     * the dummy run fires at most once; the session itself is created exactly
+     * once and reused across every identify / batch image. No-op in DEMO mode
+     * (no ONNX encoder) or when the species pack is not downloaded.
+     *
+     * Mirrors [prewarmGemma4DetectorIfAvailable] — call from a `LaunchedEffect`.
+     */
+    fun prewarmSpeciesEncoder() {
+        if (speciesEncoderPrewarmed) return
+        // Touch the lazy identifier so [speciesOnnxEmbedder] is populated.
+        speciesIdentifier
+        val embedder = speciesOnnxEmbedder ?: return
+        speciesEncoderPrewarmed = true
+        applicationScope.launch {
+            try {
+                Log.i(TAG, "Pre-warming species ONNX encoder in background")
+                embedder.prewarm()
+            } catch (e: Exception) {
+                Log.w(TAG, "Species encoder prewarm failed (non-fatal): ${e.message}")
+            }
+        }
+    }
+
+    /**
      * Builds the species identifier. M4: when the real downloadable assets
      * (ONNX encoder + reference index + catalog [+ MEOW raster]) are present in
      * `models/species/`, use the on-device OpenCLIP encoder + reference index;
@@ -345,8 +380,10 @@ class OceanGuardApp : Application() {
                     com.oceanguard.ai.inference.species.MarineRegionResolver(raster, hierarchy).apply { load() }
                 } else null
                 Log.i(TAG, "BioDex: using REAL on-device species encoder + index")
+                val onnxEmbedder = com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder(encoder)
+                speciesOnnxEmbedder = onnxEmbedder   // expose for background pre-warm
                 return com.oceanguard.ai.inference.species.SpeciesIdentifier(
-                    embedder = com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder(encoder),
+                    embedder = onnxEmbedder,
                     index = refIndex,
                     resolver = resolver,
                     describer = describer,

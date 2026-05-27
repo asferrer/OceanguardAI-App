@@ -312,6 +312,16 @@ class LiteRTTextEngine(
         temperature: Double = 0.3,
         /** Sampler top-K. Lower = faster decode with negligible quality loss on structured output. */
         topK: Int = 20,
+        /**
+         * Optional early-stop predicate evaluated on the accumulated output after
+         * every token. When it returns true the in-flight decode is cancelled and
+         * the result returned immediately. Used by the organism locator to abort
+         * as soon as the `box_2d` JSON array is closed, so the model does not keep
+         * decoding trailing whitespace / prose to the EOS — there is no native
+         * per-call max-output-token cap in LiteRT-LM, so this is the cheapest way
+         * to bound a short structured response.
+         */
+        stopWhen: ((String) -> Boolean)? = null,
         onPartialResult: ((String) -> Unit)? = null,
     ): String = withContext(Dispatchers.IO) {
         val eng = engine
@@ -340,10 +350,12 @@ class LiteRTTextEngine(
 
             val accumulated = StringBuilder()
             var lastPartialMs = 0L
+            var earlyStopped = false
 
             suspendCancellableCoroutine { continuation ->
                 conv.sendMessageAsync(contents, object : MessageCallback {
                     override fun onMessage(message: Message) {
+                        if (earlyStopped) return
                         val token = message.contents.toString()
                         accumulated.append(token)
                         val now = System.currentTimeMillis()
@@ -351,23 +363,34 @@ class LiteRTTextEngine(
                             onPartialResult(accumulated.toString())
                             lastPartialMs = now
                         }
+                        if (stopWhen != null && stopWhen(accumulated.toString())) {
+                            earlyStopped = true
+                            // Cancel the native decode before resuming so close()
+                            // in finally does not block on the rest of the stream.
+                            runCatching { conv.cancelProcess() }
+                            if (continuation.isActive) continuation.resume(Unit)
+                        }
                     }
 
                     override fun onDone() {
-                        continuation.resume(Unit)
+                        if (continuation.isActive) continuation.resume(Unit)
                     }
 
                     override fun onError(error: Throwable) {
-                        continuation.resumeWithException(error)
+                        if (continuation.isActive) continuation.resumeWithException(error)
                     }
                 })
             }
 
             val result = accumulated.toString()
             onPartialResult?.invoke(result)
-            Log.d(TAG, "Vision generation complete: ${result.length} chars")
+            Log.d(TAG, "Vision generation complete: ${result.length} chars${if (earlyStopped) " (early-stopped)" else ""}")
             result
         } finally {
+            // Belt-and-braces: cancel any in-flight decode (e.g. when the caller's
+            // coroutine was cancelled mid-stream) before closing, so close() does
+            // not block until the model hits maxTokens.
+            runCatching { conv.cancelProcess() }
             conv.close()
         }
     }

@@ -1,13 +1,18 @@
 package com.oceanguard.ai.inference.species
 
 import android.graphics.Bitmap
+import android.util.Log
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.providers.NNAPIFlags
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.FloatBuffer
+import java.util.EnumSet
 import kotlin.math.sqrt
 
 /**
@@ -34,6 +39,7 @@ import kotlin.math.sqrt
 class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
 
     companion object {
+        private const val TAG = "OnnxSpeciesEmbedder"
         private const val INPUT_SIZE = 224
         private const val INPUT_NAME = "pixel_values"   // matches the exported ONNX model
         private const val OUTPUT_NAME = "image_features"
@@ -44,7 +50,16 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
     }
 
     private var ortEnv: OrtEnvironment? = null
-    private var ortSession: OrtSession? = null
+    @Volatile private var ortSession: OrtSession? = null
+
+    /**
+     * Serializes [initialize] so a concurrent first [embed] and a background
+     * [prewarm] never each create a native [OrtSession]. The ~352 MB session +
+     * NNAPI graph compile must happen exactly once and be reused across every
+     * identify / batch image — a second session would double native RAM and
+     * recompile the graph. Cheap to take: held only for the one-time load.
+     */
+    private val initMutex = Mutex()
 
     /** Ready once the model file is present; the ORT session is loaded lazily on
      *  the first [embed] call (on Dispatchers.IO), so no suspend init is needed
@@ -53,28 +68,76 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
         get() = modelFile.exists()
 
     /**
-     * Load the ONNX model and initialise the ORT session.
+     * Load the ONNX model and initialise the ORT session **once**. Idempotent:
+     * concurrent callers (a background [prewarm] racing the first [embed]) share
+     * the single session created under [initMutex]; later calls short-circuit.
      * Must be called from a background dispatcher before the first [embed] call.
      *
      * @throws IllegalStateException if [modelFile] does not exist.
      * @throws ai.onnxruntime.OrtException on ONNX Runtime errors.
      */
     suspend fun initialize() = withContext(Dispatchers.IO) {
-        check(modelFile.exists()) {
-            "Species encoder not found at ${modelFile.absolutePath}. Download it first."
+        initMutex.withLock {
+            if (ortSession != null) return@withContext
+            check(modelFile.exists()) {
+                "Species encoder not found at ${modelFile.absolutePath}. Download it first."
+            }
+            // Reuse the process-wide singleton environment (never per-session).
+            val env = OrtEnvironment.getEnvironment()
+            val opts = OrtSession.SessionOptions().apply {
+                // NNAPI EP with fp16 relaxation: fp32→fp16 on the accelerator is a
+                // sizeable speedup on the Exynos NPU/GPU and visually lossless for
+                // a CLIP embedding (we L2-normalise the output anyway). Falls back
+                // to CPU automatically when NNAPI is unavailable.
+                runCatching { addNnapi(EnumSet.of(NNAPIFlags.USE_FP16)) }
+                    .onFailure {
+                        Log.w(TAG, "NNAPI fp16 flag unavailable, plain NNAPI: ${it.message}")
+                        addNnapi()
+                    }
+                setIntraOpNumThreads(4)   // 4 big cores for the CPU-fallback path
+                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            }
+            val startMs = System.currentTimeMillis()
+            ortEnv = env
+            ortSession = env.createSession(modelFile.absolutePath, opts)
+            Log.i(TAG, "ORT session created in ${System.currentTimeMillis() - startMs}ms")
         }
-        val env = OrtEnvironment.getEnvironment()
-        val opts = OrtSession.SessionOptions().apply {
-            addNnapi()           // NNAPI EP — falls back to CPU if unavailable
-            setIntraOpNumThreads(4)
+    }
+
+    /**
+     * Eagerly load the session **and** run one dummy 1×3×224×224 inference so the
+     * NNAPI graph compile (and any kernel JIT) happens ahead of the first real
+     * [embed]. Intended to be launched off the UI thread when BioDex opens / the
+     * app is idle, so the first identify does not pay the multi-second session
+     * load + compile. Idempotent and exception-safe: any failure is logged and
+     * swallowed (the lazy path in [embed] still works).
+     */
+    suspend fun prewarm() = withContext(Dispatchers.IO) {
+        try {
+            if (!isReady) {
+                Log.d(TAG, "prewarm skipped — model file not present")
+                return@withContext
+            }
+            initialize()
+            val session = ortSession ?: return@withContext
+            val env = ortEnv ?: return@withContext
+            val dummy = FloatArray(3 * INPUT_SIZE * INPUT_SIZE)   // zeros — content irrelevant
+            val startMs = System.currentTimeMillis()
+            OnnxTensor.createTensor(
+                env,
+                FloatBuffer.wrap(dummy),
+                longArrayOf(1, 3, INPUT_SIZE.toLong(), INPUT_SIZE.toLong()),
+            ).use { tensor ->
+                session.run(mapOf(INPUT_NAME to tensor)).close()
+            }
+            Log.i(TAG, "Encoder pre-warmed (NNAPI compile) in ${System.currentTimeMillis() - startMs}ms")
+        } catch (e: Exception) {
+            Log.w(TAG, "Encoder prewarm failed (non-fatal): ${e.message}")
         }
-        val session = env.createSession(modelFile.absolutePath, opts)
-        ortEnv = env
-        ortSession = session
     }
 
     override suspend fun embed(bitmap: Bitmap): FloatArray = withContext(Dispatchers.IO) {
-        if (ortSession == null) initialize()   // lazy one-time session load
+        if (ortSession == null) initialize()   // lazy one-time session load (mutex-guarded)
         val session = ortSession ?: error("ORT session is null")
         val env = ortEnv ?: error("ORT environment is null")
 

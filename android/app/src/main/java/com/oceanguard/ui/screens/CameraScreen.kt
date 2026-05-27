@@ -129,6 +129,13 @@ fun CameraScreen(
         app.prewarmGemma4DetectorIfAvailable()
     }
 
+    // In species (BioDex) mode also pre-warm the ONNX encoder so the first
+    // identify does not pay the OrtSession load + NNAPI compile lazily.
+    // No-op outside species mode / when the species pack is not downloaded.
+    LaunchedEffect(speciesMode) {
+        if (speciesMode) app.prewarmSpeciesEncoder()
+    }
+
     // Request location permission alongside camera so GPS data is available
     // when saving sessions. Location is optional — the app works without it.
     val locationPermissions = rememberMultiplePermissionsState(

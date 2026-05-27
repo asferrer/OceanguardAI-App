@@ -29,6 +29,8 @@ class LiteRTImageEngine(
         systemMessage: String?,
         maxTokens: Int,
         temperature: Double,
+        topK: Int,
+        stopWhen: ((String) -> Boolean)?,
     ): String = try {
         engine.generateWithImage(
             bitmap        = bitmap,
@@ -36,6 +38,8 @@ class LiteRTImageEngine(
             maxTokens     = maxTokens,
             systemMessage = systemMessage,
             temperature   = temperature,
+            topK          = topK,
+            stopWhen      = stopWhen,
         )
     } catch (e: Exception) {
         Log.w("LiteRTImageEngine", "generateWithImage failed: ${e.message}")
