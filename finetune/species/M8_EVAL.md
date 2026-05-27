@@ -5,7 +5,32 @@ evaluación de calidad del retrieval visual + la ablación del pre-filtro
 biogeográfico, los umbrales de confianza calibrables, y el plan de medición
 de latencia on-device.
 
-## ✅ Resultados REALES (OpenCLIP ViT-B/32, 2026-05-27)
+## Escala 203 especies (expansión Mediterránea, 2026-05-27)
+
+Tras ampliar a **203 especies** (27 semilla + 176 mediterráneas), índice 1218
+prototipos sobre 5788 imágenes, split 70/30 (4054 train / 1734 held-out):
+
+| Modo | Top-1 | Top-5 | Cand. | FDR |
+|------|-------|-------|-------|-----|
+| Coseno puro (sin geo) | **65.2 %** | **82.9 %** | 203 | 0 % |
+| + soft geo-prior (coords reales en 1569/1734) | 57.8 % | 72.0 % | 181.2 | 1.9 % |
+| + hard-filter STRICT | 57.9 % | 72.8 % | 163.4 | 2.9 % |
+
+**Hallazgo: a esta escala el geo-prior NO ayuda (resta ~7 pts top-1).** Causas:
+(1) catálogo **homogéneo mediterráneo** → casi todo "en-región", el filtro recorta
+poco (−11%/−20% candidatos) y no desambigua confusores intra-región (eso es del
+encoder); (2) distribuciones **OBIS/GBIF incompletas** → el soft-prior penaliza a
+la especie verdadera cuando su rango registrado no incluye la ecoregión exacta de
+la observación (de ahí FDR 2-3%). **Implicaciones:** el pre-filtro biogeográfico
+aporta con catálogos **geográficamente diversos** (excluir otros océanos), no con
+uno region-homogéneo; a esta escala la palanca de top-1 es el **encoder**
+(fine-tune marino / BioCLIP). **TODO calibración:** rellenar distribuciones con
+AquaMaps (rangos modelados) + prior más suave/condicionado a confianza, o usar
+solo hard-filter a realm sin penalización fina. Nota: el modo "OFF" del script
+aplica el soft-prior en `_search` si la query trae coords; el baseline sin-geo
+puro es la fila de coseno puro (held-out sin coords).
+
+## ✅ Resultados REALES (OpenCLIP ViT-B/32, 2026-05-27) — set semilla 27 especies
 
 Eval con el **encoder OpenCLIP real exportado a ONNX** + banco de **547 imágenes
 reales** (iNaturalist + GBIF, CC-BY/CC0) descargadas con
