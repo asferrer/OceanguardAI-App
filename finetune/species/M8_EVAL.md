@@ -118,6 +118,96 @@ coseno no degrada el top-1/top-5 del retrieval en el held-out real (medición
 pendiente). El script y el artefacto quedan listos por si el parent decide medir
 ese impacto o aceptar el trade-off tamaño/precisión.
 
+## BioCLIP base encoder (2026-05-28) — domain-specific wins
+
+Tras observar que el fine-tune del encoder es la palanca real a esta escala (la
+sección anterior cierra con "+4.9 pts top-1" y la nota *"la palanca de top-1 es
+el encoder (fine-tune marino / BioCLIP)"*), se cambia el encoder base de
+**OpenCLIP ViT-B/32 LAION-2B** (genérico, web-scraped) a **BioCLIP v1 ViT-B/16
+TreeOfLife-10M** (Stevens et al. 2024). BioCLIP está pre-entrenado contrastivamente
+sobre 10 M de imágenes de organismos con taxonomía estructurada (iNat + EOL +
+BIOSCAN), exactamente el dominio del catálogo BioDex.
+
+Mismo contrato I/O que el OpenCLIP actual — pixel_values [b,3,224,224] →
+image_features [b,512] L2-norm — por lo que es **drop-in** en
+`OnnxSpeciesEmbedder.kt`. Implementado parametrizando `embedder.ENCODERS` (registro
+con `{model, pretrained}` por encoder) + flag `--encoder` propagado a
+`train_encoder.py`, `build_reference_bank.py` y `eval_retrieval.py`. El ckpt
+guarda `encoder_name` y `_load_finetuned` aborta en mismatch (e.g. mezclar pesos
+B/16 sobre arquitectura B/32) para evitar errores opacos.
+
+**Retrieval held-out (1734 queries, modo OFF = coseno puro), 203 especies, mismo
+banco k=6 prototipos. Comparativa contra los dos puntos previos:**
+
+| Encoder | Top-1 | Top-5 |
+|---------|-------|-------|
+| OpenCLIP ViT-B/32 zero-shot (baseline original) | 65.2 % | 82.9 % |
+| OpenCLIP ViT-B/32 fine-tuned (SupCon, 4 bloques) — deploy hoy | 70.1 % | 88.2 % |
+| **BioCLIP ViT-B/16 zero-shot — sin entrenar nada** | **80.9 %** | **92.7 %** |
+| Δ vs OpenCLIP zero-shot | **+15.7 pts** | **+9.8 pts** |
+| Δ vs OpenCLIP fine-tuned | **+10.8 pts** | **+4.5 pts** |
+
+BioCLIP zero-shot **supera al fine-tune actual por +10.8 pts top-1 sin entrenar
+nada**, confirmando la hipótesis: a esta escala (200 sp / ~20 img/sp) el techo
+del encoder genérico está pegado al suelo del encoder domain-specific. El
+fine-tune sobre OpenCLIP movía 4.9 pts hacia ese techo; cambiar el encoder
+salta 15.7 pts de golpe.
+
+**Fine-tune sobre BioCLIP — abortado por TDR en RTX 5090.** El intento de aplicar
+la misma receta SupCon a BioCLIP (`unfreeze 4, epochs 12, P=16 K=4, lr 1e-5,
+temp 0.07`) muere en el primer step de train+backward — Windows TDR (Timeout
+Detection and Recovery) resetea el driver de display: combo bleeding-edge **RTX
+5090 (Blackwell) + driver 596.36 + CUDA 13.2 + PyTorch 2.7+cu128** + kernel CUDA
+del primer backward por encima del `TdrDelay` por defecto (2s). El zero-shot
+funciona porque solo hay forward + `no_grad`.
+
+**Decisión:** desplegar BioCLIP zero-shot (80.9/92.7) y dejar el fine-tune para
+una sesión posterior (subir `TdrDelay` o reducir P×K + autocast fp16). Ganancia
+marginal esperada del FT (+2-4 pts dado que ya estamos cerca del techo) no
+justifica relanzar con riesgo de display crash hoy.
+
+**Comando reproducible (zero-shot, sin entrenamiento, ~3 min en RTX 5090, banco;
+~5 min eval; export ONNX en CPU para evitar TDR):**
+```bash
+cd finetune/species
+# Banco con BioCLIP zero-shot
+python build_reference_bank.py --images-dir images_train \
+    --output-dir output_bioclip_zs --k 6 --encoder bioclip-b16-tol10m
+# Eval held-out 1734
+python eval_retrieval.py --index output_bioclip_zs/species_index_v1.bin \
+    --catalog output/species_catalog_v1.json --raster output/meow_raster_v1.bin \
+    --hierarchy output/ecoregion_hierarchy_v1.json --held-out held_out.jsonl \
+    --embedder openclip --encoder bioclip-b16-tol10m
+# Export ONNX para Android (CPU)
+CUDA_VISIBLE_DEVICES="" python embedder.py \
+    --encoder bioclip-b16-tol10m --export-onnx output/clip_bioclip_b16.onnx
+```
+
+**Artefactos generados:**
+
+| Fichero | Tamaño | Contrato |
+|---------|--------|----------|
+| `output/clip_bioclip_b16.onnx` | 345 MB fp32 | `pixel_values [b,3,224,224]` → `image_features [b,512]` L2-norm, opset 14 |
+| `output_bioclip_zs/species_index_v1.bin` | 1.37 MB | 1218 vectores (203 sp × k=6), header SPEX + float16 + trailer JSONL — formato idéntico al actual |
+
+Paridad torch ↔ ONNX verificada por `_bioclip_onnx_sanity.py`: coseno = 1.0000
+sobre 3 imágenes reales (mismo preprocess open_clip).
+
+**Implicación de latencia en device.** BioCLIP es ViT-B/16 vs OpenCLIP ViT-B/32
+→ 4× patches → ~4× FLOPs en attention. Latencia esperada en Exynos 2200 (S22)
+NNAPI EP: **encode ~80-130 ms/crop** (vs ~30-50 ms B/32). Sigue siendo
+single-shot aceptable; cold start sin prewarm puede subir a ~1.5-2 s. El prewarm
+ya implementado en `OnnxSpeciesEmbedder.prewarm()` lo absorbe.
+
+**Próximos pasos pendientes** (no hechos en esta sesión):
+1. Publicar `clip_bioclip_b16.onnx` + `species_index_v1.bin` (BioCLIP) a HF
+   (`asferrer/oceanguard-biodex`) como versión `v2` o renombrando los actuales.
+2. Actualizar el manifest descargable de la app para que apunte a los nuevos
+   artefactos.
+3. Verificar en S22: el `OnnxSpeciesEmbedder.kt` no necesita cambios (contrato
+   I/O idéntico); solo cambia el binario descargado.
+4. Re-medir latencia real en device tras prewarm.
+
 ## ✅ Resultados REALES (OpenCLIP ViT-B/32, 2026-05-27) — set semilla 27 especies
 
 Eval con el **encoder OpenCLIP real exportado a ONNX** + banco de **547 imágenes

@@ -34,9 +34,32 @@ if TYPE_CHECKING:
 
 # Dimensión fijada globalmente para desacoplar encoder de índice.
 EMBED_DIM = 512
-# Modelo primario OpenCLIP
-_CLIP_MODEL = "ViT-B-32"
-_CLIP_PRETRAINED = "laion2b_s34b_b79k"
+
+# Encoders soportados. `pretrained=None` indica que `model` ya es un hf-hub URI
+# (open_clip lo resuelve directamente). Todos comparten input 224x224 CLIP-norm
+# y output dim 512, por lo que son drop-in entre sí en el contrato ONNX.
+ENCODERS: dict[str, dict[str, str | None]] = {
+    "openclip-b32-laion2b": {
+        "model": "ViT-B-32",
+        "pretrained": "laion2b_s34b_b79k",
+    },
+    "bioclip-b16-tol10m": {
+        # BioCLIP v1 (Stevens et al. 2024), entrenado en TreeOfLife-10M.
+        # Arquitectura ViT-B/16, dim 512. License MIT.
+        "model": "hf-hub:imageomics/bioclip",
+        "pretrained": None,
+    },
+}
+DEFAULT_ENCODER = "openclip-b32-laion2b"
+
+
+def _resolve_encoder(name: str) -> tuple[str, str | None]:
+    if name not in ENCODERS:
+        raise ValueError(
+            f"encoder '{name}' no soportado. Opciones: {sorted(ENCODERS)}"
+        )
+    spec = ENCODERS[name]
+    return str(spec["model"]), spec["pretrained"]  # type: ignore[return-value]
 
 
 class ImageEmbedder(ABC):
@@ -96,30 +119,48 @@ class OpenCLIPEmbedder(ImageEmbedder):
         ckpt_path: Si se indica, carga el state_dict del visual tower afinado
             (ckpt de train_encoder.py, clave 'visual_state_dict') sobre los pesos
             base. El resto del contrato (preprocess, dim 512, L2-norm) no cambia.
+        encoder: Clave en `ENCODERS` (default 'openclip-b32-laion2b'). Si se carga
+            un ckpt cuyo `encoder_name` no coincide con éste se aborta para evitar
+            mismatches silenciosos (e.g. mezclar pesos B/16 sobre arquitectura B/32).
     """
 
     def __init__(self, device: str | None = None, batch_size: int = 32,
-                 ckpt_path: str | Path | None = None) -> None:
+                 ckpt_path: str | Path | None = None,
+                 encoder: str = DEFAULT_ENCODER) -> None:
         import torch
         import open_clip  # type: ignore[import]
 
         self._torch = torch
         self._device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self._batch_size = batch_size
+        self._encoder_name = encoder
 
+        model_id, pretrained = _resolve_encoder(encoder)
         model, _, preprocess = open_clip.create_model_and_transforms(
-            _CLIP_MODEL, pretrained=_CLIP_PRETRAINED
+            model_id, pretrained=pretrained
         )
         if ckpt_path is not None:
-            self._load_finetuned(model.visual, Path(ckpt_path), torch)
+            self._load_finetuned(model.visual, Path(ckpt_path), torch, encoder)
         model.eval().to(self._device)
         self._model = model
         self._preprocess = preprocess
 
     @staticmethod
-    def _load_finetuned(visual, ckpt_path: Path, torch) -> None:
-        """Carga 'visual_state_dict' del ckpt afinado sobre el visual tower base."""
+    def _load_finetuned(visual, ckpt_path: Path, torch,
+                        encoder_name: str) -> None:
+        """Carga 'visual_state_dict' del ckpt afinado sobre el visual tower base.
+
+        Aborta si el ckpt declara `encoder_name` y no coincide con el actual:
+        mezclar pesos B/16 sobre arquitectura B/32 daría errores opacos en
+        load_state_dict; mejor fallar pronto y explícito.
+        """
         ckpt = torch.load(str(ckpt_path), map_location="cpu", weights_only=False)
+        ckpt_encoder = ckpt.get("encoder_name") if isinstance(ckpt, dict) else None
+        if ckpt_encoder is not None and ckpt_encoder != encoder_name:
+            raise ValueError(
+                f"ckpt encoder mismatch: ckpt={ckpt_encoder!r}, "
+                f"runtime={encoder_name!r}. Re-entrena o carga con --encoder {ckpt_encoder}."
+            )
         state = ckpt["visual_state_dict"] if "visual_state_dict" in ckpt else ckpt
         # El ckpt guarda con prefijo 'visual.' (wrapper _VisualEncoder); lo quitamos.
         cleaned = {
@@ -130,7 +171,7 @@ class OpenCLIPEmbedder(ImageEmbedder):
         if unexpected:
             print(f"WARN ckpt: claves inesperadas ignoradas: {len(unexpected)}")
         print(f"Fine-tuned visual cargado desde {ckpt_path} "
-              f"(missing={len(missing)}, unexpected={len(unexpected)})")
+              f"(encoder={encoder_name}, missing={len(missing)}, unexpected={len(unexpected)})")
 
     def embed(self, image_paths: list[str]) -> np.ndarray:
         from PIL import Image  # type: ignore[import]
@@ -206,17 +247,21 @@ class OpenCLIPEmbedder(ImageEmbedder):
         return output_path
 
 
-def _build_embedder(fake: bool, ckpt_path: str | None = None) -> ImageEmbedder:
+def _build_embedder(
+    fake: bool,
+    ckpt_path: str | None = None,
+    encoder: str = DEFAULT_ENCODER,
+) -> ImageEmbedder:
     if fake:
         return FakeEmbedder()
-    return OpenCLIPEmbedder(ckpt_path=ckpt_path)
+    return OpenCLIPEmbedder(ckpt_path=ckpt_path, encoder=encoder)
 
 
 def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Embed imágenes con OpenCLIP ViT-B/32 o FakeEmbedder (--mock)."
+        description="Embed imágenes con un encoder ONNX-compatible o FakeEmbedder (--mock)."
     )
     parser.add_argument("images", nargs="*", help="Paths de imagen a embeber.")
     parser.add_argument(
@@ -234,10 +279,19 @@ def main() -> None:
         metavar="PATH",
         help="Cargar visual tower afinado (ckpt de train_encoder.py) antes de embed/export.",
     )
+    parser.add_argument(
+        "--encoder",
+        choices=sorted(ENCODERS.keys()),
+        default=DEFAULT_ENCODER,
+        help=f"Encoder base (default: {DEFAULT_ENCODER}).",
+    )
     args = parser.parse_args()
 
-    embedder = _build_embedder(fake=args.mock, ckpt_path=args.load_ckpt)
-    print(f"Embedder: {embedder.__class__.__name__}, dim={embedder.dim}")
+    embedder = _build_embedder(
+        fake=args.mock, ckpt_path=args.load_ckpt, encoder=args.encoder
+    )
+    print(f"Embedder: {embedder.__class__.__name__}, dim={embedder.dim}, "
+          f"encoder={args.encoder if not args.mock else 'fake'}")
 
     if args.export_onnx:
         if isinstance(embedder, OpenCLIPEmbedder):

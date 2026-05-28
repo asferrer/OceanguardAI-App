@@ -96,6 +96,8 @@ def parse_args() -> argparse.Namespace:
                    help="0 = auto (cubre ~todo el train una vez por época).")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--device", type=str, default=None)
+    p.add_argument("--encoder", type=str, default=None,
+                   help="Clave en embedder.ENCODERS (default: openclip-b32-laion2b).")
     return p.parse_args()
 
 
@@ -123,7 +125,8 @@ def main() -> None:
     args = parse_args()
     set_seed(args.seed)
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | unfreeze_blocks={args.unfreeze_blocks} "
+    encoder_name = args.encoder or _default_encoder_name()
+    print(f"Device: {device} | encoder={encoder_name} | unfreeze_blocks={args.unfreeze_blocks} "
           f"epochs={args.epochs} P={args.batch_p} K={args.batch_k} lr={args.lr}")
 
     # --- datos: SOLO images_train (split determinista seed 42) ---
@@ -142,7 +145,7 @@ def main() -> None:
     val_ds = SpeciesImageDataset(val_items, species_keys, eval_tf)
 
     # --- modelo ---
-    model = load_openclip_visual(device)
+    model = load_openclip_visual(device, encoder=encoder_name)
     n_trainable = set_visual_trainable(model, args.unfreeze_blocks)
     print(f"Params entrenables: {n_trainable/1e6:.2f}M de {sum(p.numel() for p in model.parameters())/1e6:.2f}M")
 
@@ -159,7 +162,7 @@ def main() -> None:
     print(f"[época 0 / pre-train] val top-1={base_top1:.3f} top-5={base_top5:.3f}")
 
     best_top1 = train_loop(model, sampler, train_ds, val_ds, optimizer, args,
-                           base_top1, device)
+                           base_top1, device, encoder_name)
     print(f"Checkpoint guardado: {args.out_ckpt} (mejor val top-1={best_top1:.3f})")
 
     if args.export_onnx:
@@ -167,15 +170,27 @@ def main() -> None:
         print(f"ONNX afinado exportado: {args.export_onnx}")
 
 
-def _save_ckpt(out_ckpt, state: dict, top1: float, unfreeze: int) -> None:
-    """Guarda el ckpt en cada mejora → el mejor sobrevive a interrupciones."""
+def _default_encoder_name() -> str:
+    """Lee el encoder por defecto del módulo embedder (single source of truth)."""
+    from embedder import DEFAULT_ENCODER  # type: ignore[import]
+    return DEFAULT_ENCODER
+
+
+def _save_ckpt(out_ckpt, state: dict, top1: float, unfreeze: int,
+               encoder_name: str) -> None:
+    """Guarda el ckpt en cada mejora → el mejor sobrevive a interrupciones.
+
+    Incluye encoder_name para que el loader rechace mismatches (e.g. cargar un
+    ckpt B/16 sobre arquitectura B/32, que daría errores opacos).
+    """
     out_ckpt.parent.mkdir(parents=True, exist_ok=True)
     torch.save({"visual_state_dict": state, "best_val_top1": top1,
-                "unfreeze_blocks": unfreeze}, out_ckpt)
+                "unfreeze_blocks": unfreeze, "encoder_name": encoder_name},
+               out_ckpt)
 
 
 def train_loop(model, sampler, train_ds, val_ds, optimizer, args,
-               base_top1: float, device: str) -> float:
+               base_top1: float, device: str, encoder_name: str) -> float:
     """Bucle de entrenamiento con early-stop + save-on-best. Devuelve best val top-1."""
     best_top1 = base_top1
     best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -188,7 +203,8 @@ def train_loop(model, sampler, train_ds, val_ds, optimizer, args,
         if top1 > best_top1 + 1e-4:
             best_top1 = top1
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-            _save_ckpt(args.out_ckpt, best_state, best_top1, args.unfreeze_blocks)
+            _save_ckpt(args.out_ckpt, best_state, best_top1, args.unfreeze_blocks,
+                       encoder_name)
             patience = 0
             flag = "  <- best (guardado)"
         else:
@@ -199,7 +215,8 @@ def train_loop(model, sampler, train_ds, val_ds, optimizer, args,
             print(f"Early-stop: sin mejora en {patience} épocas.")
             break
     model.load_state_dict(best_state)
-    _save_ckpt(args.out_ckpt, best_state, best_top1, args.unfreeze_blocks)
+    _save_ckpt(args.out_ckpt, best_state, best_top1, args.unfreeze_blocks,
+               encoder_name)
     return best_top1
 
 

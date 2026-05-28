@@ -5,6 +5,9 @@ output/
 output_synth/
 output_eval/
 output_ft/
+output_bioclip_zs/
+output_bioclip_ft/
+_*.py
 _train*.log
 _train*.err
 _train_pid.txt

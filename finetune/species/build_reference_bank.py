@@ -301,6 +301,7 @@ def build_from_images(
     embedder_type: str,
     sci_name_map: dict[str, str] | None = None,
     ckpt_path: str | None = None,
+    encoder: str | None = None,
 ) -> Path:
     """
     Construye el banco real desde un directorio de imágenes.
@@ -309,15 +310,21 @@ def build_from_images(
         sci_name_map: {species_key: scientific_name}. Si None, usa species_key como nombre.
         embedder_type: 'openclip' | 'fake'
         ckpt_path: ckpt de fine-tune (train_encoder.py) para OpenCLIPEmbedder. None=base.
+        encoder: clave en embedder.ENCODERS. None → default (back-compat).
 
     Returns:
         Path al .bin generado.
     """
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
-    from embedder import FakeEmbedder, OpenCLIPEmbedder  # type: ignore[import]
+    from embedder import FakeEmbedder, OpenCLIPEmbedder, DEFAULT_ENCODER  # type: ignore[import]
 
-    emb = FakeEmbedder() if embedder_type == "fake" else OpenCLIPEmbedder(ckpt_path=ckpt_path)
+    if embedder_type == "fake":
+        emb = FakeEmbedder()
+    else:
+        emb = OpenCLIPEmbedder(
+            ckpt_path=ckpt_path, encoder=encoder or DEFAULT_ENCODER
+        )
     image_map = _discover_images(images_dir)
     if not image_map:
         raise FileNotFoundError(f"No se encontraron imágenes en {images_dir}")
@@ -431,6 +438,12 @@ def main() -> None:
         default=None,
         help="ckpt de fine-tune (train_encoder.py) para el embedder openclip.",
     )
+    parser.add_argument(
+        "--encoder",
+        type=str,
+        default=None,
+        help="Clave en embedder.ENCODERS (default: openclip-b32-laion2b).",
+    )
     args = parser.parse_args()
 
     if args.mock:
@@ -442,7 +455,7 @@ def main() -> None:
         print(f"Construyendo banco desde {args.images_dir}...")
         bin_p = build_from_images(
             args.images_dir, args.output_dir, k=args.k, embedder_type=args.embedder,
-            ckpt_path=args.load_ckpt,
+            ckpt_path=args.load_ckpt, encoder=args.encoder,
         )
 
     info = verify_bin(bin_p)

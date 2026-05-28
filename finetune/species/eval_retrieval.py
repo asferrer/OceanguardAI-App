@@ -610,6 +610,12 @@ def main() -> None:
         default=None,
         help="ckpt de fine-tune (train_encoder.py) para el embedder openclip.",
     )
+    parser.add_argument(
+        "--encoder",
+        type=str,
+        default=None,
+        help="Clave en embedder.ENCODERS (default: openclip-b32-laion2b).",
+    )
     args = parser.parse_args()
 
     if args.mock:
@@ -645,8 +651,10 @@ def main() -> None:
         from embedder import FakeEmbedder
         embedder: Any = FakeEmbedder()
     else:
-        from embedder import OpenCLIPEmbedder
-        embedder = OpenCLIPEmbedder(ckpt_path=args.load_ckpt)
+        from embedder import OpenCLIPEmbedder, DEFAULT_ENCODER
+        embedder = OpenCLIPEmbedder(
+            ckpt_path=args.load_ckpt, encoder=args.encoder or DEFAULT_ENCODER
+        )
 
     results = run_ablation(
         queries, index, metas, distribs,

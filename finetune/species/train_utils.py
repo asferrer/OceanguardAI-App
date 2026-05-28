@@ -20,10 +20,9 @@ from PIL import Image
 from torchvision import transforms
 
 # Normalización CLIP estándar (debe coincidir con embedder.py / Kotlin).
+# La normalización es la misma para OpenCLIP y BioCLIP (ambos derivan de CLIP).
 _CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 _CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
-_CLIP_MODEL = "ViT-B-32"
-_CLIP_PRETRAINED = "laion2b_s34b_b79k"
 EMBED_DIM = 512
 
 
@@ -199,12 +198,19 @@ def supcon_loss(features: torch.Tensor, labels: torch.Tensor,
 # Modelo: carga + partial-unfreeze + export
 # ---------------------------------------------------------------------------
 
-def load_openclip_visual(device: str) -> torch.nn.Module:
-    """Carga OpenCLIP ViT-B/32 y devuelve un wrapper que da embeddings L2-normalizables."""
+def load_openclip_visual(device: str,
+                         encoder: str | None = None) -> torch.nn.Module:
+    """Carga un visual tower compatible CLIP y lo envuelve en _VisualEncoder.
+
+    Args:
+        device: 'cpu' | 'cuda'.
+        encoder: clave en embedder.ENCODERS. None → DEFAULT_ENCODER (back-compat).
+    """
     import open_clip
-    model, _, _ = open_clip.create_model_and_transforms(
-        _CLIP_MODEL, pretrained=_CLIP_PRETRAINED
-    )
+    from embedder import _resolve_encoder, DEFAULT_ENCODER  # type: ignore[import]
+
+    model_id, pretrained = _resolve_encoder(encoder or DEFAULT_ENCODER)
+    model, _, _ = open_clip.create_model_and_transforms(model_id, pretrained=pretrained)
     visual = model.visual
     return _VisualEncoder(visual).to(device)
 
