@@ -112,8 +112,13 @@ class OrganismLocator(
         /** Minimum box area fraction of total image to keep a crop (noise filter). */
         private const val MIN_AREA_FRACTION = 0.01f
 
-        /** Padding applied around each detected box, as a fraction of image dimension. */
-        private const val BOX_PADDING_FRACTION = 0.05f
+        // Box context margin used to be applied here as a fraction of the FRAME
+        // (5 %), which both inflated the bbox sent to the overlay and produced an
+        // over-padded crop that the embedder then had to center-crop again,
+        // losing the long-axis flanks of elongated organisms. Margin and the
+        // square geometry now live in [RagCropPreparer], so the bbox we hand to
+        // the overlay matches the VLM box exactly and the encoder receives a
+        // crop sized adaptively for its 224 input.
 
         /**
          * Early-stop predicate: true once the accumulated output contains a
@@ -236,13 +241,16 @@ class OrganismLocator(
             imgH   = bitmap.height,
         ) ?: return null
 
-        val cropBitmap = Bitmap.createBitmap(bitmap, rect.x, rect.y, rect.width, rect.height)
+        // bbox is reported as the VLM gave it (no padding) so the overlay sits
+        // tight on the organism. The encoder, however, gets an adaptively-sized
+        // square crop with natural context — see [RagCropPreparer].
         val bbox = BoundingBox(
             x      = rect.x.toFloat(),
             y      = rect.y.toFloat(),
             width  = rect.width.toFloat(),
             height = rect.height.toFloat(),
         )
+        val cropBitmap = RagCropPreparer.cropForRag(bitmap, bbox)
         return OrganismCrop(bbox = bbox, crop = cropBitmap, confidence = 0.85f)
     }
 
@@ -276,14 +284,10 @@ class OrganismLocator(
         val boxArea = (xMax - xMin).toFloat() * (yMax - yMin).toFloat()
         if (boxArea / (w * h) < MIN_AREA_FRACTION) return null
 
-        val padX = (w * BOX_PADDING_FRACTION).toInt()
-        val padY = (h * BOX_PADDING_FRACTION).toInt()
-        val x0 = (xMin - padX).coerceAtLeast(0)
-        val y0 = (yMin - padY).coerceAtLeast(0)
-        val x1 = (xMax + padX).coerceAtMost(imgW)
-        val y1 = (yMax + padY).coerceAtMost(imgH)
-
-        return PixelRect(x = x0, y = y0, width = x1 - x0, height = y1 - y0)
+        // No padding: keep the bbox as tight as the VLM reported. The encoder
+        // crop is sized adaptively by [RagCropPreparer] further down the
+        // pipeline; the overlay shows this exact rectangle.
+        return PixelRect(x = xMin, y = yMin, width = xMax - xMin, height = yMax - yMin)
     }
 
     private fun clamp(v: Float): Float = v.coerceIn(0f, 1000f)

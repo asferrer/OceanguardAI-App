@@ -168,13 +168,29 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
     // Internal helpers
     // -----------------------------------------------------------------------
 
-    /** Center-crop + resize to [INPUT_SIZE], convert to NCHW float32, apply CLIP normalization. */
+    /**
+     * Resize-to-[INPUT_SIZE] (when needed) + NCHW float32 + CLIP normalisation.
+     *
+     * Fast-path: when the caller already produced an [INPUT_SIZE]×[INPUT_SIZE]
+     * bitmap (the normal path through [RagCropPreparer]) we skip the redundant
+     * crop + resize and read pixels directly. That avoids a second centre-crop
+     * that used to chop the long-axis flanks of elongated organisms and a
+     * needless bilinear pass. The else branch keeps back-compat with arbitrary
+     * input sizes (e.g. the legacy centre-square fallback).
+     */
     private fun preprocess(bitmap: Bitmap): FloatArray {
-        val size = minOf(bitmap.width, bitmap.height)
-        val xOff = (bitmap.width - size) / 2
-        val yOff = (bitmap.height - size) / 2
-        val cropped = Bitmap.createBitmap(bitmap, xOff, yOff, size, size)
-        val scaled = Bitmap.createScaledBitmap(cropped, INPUT_SIZE, INPUT_SIZE, true)
+        val scaled: Bitmap
+        val cropped: Bitmap?
+        if (bitmap.width == INPUT_SIZE && bitmap.height == INPUT_SIZE) {
+            scaled = bitmap
+            cropped = null
+        } else {
+            val size = minOf(bitmap.width, bitmap.height)
+            val xOff = (bitmap.width - size) / 2
+            val yOff = (bitmap.height - size) / 2
+            cropped = Bitmap.createBitmap(bitmap, xOff, yOff, size, size)
+            scaled = Bitmap.createScaledBitmap(cropped, INPUT_SIZE, INPUT_SIZE, true)
+        }
 
         val pixels = IntArray(INPUT_SIZE * INPUT_SIZE)
         scaled.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
@@ -190,8 +206,9 @@ class OnnxSpeciesEmbedder(private val modelFile: File) : SpeciesEmbedder {
             tensor[2 * INPUT_SIZE * INPUT_SIZE + i]= (b - CLIP_MEAN[2]) / CLIP_STD[2]
         }
 
-        if (cropped != bitmap) cropped.recycle()
-        if (scaled != cropped) scaled.recycle()
+        // Only recycle bitmaps we allocated; never recycle the caller's input.
+        if (cropped != null && cropped !== bitmap) cropped.recycle()
+        if (scaled !== bitmap && scaled !== cropped) scaled.recycle()
         return tensor
     }
 

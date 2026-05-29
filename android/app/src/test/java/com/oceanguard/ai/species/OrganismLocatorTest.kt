@@ -8,16 +8,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for [OrganismLocator.boxToPixelRect] — the pure crop-from-bbox
- * arithmetic that converts a VLM `box_2d` (0-1000 grid) into a padded, clamped
- * pixel rectangle. Runs on plain JVM (no [android.graphics.Bitmap]).
+ * Unit tests for [OrganismLocator.boxToPixelRect] — the pure conversion that
+ * maps a VLM `box_2d` (0-1000 grid) into a tight, clamped pixel rectangle.
+ * Runs on plain JVM (no [android.graphics.Bitmap]).
+ *
+ * The framing margin/squareness used to live in this method as a 5 %-of-frame
+ * padding and now lives in [RagCropPreparer.computeCropRect]; this method
+ * returns the bbox **as the VLM gave it**, only clamped to the image.
  */
 class OrganismLocatorTest {
 
     private val locator = OrganismLocator()  // engine = null
 
     @Test
-    fun `centered box maps to expected padded pixel rect`() {
+    fun `centered box maps to tight pixel rect`() {
         // Box covering the central 25%..75% of a 1000x800 image.
         val rect = locator.boxToPixelRect(
             yMin1k = 250f, xMin1k = 250f, yMax1k = 750f, xMax1k = 750f,
@@ -25,16 +29,15 @@ class OrganismLocatorTest {
         )
         assertNotNull(rect)
         rect!!
-        // Core box: x 250..750, y 200..600. Padding 5% of each dim: padX=50, padY=40.
-        assertEquals(200, rect.x)        // 250 - 50
-        assertEquals(160, rect.y)        // 200 - 40
-        assertEquals(600, rect.width)    // (750+50) - (250-50)
-        assertEquals(480, rect.height)   // (600+40) - (200-40)
+        // Tight box, no padding: x 250..750, y 200..600.
+        assertEquals(250, rect.x)
+        assertEquals(200, rect.y)
+        assertEquals(500, rect.width)
+        assertEquals(400, rect.height)
     }
 
     @Test
-    fun `padding is clamped to image bounds`() {
-        // Full-frame box → padding cannot push the rect outside the image.
+    fun `full-frame box stays inside image bounds`() {
         val rect = locator.boxToPixelRect(
             yMin1k = 0f, xMin1k = 0f, yMax1k = 1000f, xMax1k = 1000f,
             imgW = 640, imgH = 480,
