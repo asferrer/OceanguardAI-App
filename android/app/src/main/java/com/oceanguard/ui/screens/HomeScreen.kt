@@ -174,16 +174,16 @@ fun HomeScreen(
         }
     }
 
-    // Species gallery picker — supports single or multi-select.
-    // One image → single-capture result screen (auto-return, immersive backdrop).
-    // Multiple images → batch result screen (thumbnail grid, summary card).
+    // Species gallery picker — always routes to the batch result screen, even
+    // for a single picked image. The single-image immersive screen with the
+    // 10 s auto-return belongs to the live camera flow only; from the gallery
+    // we want the batch summary (thumbnail grid + per-item state) regardless
+    // of the count, so users can review the result on their own time and add
+    // more images later without being kicked back to the picker.
     val speciesGalleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
     ) { uris: List<Uri> ->
-        when {
-            uris.size == 1 -> onSpeciesImagePicked(uris[0])
-            uris.size > 1  -> onSpeciesBatchPicked(uris)
-        }
+        if (uris.isNotEmpty()) onSpeciesBatchPicked(uris)
     }
 
     // Multi-media picker — gallery, accepts images and videos (batch).
