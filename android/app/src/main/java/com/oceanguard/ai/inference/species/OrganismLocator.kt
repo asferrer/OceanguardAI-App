@@ -53,8 +53,16 @@ data class PixelRect(
  * @param engine  VLM engine adapter. When null the locator always falls back
  *                to the center-square crop (useful for Phase-0 benchmarking).
  */
+/**
+ * Primary localiser is now a YOLO26-N ONNX detector when provided
+ * ([com.oceanguard.ai.inference.species.OnnxOrganismDetector]) — ~20-30 ms on
+ * S22 NNAPI vs ~9 s for the VLM cold call. The VLM remains as a fallback when
+ * the detector is missing or yields no boxes, and the centre-square crop is
+ * the last resort. Order: detector → VLM → centre crop.
+ */
 class OrganismLocator(
     private val engine: VlmImageEngine? = null,
+    private val detector: OnnxOrganismDetector? = null,
 ) : CropProvider {
     companion object {
         private const val TAG = "OrganismLocator"
@@ -150,6 +158,27 @@ class OrganismLocator(
      * @param bitmap Full input frame (any size).
      */
     override suspend fun locate(bitmap: Bitmap): List<OrganismCrop> {
+        // Primary path: fast ONNX detector. Sub-50 ms on Exynos NNAPI, no VLM
+        // prefill cost. Falls through to VLM if detector misses everything.
+        val det = detector
+        if (det != null && det.isReady) {
+            try {
+                val detections = det.detect(bitmap)
+                if (detections.isNotEmpty()) {
+                    val crops = detections.map { d ->
+                        val bbox = d.toBoundingBoxPx(bitmap.width, bitmap.height)
+                        val cropBitmap = RagCropPreparer.cropForRag(bitmap, bbox)
+                        OrganismCrop(bbox = bbox, crop = cropBitmap, confidence = d.confidence)
+                    }
+                    Log.d(TAG, "Detector found ${crops.size} crop(s)")
+                    return crops
+                }
+                Log.d(TAG, "Detector returned no boxes — trying VLM fallback")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Detector failed: ${e.message} — trying VLM fallback")
+            }
+        }
+
         val vlm = engine
         if (vlm == null || !vlm.isReady) {
             Log.d(TAG, "Engine not ready — using fallback center crop")

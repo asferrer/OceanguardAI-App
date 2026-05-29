@@ -318,6 +318,10 @@ class OceanGuardApp : Application() {
     @Volatile private var speciesOnnxEmbedder: com.oceanguard.ai.inference.species.OnnxSpeciesEmbedder? = null
     @Volatile private var speciesEncoderPrewarmed = false
 
+    /** Same idea as [speciesOnnxEmbedder] but for the YOLO26-N detector. */
+    @Volatile private var speciesOnnxDetector: com.oceanguard.ai.inference.species.OnnxOrganismDetector? = null
+    @Volatile private var speciesDetectorPrewarmed = false
+
     /**
      * Pre-warm the ONNX species encoder off the UI thread when BioDex opens or
      * the species camera is framed, so the first identify does not pay the
@@ -329,17 +333,36 @@ class OceanGuardApp : Application() {
      * Mirrors [prewarmGemma4DetectorIfAvailable] — call from a `LaunchedEffect`.
      */
     fun prewarmSpeciesEncoder() {
-        if (speciesEncoderPrewarmed) return
-        // Touch the lazy identifier so [speciesOnnxEmbedder] is populated.
+        // Touch the lazy identifier so both species ONNX members are populated.
         speciesIdentifier
-        val embedder = speciesOnnxEmbedder ?: return
-        speciesEncoderPrewarmed = true
-        applicationScope.launch {
-            try {
-                Log.i(TAG, "Pre-warming species ONNX encoder in background")
-                embedder.prewarm()
-            } catch (e: Exception) {
-                Log.w(TAG, "Species encoder prewarm failed (non-fatal): ${e.message}")
+
+        if (!speciesEncoderPrewarmed) {
+            val embedder = speciesOnnxEmbedder
+            if (embedder != null) {
+                speciesEncoderPrewarmed = true
+                applicationScope.launch {
+                    try {
+                        Log.i(TAG, "Pre-warming species ONNX encoder in background")
+                        embedder.prewarm()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Species encoder prewarm failed (non-fatal): ${e.message}")
+                    }
+                }
+            }
+        }
+
+        if (!speciesDetectorPrewarmed) {
+            val detector = speciesOnnxDetector
+            if (detector != null) {
+                speciesDetectorPrewarmed = true
+                applicationScope.launch {
+                    try {
+                        Log.i(TAG, "Pre-warming organism ONNX detector in background")
+                        detector.prewarm()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Detector prewarm failed (non-fatal): ${e.message}")
+                    }
+                }
             }
         }
     }
@@ -361,13 +384,30 @@ class OceanGuardApp : Application() {
         val raster = java.io.File(dir, "meow_raster_v1.bin")
         val hierarchy = java.io.File(dir, "ecoregion_hierarchy_v1.json")
 
+        // YOLO26-N marine organism detector (trained in finetune/detector/).
+        // Optional: when the .onnx is present we use it as the primary
+        // localiser (NNAPI ~20-30 ms). Otherwise the OrganismLocator falls
+        // through to the VLM (~9 s) and finally to a centre-square crop.
+        val detectorFile = java.io.File(dir, "detector_yolo26n_v2.onnx")
+        val detector = if (detectorFile.exists()) {
+            try {
+                com.oceanguard.ai.inference.species.OnnxOrganismDetector(detectorFile).also {
+                    Log.i(TAG, "BioDex: organism detector available at ${detectorFile.name}")
+                    speciesOnnxDetector = it
+                }
+            } catch (e: Throwable) {
+                Log.w(TAG, "Detector init failed; falling back to VLM", e)
+                null
+            }
+        } else null
+
         // Shared Gemma 4 engine — same instance the debris flow loads. Wrapped
         // behind the VlmImageEngine port so the organism locator localises the
         // subject (box_2d) and the describer confirms/describes it. When the
         // engine is not yet loaded, isReady is false and both degrade safely:
         // the locator falls back to a center-square crop of the full frame.
         val vlmEngine = com.oceanguard.ai.inference.species.LiteRTImageEngine(sharedLiteRTEngine)
-        val locator = com.oceanguard.ai.inference.species.OrganismLocator(vlmEngine)
+        val locator = com.oceanguard.ai.inference.species.OrganismLocator(vlmEngine, detector)
         val describer = com.oceanguard.ai.inference.species.SpeciesDescriber(vlmEngine)
 
         if (encoder.exists() && indexBin.exists() && catalogJson.exists()) {
