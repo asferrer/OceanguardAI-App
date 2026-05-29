@@ -1,0 +1,8 @@
+# Smoke-test data config: solo Aquarium (638 imgs) colapsado a 1-class.
+# Sirve para validar pipeline + 0 TDR sin esperar a las descargas pesadas.
+path: ./datasets/aquarium
+train: images/train
+val: images/valid
+test: images/test
+names:
+  0: organism

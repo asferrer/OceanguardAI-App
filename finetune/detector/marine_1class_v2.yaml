@@ -1,0 +1,7 @@
+# Merged marine 1-class detector dataset (auto-generated).
+# Brackish + Aquarium + DeepFish + SUIM (negatives).
+path: C:/Users/aleja/Desktop/Doctorado/OceanguardAI-App/finetune/detector
+train: splits/train_v2.txt
+val: splits/val_v2.txt
+names:
+  0: organism
